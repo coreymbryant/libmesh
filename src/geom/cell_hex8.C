@@ -198,8 +198,7 @@ AutoPtr<Elem> Hex8::build_edge (const unsigned int i) const
 {
   libmesh_assert_less (i, this->n_edges());
 
-  AutoPtr<Elem> ap(new SideEdge<Edge2,Hex8>(this,i));
-  return ap;
+  return AutoPtr<Elem>(new SideEdge<Edge2,Hex8>(this,i));
 }
 
 
