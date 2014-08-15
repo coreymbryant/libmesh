@@ -506,7 +506,8 @@ DofObject::DofObject () :
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
   _unique_id (invalid_unique_id),
 #endif
-  _processor_id (invalid_processor_id)
+  _processor_id (invalid_processor_id),
+  _idx_buf()
 {
   this->invalidate();
 }

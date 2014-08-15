@@ -46,12 +46,26 @@ class ParsedFunction : public FunctionBase<Output>
 {
 public:
   explicit
-  ParsedFunction (const std::string& expression, const std::vector<std::string>* additional_vars=NULL,
-                  const std::vector<Output>* initial_vals=NULL)
-    : _expression(expression), _valid_derivatives(true)
-      // Size the spacetime vector to account for space, time, and any additional
-      // variables passed
-      //_spacetime(LIBMESH_DIM+1 + (additional_vars ? additional_vars->size() : 0)),
+  ParsedFunction (const std::string& expression,
+                  const std::vector<std::string>* additional_vars=NULL,
+                  const std::vector<Output>* initial_vals=NULL) :
+    _expression(expression),
+    parsers(),
+    _spacetime(LIBMESH_DIM+1 + (additional_vars ?
+                                additional_vars->size() : 0)),
+    dx_parsers(),
+#if LIBMESH_DIM > 1
+    dy_parsers(),
+#endif
+#if LIBMESH_DIM > 2
+    dz_parsers(),
+#endif
+    dt_parsers(),
+    _valid_derivatives(true),
+    _additional_vars(additional_vars ? *additional_vars :
+                     std::vector<std::string>()),
+    _initial_vals(initial_vals ? *initial_vals :
+                  std::vector<Output>())
   {
     std::string variables = "x";
 #if LIBMESH_DIM > 1
@@ -62,18 +76,11 @@ public:
 #endif
     variables += ",t";
 
-    _spacetime.resize(LIBMESH_DIM+1 + (additional_vars ? additional_vars->size() : 0));
-
     // If additional vars were passed, append them to the string
     // that we send to the function parser. Also add them to the
     // end of our spacetime vector
     if (additional_vars)
       {
-        if (initial_vals)
-          std::copy(initial_vals->begin(), initial_vals->end(), std::back_inserter(_initial_vals));
-
-        std::copy(additional_vars->begin(), additional_vars->end(), std::back_inserter(_additional_vars));
-
         for (unsigned int i=0; i < additional_vars->size(); ++i)
           {
             variables += "," + (*additional_vars)[i];
