@@ -98,11 +98,9 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
 {
   libmesh_assert_less (i, this->n_sides());
 
-
-
   Elem* face = new Quad4;
 
-  // Think of a unit cube: (-1,1) x (-1,1)x (-1,1)
+  // Think of a unit cube: (-1,1) x (-1,1) x (-1,1)
   switch (i)
     {
     case 0:  // the face at z = -1
@@ -111,9 +109,7 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
         face->set_node(1) = this->get_node(3);
         face->set_node(2) = this->get_node(2);
         face->set_node(3) = this->get_node(1);
-
-        AutoPtr<Elem> ap(face);
-        return ap;
+        break;
       }
     case 1:  // the face at y = -1
       {
@@ -121,9 +117,7 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
         face->set_node(1) = this->get_node(1);
         face->set_node(2) = this->get_node(5);
         face->set_node(3) = this->get_node(4);
-
-        AutoPtr<Elem> ap(face);
-        return ap;
+        break;
       }
     case 2:  // the face at x = 1
       {
@@ -131,9 +125,7 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
         face->set_node(1) = this->get_node(2);
         face->set_node(2) = this->get_node(6);
         face->set_node(3) = this->get_node(5);
-
-        AutoPtr<Elem> ap(face);
-        return ap;
+        break;
       }
     case 3: // the face at y = 1
       {
@@ -141,9 +133,7 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
         face->set_node(1) = this->get_node(3);
         face->set_node(2) = this->get_node(7);
         face->set_node(3) = this->get_node(6);
-
-        AutoPtr<Elem> ap(face);
-        return ap;
+        break;
       }
     case 4: // the face at x = -1
       {
@@ -151,9 +141,7 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
         face->set_node(1) = this->get_node(0);
         face->set_node(2) = this->get_node(4);
         face->set_node(3) = this->get_node(7);
-
-        AutoPtr<Elem> ap(face);
-        return ap;
+        break;
       }
     case 5: // the face at z = 1
       {
@@ -161,17 +149,13 @@ AutoPtr<Elem> Hex::side (const unsigned int i) const
         face->set_node(1) = this->get_node(5);
         face->set_node(2) = this->get_node(6);
         face->set_node(3) = this->get_node(7);
-
-        AutoPtr<Elem> ap(face);
-        return ap;
+        break;
       }
     default:
       libmesh_error_msg("Unsupported side i = " << i);
     }
 
-  libmesh_error_msg("We'll never get here!");
-  AutoPtr<Elem> ap(face);
-  return ap;
+  return AutoPtr<Elem>(face);
 }
 
 
