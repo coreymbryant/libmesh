@@ -8,6 +8,9 @@
 #include <boost/throw_exception.hpp>
 #include <boost/version.hpp>
 
+// Howard Hinnant's C++03 unique_ptr implementation.
+#include <boost/unique_ptr.hpp>
+
 // Workaround to avoid the following linking errors:
 // Undefined symbols for architecture x86_64:
 //   "boost::system::system_category()", referenced from:
@@ -35,6 +38,7 @@ void test_pool();
 int main (int, char**)
 {
   boost::shared_ptr<int> p1( new int(1) );
+  boost::unique_ptr<int> p2( new int(2) );
 
   BOOST_ASSERT(true);
 
