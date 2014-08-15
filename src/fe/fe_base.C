@@ -184,9 +184,6 @@ AutoPtr<FEGenericBase<Real> >
 FEGenericBase<Real>::build (const unsigned int dim,
                             const FEType& fet)
 {
-  // The stupid AutoPtr<FEBase> ap(); return ap;
-  // construct is required to satisfy IBM's xlC
-
   switch (dim)
     {
       // 0D
@@ -388,9 +385,6 @@ AutoPtr<FEGenericBase<RealGradient> >
 FEGenericBase<RealGradient>::build (const unsigned int dim,
                                     const FEType& fet)
 {
-  // The stupid AutoPtr<FEBase> ap(); return ap;
-  // construct is required to satisfy IBM's xlC
-
   switch (dim)
     {
       // 0D
@@ -467,9 +461,6 @@ AutoPtr<FEGenericBase<Real> >
 FEGenericBase<Real>::build_InfFE (const unsigned int dim,
                                   const FEType& fet)
 {
-  // The stupid AutoPtr<FEBase> ap(); return ap;
-  // construct is required to satisfy IBM's xlC
-
   switch (dim)
     {
 
@@ -486,10 +477,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<1,JACOBI_20_00,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<1,JACOBI_20_00,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Can't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -500,10 +489,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<1,JACOBI_30_00,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<1,JACOBI_30_00,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Can't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -514,10 +501,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<1,LEGENDRE,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<1,LEGENDRE,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Can't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -528,10 +513,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<1,LAGRANGE,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<1,LAGRANGE,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Can't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -558,10 +541,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<2,JACOBI_20_00,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<2,JACOBI_20_00,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -572,10 +553,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<2,JACOBI_30_00,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<2,JACOBI_30_00,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -586,10 +565,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<2,LEGENDRE,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<2,LEGENDRE,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -600,10 +577,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<2,LAGRANGE,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<2,LAGRANGE,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -630,10 +605,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<3,JACOBI_20_00,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<3,JACOBI_20_00,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -644,10 +617,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<3,JACOBI_30_00,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<3,JACOBI_30_00,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -658,10 +629,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<3,LEGENDRE,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<3,LEGENDRE,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -672,10 +641,8 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
               switch (fet.inf_map)
                 {
                 case CARTESIAN:
-                  {
-                    AutoPtr<FEBase> ap(new InfFE<3,LAGRANGE,CARTESIAN>(fet));
-                    return ap;
-                  }
+                  return AutoPtr<FEBase>(new InfFE<3,LAGRANGE,CARTESIAN>(fet));
+
                 default:
                   libmesh_error_msg("ERROR: Don't build an infinite element with InfMapType = " << fet.inf_map);
                 }
@@ -691,8 +658,7 @@ FEGenericBase<Real>::build_InfFE (const unsigned int dim,
     }
 
   libmesh_error_msg("We'll never get here!");
-  AutoPtr<FEBase> ap(NULL);
-  return ap;
+  return AutoPtr<FEBase>(NULL);
 }
 
 
@@ -704,8 +670,7 @@ FEGenericBase<RealGradient>::build_InfFE (const unsigned int,
 {
   // No vector types defined... YET.
   libmesh_not_implemented();
-  AutoPtr<FEVectorBase> ap(NULL);
-  return ap;
+  return AutoPtr<FEVectorBase>(NULL);
 }
 
 #endif // ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
