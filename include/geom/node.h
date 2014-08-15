@@ -280,8 +280,7 @@ Node & Node::operator= (const Point& p)
 inline
 AutoPtr<Node> Node::build(const Node& n)
 {
-  AutoPtr<Node> ap(new Node(n));
-  return ap;
+  return AutoPtr<Node>(new Node(n));
 }
 
 
@@ -290,9 +289,7 @@ inline
 AutoPtr<Node> Node::build(const Point& p,
                           const dof_id_type id)
 {
-
-  AutoPtr<Node> ap(new Node(p,id));
-  return ap;
+  return AutoPtr<Node>(new Node(p,id));
 }
 
 
@@ -303,8 +300,7 @@ AutoPtr<Node> Node::build(const Real x,
                           const Real z,
                           const dof_id_type id)
 {
-  AutoPtr<Node> ap(new Node(x,y,z,id));
-  return ap;
+  return AutoPtr<Node>(new Node(x,y,z,id));
 }
 
 

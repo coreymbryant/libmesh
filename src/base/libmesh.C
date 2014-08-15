@@ -77,8 +77,6 @@ EXTERN_C_FOR_PETSC_END
 // Local anonymous namespace to hold miscelaneous bits
 namespace {
 
-using libMesh::AutoPtr;
-
 AutoPtr<GetPot> command_line (NULL);
 AutoPtr<std::ofstream> _ofstream (NULL);
 // If std::cout and std::cerr are redirected, we need to
