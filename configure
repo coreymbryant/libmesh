@@ -28498,6 +28498,7 @@ fi
 
 
   install_internal_boost=no
+  BOOST_INCLUDE=""
   if (test "$enableboost" !=  no) ; then
     # --------------------------------------------------------------
     # Look for a user or system-provided boost.  If there is not
@@ -28786,9 +28787,9 @@ $as_echo "<<< External boost installation *not* found... will try to configure f
       # Note: 4th argument is libmesh's builtin boost.
       internal_boost_found=yes
 
-          if test "x$srcdir/contrib/boost" != "x"; then
+          if test "x$top_srcdir/contrib/boost" != "x"; then
     want_boost="yes"
-    ac_boost_path="$srcdir/contrib/boost"
+    ac_boost_path="$top_srcdir/contrib/boost"
   else
 
 # Check whether --with-boost was given.
@@ -29065,6 +29066,7 @@ $as_echo "<<< Libmesh boost installation *not* found >>>" >&6; }
 	enableboost=no
       else
         install_internal_boost=yes
+        BOOST_INCLUDE="-I\$(top_srcdir)/contrib/boost/include"
       fi
     fi
 
@@ -29072,6 +29074,16 @@ $as_echo "<<< Libmesh boost installation *not* found >>>" >&6; }
     libmesh_optional_INCLUDES="$BOOST_CPPFLAGS $libmesh_optional_INCLUDES"
     #libmesh_optional_LIBS="$BOOST_LDFLAGS $libmesh_optional_LIBS"
   fi
+
+
+  # if we are installing our own Boost, add it to the contrib search path
+  # which is not exported during install.
+  if (test x$enableboost = xyes); then
+    if (test x$install_internal_boost = xyes); then
+      libmesh_contrib_INCLUDES="$BOOST_INCLUDE $libmesh_contrib_INCLUDES"
+    fi
+  fi
+
    if test x$install_internal_boost = xyes; then
   LIBMESH_INSTALL_INTERNAL_BOOST_TRUE=
   LIBMESH_INSTALL_INTERNAL_BOOST_FALSE='#'
@@ -29080,7 +29092,6 @@ else
   LIBMESH_INSTALL_INTERNAL_BOOST_FALSE=
 fi
 
-  # --------------------------------------------------------------
 
 ac_config_files="$ac_config_files contrib/boost/include/Makefile"
 
