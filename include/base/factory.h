@@ -168,10 +168,7 @@ template <class Derived, class Base>
 inline
 AutoPtr<Base> FactoryImp<Derived,Base>::create ()
 {
-  // Do this the stoopid way for IBM xlC
-  AutoPtr<Base> ret_val (new Derived);
-
-  return ret_val;
+  return AutoPtr<Base>(new Derived);
 }
 
 
