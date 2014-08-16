@@ -247,8 +247,7 @@ AutoPtr<Elem> Hex20::build_edge (const unsigned int i) const
 {
   libmesh_assert_less (i, this->n_edges());
 
-  AutoPtr<Elem> ap(new SideEdge<Edge3,Hex20>(this,i));
-  return ap;
+  return AutoPtr<Elem>(new SideEdge<Edge3,Hex20>(this,i));
 }
 
 
