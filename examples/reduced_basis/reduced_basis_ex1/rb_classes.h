@@ -28,7 +28,6 @@
 
 // Bring in bits from the libMesh namespace.
 // Just the bits we're using, since this is a header.
-using libMesh::AutoPtr;
 using libMesh::DirichletBoundary;
 using libMesh::EquationSystems;
 using libMesh::FEMContext;
@@ -158,7 +157,6 @@ public:
    * The object that defines which degrees of freedom are on a Dirichlet boundary.
    */
   AutoPtr<DirichletBoundary> dirichlet_bc;
-
 };
 
 #endif
