@@ -44,9 +44,6 @@ namespace libMesh
 AutoPtr<FEAbstract> FEAbstract::build(const unsigned int dim,
                                       const FEType& fet)
 {
-  // The stupid AutoPtr<FEAbstract> ap(); return ap;
-  // construct is required to satisfy IBM's xlC
-
   switch (dim)
     {
       // 0D
