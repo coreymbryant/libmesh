@@ -29069,18 +29069,18 @@ $as_echo "<<< Libmesh boost installation *not* found >>>" >&6; }
         BOOST_INCLUDE="-I\$(top_srcdir)/contrib/boost/include"
       fi
     fi
-
-    # currently only using boost headers
-    libmesh_optional_INCLUDES="$BOOST_CPPFLAGS $libmesh_optional_INCLUDES"
-    #libmesh_optional_LIBS="$BOOST_LDFLAGS $libmesh_optional_LIBS"
   fi
 
 
   # if we are installing our own Boost, add it to the contrib search path
-  # which is not exported during install.
+  # which is not exported during install.  If we are using an external boost,
+  # add its (absolute) path, as determined by AX_BOOST_BASE to the
+  # libmesh_optional_INCLUDES variable.
   if (test x$enableboost = xyes); then
     if (test x$install_internal_boost = xyes); then
       libmesh_contrib_INCLUDES="$BOOST_INCLUDE $libmesh_contrib_INCLUDES"
+    else
+      libmesh_optional_INCLUDES="$BOOST_CPPFLAGS $libmesh_optional_INCLUDES"
     fi
   fi
 
