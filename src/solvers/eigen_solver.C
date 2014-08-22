@@ -24,7 +24,6 @@
 // Local Includes
 #include "libmesh/eigen_solver.h"
 #include "libmesh/slepc_eigen_solver.h"
-#include "libmesh/auto_ptr.h"
 
 namespace libMesh
 {
