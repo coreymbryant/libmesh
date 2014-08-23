@@ -29098,6 +29098,12 @@ ac_config_files="$ac_config_files contrib/boost/include/Makefile"
 # --------------------------------------------------------------
 
 
+# --------------------------------------------------------------
+# Howard Hinnant's unique_ptr
+ac_config_files="$ac_config_files contrib/unique_ptr/Makefile"
+
+# --------------------------------------------------------------
+
 
 # -------------------------------------------------------------
 # Petsc -- enabled by default
@@ -37064,6 +37070,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "contrib/boost/include/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/boost/include/Makefile" ;;
+    "contrib/unique_ptr/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/unique_ptr/Makefile" ;;
     "contrib/laspack/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/laspack/Makefile" ;;
     "contrib/sfcurves/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/sfcurves/Makefile" ;;
     "contrib/gzstream/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/gzstream/Makefile" ;;

@@ -346,11 +346,11 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = boost/include eigen/eigen gmv gzstream netcdf/v3 \
-	netcdf/v4 exodusii/v5.09 exodusii/v5.22/exodus nemesis/v3.09 \
-	nemesis/v5.22/nemesis tecplot/tecio tecplot/binary triangle \
-	tetgen qhull/qhull libHilbert laspack metis parmetis sfcurves \
-	fparser nanoflann
+DIST_SUBDIRS = unique_ptr boost/include eigen/eigen gmv gzstream \
+	netcdf/v3 netcdf/v4 exodusii/v5.09 exodusii/v5.22/exodus \
+	nemesis/v3.09 nemesis/v5.22/nemesis tecplot/tecio \
+	tecplot/binary triangle tetgen qhull/qhull libHilbert laspack \
+	metis parmetis sfcurves fparser nanoflann
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -670,7 +670,9 @@ AUTOMAKE_OPTIONS = subdir-objects
 
 ###########################################################
 # add contributed libraries that are conditionally compiled
-SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
+
+# FIXME: Add a configure test for this?
+SUBDIRS = unique_ptr $(am__append_1) $(am__append_2) $(am__append_3) \
 	$(am__append_9) $(am__append_15) $(am__append_21) \
 	$(am__append_27) $(am__append_33) $(am__append_39) \
 	$(am__append_45) $(am__append_51) $(am__append_57) \

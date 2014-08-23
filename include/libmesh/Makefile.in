@@ -557,10 +557,11 @@ BUILT_SOURCES = auto_ptr.h dirichlet_boundaries.h dof_map.h \
 	utility.h vectormap.h xdr_cxx.h \
 	parallel_communicator_specializations $(am__append_1) \
 	$(am__append_3) $(am__append_5) $(am__append_7) \
-	$(am__append_9) $(am__append_11) libmesh_config.h
+	$(am__append_9) $(am__append_11) unique_ptr.hpp \
+	libmesh_config.h
 DISTCLEANFILES = $(BUILT_SOURCES) $(am__append_2) $(am__append_4) \
 	$(am__append_6) $(am__append_8) $(am__append_10) \
-	$(am__append_12) libmesh_config.h
+	$(am__append_12) unique_ptr.hpp libmesh_config.h
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -784,6 +785,9 @@ uninstall-am:
 
 @LIBMESH_ENABLE_NETCDF_V4_TRUE@netcdf.h: $(top_srcdir)/contrib/netcdf/v4/include/netcdf.h
 @LIBMESH_ENABLE_NETCDF_V4_TRUE@	$(AM_V_GEN)rm -f $@ && $(LN_S) $< $@
+
+unique_ptr.hpp: $(top_srcdir)/contrib/unique_ptr/unique_ptr.hpp
+	$(AM_V_GEN)rm -f $@ && $(LN_S) $< $@
 
 #
 # libmesh_config.h rule

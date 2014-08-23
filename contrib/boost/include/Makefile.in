@@ -387,9 +387,8 @@ am__nobase_include_HEADERS_DIST = boost/aligned_storage.hpp \
 	boost/type_traits/type_with_alignment.hpp \
 	boost/type_traits.hpp boost/typeof/message.hpp \
 	boost/typeof/native.hpp boost/typeof/typeof.hpp \
-	boost/unique_ptr.hpp boost/utility/addressof.hpp \
-	boost/utility/declval.hpp boost/utility/enable_if.hpp \
-	boost/version.hpp
+	boost/utility/addressof.hpp boost/utility/declval.hpp \
+	boost/utility/enable_if.hpp boost/version.hpp
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -1023,7 +1022,6 @@ vtkversion = @vtkversion@
 @LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/typeof/message.hpp \
 @LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/typeof/native.hpp \
 @LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/typeof/typeof.hpp \
-@LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/unique_ptr.hpp \
 @LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/utility/addressof.hpp \
 @LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/utility/declval.hpp \
 @LIBMESH_INSTALL_INTERNAL_BOOST_TRUE@        boost/utility/enable_if.hpp \
