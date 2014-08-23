@@ -4,11 +4,6 @@ with libmesh:
 .) Download and unpack the newest boost source distribution to e.g.
    /path/to/unpacked/boost/boost_1_XY_Z
 
-.) Drop a copy (unique_ptr.hpp located in this directory) of Howard
-   Hinnant's C++03 unique_ptr implementation [0] into the top level of
-   your unpacked boost distribution.
-   [0]: http://home.roadrunner.com/~hinnant/unique_ptr03.html
-
 .) Using the test_boost.cc file located in this directory, run
 
    $CXX -MM -MF foo.d -I/path/to/unpacked/boost/boost_1_XY_Z test_boost.cc

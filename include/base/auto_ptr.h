@@ -29,7 +29,7 @@
 #  include <memory>
 #  define AutoPtr std::unique_ptr
 #else
-#  include <boost/unique_ptr.hpp>
+#  include "libmesh/unique_ptr.hpp"
 #  define AutoPtr boost::unique_ptr
 #endif
 

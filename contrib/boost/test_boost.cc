@@ -8,8 +8,12 @@
 #include <boost/throw_exception.hpp>
 #include <boost/version.hpp>
 
-// Howard Hinnant's C++03 unique_ptr implementation.
-#include <boost/unique_ptr.hpp>
+// Headers required by Howard Hinnant's C++03 unique_ptr
+// implementation that we distribute with libmesh.
+#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/mpl/if.hpp>
 
 // Workaround to avoid the following linking errors:
 // Undefined symbols for architecture x86_64:

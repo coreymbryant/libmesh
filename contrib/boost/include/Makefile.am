@@ -313,7 +313,6 @@ if LIBMESH_INSTALL_INTERNAL_BOOST
         boost/typeof/message.hpp \
         boost/typeof/native.hpp \
         boost/typeof/typeof.hpp \
-        boost/unique_ptr.hpp \
         boost/utility/addressof.hpp \
         boost/utility/declval.hpp \
         boost/utility/enable_if.hpp \
