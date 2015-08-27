@@ -216,6 +216,25 @@ dbg_programs   = # empty, append below
 prof_programs  = # empty, append below
 oprof_programs = # empty, append below
 
+# fparser_parse
+opt_programs               += fparser_parse-opt
+fparser_parse_opt_SOURCES    = src/apps/fparser_parse.C
+fparser_parse_opt_CPPFLAGS   = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
+fparser_parse_opt_CXXFLAGS   = $(CXXFLAGS_OPT)
+fparser_parse_opt_LDADD      = libmesh_opt.la
+
+devel_programs             += fparser_parse-devel
+fparser_parse_devel_SOURCES  = src/apps/fparser_parse.C
+fparser_parse_devel_CPPFLAGS = $(CPPFLAGS_DEVEL) $(AM_CPPFLAGS)
+fparser_parse_devel_CXXFLAGS = $(CXXFLAGS_DEVEL)
+fparser_parse_devel_LDADD    = libmesh_devel.la
+
+dbg_programs               += fparser_parse-dbg
+fparser_parse_dbg_SOURCES    = src/apps/fparser_parse.C
+fparser_parse_dbg_CPPFLAGS   = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
+fparser_parse_dbg_CXXFLAGS   = $(CXXFLAGS_DBG)
+fparser_parse_dbg_LDADD      = libmesh_dbg.la
+
 # getpot_parse
 opt_programs               += getpot_parse-opt
 getpot_parse_opt_SOURCES    = src/apps/getpot_parse.C
@@ -253,6 +272,28 @@ meshtool_dbg_SOURCES    = src/apps/meshtool.C
 meshtool_dbg_CPPFLAGS   = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshtool_dbg_CXXFLAGS   = $(CXXFLAGS_DBG)
 meshtool_dbg_LDADD      = libmesh_dbg.la
+
+# compare
+opt_programs          += calculator-opt
+calculator_opt_SOURCES    = src/apps/calculator.C
+calculator_opt_SOURCES   += src/apps/L2system.C src/apps/L2system.h
+calculator_opt_CPPFLAGS   = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
+calculator_opt_CXXFLAGS   = $(CXXFLAGS_OPT)
+calculator_opt_LDADD      = libmesh_opt.la
+
+devel_programs        += calculator-devel
+calculator_devel_SOURCES  = src/apps/calculator.C
+calculator_devel_SOURCES += src/apps/L2system.C src/apps/L2system.h
+calculator_devel_CPPFLAGS = $(CPPFLAGS_DEVEL) $(AM_CPPFLAGS)
+calculator_devel_CXXFLAGS = $(CXXFLAGS_DEVEL)
+calculator_devel_LDADD    = libmesh_devel.la
+
+dbg_programs          += calculator-dbg
+calculator_dbg_SOURCES    = src/apps/calculator.C
+calculator_dbg_SOURCES   += src/apps/L2system.C src/apps/L2system.h
+calculator_dbg_CPPFLAGS   = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
+calculator_dbg_CXXFLAGS   = $(CXXFLAGS_DBG)
+calculator_dbg_LDADD      = libmesh_dbg.la
 
 # compare
 opt_programs          += compare-opt
@@ -310,6 +351,25 @@ meshid_dbg_SOURCES    = src/apps/meshid.C
 meshid_dbg_CPPFLAGS   = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
 meshid_dbg_CXXFLAGS   = $(CXXFLAGS_DBG)
 meshid_dbg_LDADD      = libmesh_dbg.la
+
+# meshavg
+opt_programs           += meshavg-opt
+meshavg_opt_SOURCES    = src/apps/meshavg.C
+meshavg_opt_CPPFLAGS   = $(CPPFLAGS_OPT) $(AM_CPPFLAGS)
+meshavg_opt_CXXFLAGS   = $(CXXFLAGS_OPT)
+meshavg_opt_LDADD      = libmesh_opt.la
+
+devel_programs         += meshavg-devel
+meshavg_devel_SOURCES  = src/apps/meshavg.C
+meshavg_devel_CPPFLAGS = $(CPPFLAGS_DEVEL) $(AM_CPPFLAGS)
+meshavg_devel_CXXFLAGS = $(CXXFLAGS_DEVEL)
+meshavg_devel_LDADD    = libmesh_devel.la
+
+dbg_programs           += meshavg-dbg
+meshavg_dbg_SOURCES    = src/apps/meshavg.C
+meshavg_dbg_CPPFLAGS   = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
+meshavg_dbg_CXXFLAGS   = $(CXXFLAGS_DBG)
+meshavg_dbg_LDADD      = libmesh_dbg.la
 
 # meshdiff
 opt_programs           += meshdiff-opt
@@ -444,8 +504,11 @@ if LIBMESH_ENABLE_EXAMPLES
   SUBDIRS += examples
 endif
 
-#
-.PHONY: examples_doc doc svnexpand
+###########################################################
+# Documentation
+.PHONY: examples_doc doc
+
+SUBDIRS += doc
 
 #
 # documentation for the examples
@@ -455,35 +518,25 @@ examples_doc:
 #
 # doxygen documentation - be sure to generate symlinks in include/libmesh!
 doc html:
-	$(MAKE) examples_doc
-	@cd $(top_builddir)/include/libmesh && $(MAKE)
-	$(MKDIR_P) $(top_builddir)/doc/html
-	$(DOXYGEN) $(top_builddir)/doc/Doxyfile
+#	$(MAKE) examples_doc
+	$(MAKE) -C doc/html doc
 
-# Upload the web page to sourceforge.  We need a way to specify usernames
-# other than $USER when connecting to sourceforge servers... Please set the
-# environment variable: $LIBMESH_SVN_USER.
+# Upload the web page to github.io.
 upload:
-	if [ x$(LIBMESH_SVN_USER) = x ]; then echo "Set LIBMESH_SVN_USER environment variable"; false; fi
-	chmod -R g+w $(top_builddir)/doc/html/* $(top_srcdir)/doc/html/* $(top_srcdir)/doc/latex/*/*
-	rsync -rltzve ssh --exclude '.svn' $(top_srcdir)/doc/html/ $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	rsync -rltzve ssh --exclude '.svn' $(top_builddir)/doc/html/ $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	rsync -rltzve ssh --exclude '.svn' $(top_srcdir)/doc/latex/howto $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	rsync -rltzve ssh --exclude '.svn' $(top_srcdir)/doc/latex/xda_format $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	chmod -R g-w $(top_builddir)/doc/html/* $(top_srcdir)/doc/html/* $(top_srcdir)/doc/latex/*/*
+	-rm -rf libMesh.github.io && git clone https://github.com/libMesh/libMesh.github.io.git
+	cd libMesh.github.io && git rm -rf doxygen
+	rsync -aLv --exclude=src --exclude=Makefile --exclude=.linkstamp $(top_builddir)/doc/html/ libMesh.github.io/
+	gitcommit=`git log | head -1` && cd libMesh.github.io && git add * && git ci -m"updating web page from \"make upload\", libmesh.git at $$gitcommit"
+# uncomment below when ready
+#	cd libMesh.github.io && git push
+#	-rm -rf libMesh.github.io
 
-upload_test:
-	chmod -R g+w $(top_builddir)/doc/html/* $(top_srcdir)/doc/html/* $(top_srcdir)/doc/latex/*/*
-	rsync -nrltzve ssh --exclude '.svn' $(top_srcdir)/doc/html/ $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	rsync -nrltzve ssh --exclude '.svn' $(top_builddir)/doc/html/ $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	rsync -nrltzve ssh --exclude '.svn' $(top_srcdir)/doc/latex/howto $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	rsync -nrltzve ssh --exclude '.svn' $(top_srcdir)/doc/latex/xda_format $(LIBMESH_SVN_USER),libmesh@web.sourceforge.net:/home/groups/l/li/libmesh/htdocs/
-	chmod -R g-w $(top_builddir)/doc/html/* $(top_srcdir)/doc/html/* $(top_srcdir)/doc/latex/*/*
 
 #
 # special things to do when running 'make dist'
 dist-hook:
 	rm -rf `find $(distdir) -name libmesh_config.h`
+	rm -rf `find $(distdir) -name getpot_test.C`
 	rm -rf `find $(distdir) -name .svn`
 
 

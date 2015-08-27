@@ -2,8 +2,10 @@
 #define ONCE_FPARSERAD_H_
 
 #include "fparser.hh"
-//#include "libmesh_common.h"
 #include <exception>
+
+template<typename Value_t>
+class ADImplementation;
 
 template<typename Value_t>
 class FunctionParserADBase : public FunctionParserBase<Value_t>
@@ -11,11 +13,17 @@ class FunctionParserADBase : public FunctionParserBase<Value_t>
 public:
   FunctionParserADBase();
   FunctionParserADBase(const FunctionParserADBase& cpy);
+  virtual ~FunctionParserADBase();
 
   /**
    * auto-differentiate for var
    */
-  int AutoDiff(const std::string& var);
+  int AutoDiff(const std::string & var_name);
+
+  /**
+   * add another variable
+   */
+  bool AddVariable(const std::string & var_name);
 
   /**
    * check if the function is equal to 0
@@ -35,43 +43,48 @@ public:
    */
   void silenceAutoDiffErrors(bool _silence = true) { mSilenceErrors = _silence; }
 
-protected:
   /**
-   * A list of opcodes and immediate values
+   * compile the current function, or load a previously compiled copy.
+   * Warning: When re-using an FParser function object by parsing a new expression
+   *          the previously JIT compiled function will continue to be Evaled until the
+   *          JITCompile method is called again.
    */
-  typedef std::pair<unsigned, Value_t> OpcodeDataPair;
-  typedef std::vector<OpcodeDataPair> DiffProgramFragment;
-  typedef std::pair<typename DiffProgramFragment::const_iterator,
-                    typename DiffProgramFragment::const_iterator> Interval;
+  bool JITCompile(bool cacheFunction = true);
 
   /**
-   * Recursively differentiate functions from the outside (end of program)
-   * to the inside.
+   * wrap Optimize of the parent class to check for a JIT compiled version and redo
+   * the compilation after Optimization
    */
-  DiffProgramFragment DiffFunction(const DiffProgramFragment & orig);
+  void Optimize();
+
+#if LIBMESH_HAVE_FPARSER_JIT
+  /**
+   * Overwrite the Exec function with one that tests for a JIT compiled version
+   * and uses that if it exists
+   */
+  Value_t Eval(const Value_t* Vars);
+#endif
 
   /**
-   * how much does the current opcode move the stack pointer
+   * look up the opcode number for a given variable name
+   * throws UnknownVariableException if the variable is not found
    */
-  int OpcodeSize(unsigned op);
+  unsigned int LookUpVarOpcode(const std::string & var_name);
+
+  /**
+   * register a dependency between variables so that da/db = c
+   */
+  void RegisterDerivative(const std::string & a, const std::string & b, const std::string & c);
 
 private:
-  typename FunctionParserBase<Value_t>::Data * mData;
+  /// helper function to perform the JIT compilation (needs the Value_t typename as a string)
+  bool JITCompileHelper(const std::string &, bool);
 
-  /// get the preceeding argument
-  Interval GetArgument(const DiffProgramFragment & code);
+  /// JIT function pointer
+  Value_t (*compiledFunction)(const Value_t *, const Value_t *, const Value_t);
 
-  /// get argument n before
-  Interval GetArgument(const DiffProgramFragment & code, unsigned int index);
-
-  /// remove the code fragments that generate the n previous arguments
-  //std::vector<DiffProgramFragment> PopArguments(DiffProgramFragment & code, unsigned int index);
-
-  /// variable to diff for
-  unsigned mVarOp;
-
-  /// write the DiffProgramFragement into the internal bytecode storage
-  void Commit(const DiffProgramFragment & code);
+  /// pointer to the mImmed values (or NULL if the mImmed vector is empty)
+  Value_t * pImmed;
 
   /**
    * In certain applications derivatives are built proactively and may never be used.
@@ -79,19 +92,28 @@ private:
    */
   bool mSilenceErrors;
 
+  // user function plog
+  static Value_t fp_plog(const Value_t * params);
+
+  // function ID for the plog function
+  unsigned int mFPlog;
+
+  // registered derivative table, and entry structure
+  struct VariableDerivative {
+    unsigned int var, dependence, derivative;
+  };
+  std::vector<VariableDerivative> mRegisteredDerivatives;
+
+  // private implementaion of the automatic differentiation algorithm
+  ADImplementation<Value_t> * ad;
+
+  // the firewalled implementation class of the AD algorithm has full access to the FParser object
+  friend class ADImplementation<Value_t>;
+
   // Exceptions
-  class UnsupportedOpcode : public std::exception {
-    virtual const char* what() const throw() { return "Unsupported opcode"; }
-  } UnsupportedOpcodeException;
-  class StackExhausted : public std::exception {
-    virtual const char* what() const throw() { return "Stack exhausted."; }
-  } StackExhaustedException;
-  class EmptyProgram : public std::exception {
-    virtual const char* what() const throw() { return "Empty programm passed in."; }
-  } EmptyProgramException;
-  class UnsupportedArgumentCount : public std::exception {
-    virtual const char* what() const throw() { return "Unsupported argument count."; }
-  } UnsupportedArgumentCountException;
+  class UnknownVariable : public std::exception {
+    virtual const char* what() const throw() { return "Unknown variable"; }
+  } UnknownVariableException;
 };
 
 

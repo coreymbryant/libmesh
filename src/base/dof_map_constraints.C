@@ -82,9 +82,10 @@ public:
     const Variable &var_description = _dof_map.variable(_variable_number);
 
 #ifdef LIBMESH_ENABLE_PERIODIC
-    AutoPtr<PointLocatorBase> point_locator;
-    bool have_periodic_boundaries = !_periodic_boundaries.empty();
-    if (have_periodic_boundaries)
+    UniquePtr<PointLocatorBase> point_locator;
+    const bool have_periodic_boundaries =
+      !_periodic_boundaries.empty();
+    if (have_periodic_boundaries && !range.empty())
       point_locator = _mesh.sub_point_locator();
 #endif
 
@@ -144,9 +145,9 @@ public:
   void operator()(const ConstElemRange &range) const
   {
 #ifdef LIBMESH_ENABLE_PERIODIC
-    AutoPtr<PointLocatorBase> point_locator;
+    UniquePtr<PointLocatorBase> point_locator;
     bool have_periodic_boundaries = !_periodic_boundaries.empty();
-    if (have_periodic_boundaries)
+    if (have_periodic_boundaries && !range.empty())
       point_locator = _mesh.sub_point_locator();
 #endif
 
@@ -249,31 +250,29 @@ private:
 
   const AddConstraint     &add_fn;
 
-  static Number f_component
-    (FunctionBase<Number> *f,
-     FEMFunctionBase<Number> *f_fem,
-     const FEMContext* c,
-     unsigned int i,
-     const Point& p,
-     Real time)
+  static Number f_component (FunctionBase<Number> *f,
+                             FEMFunctionBase<Number> *f_fem,
+                             const FEMContext* c,
+                             unsigned int i,
+                             const Point& p,
+                             Real time)
   {
     if (f_fem)
       {
         if (c)
           return f_fem->component(*c, i, p, time);
         else
-          return std::numeric_limits<Number>::quiet_NaN();
+          return std::numeric_limits<Real>::quiet_NaN();
       }
     return f->component(i, p, time);
   }
 
-  static Gradient g_component
-    (FunctionBase<Gradient> *g,
-     FEMFunctionBase<Gradient> *g_fem,
-     const FEMContext* c,
-     unsigned int i,
-     const Point& p,
-     Real time)
+  static Gradient g_component (FunctionBase<Gradient> *g,
+                               FEMFunctionBase<Gradient> *g_fem,
+                               const FEMContext* c,
+                               unsigned int i,
+                               const Point& p,
+                               Real time)
   {
     if (g_fem)
       {
@@ -328,7 +327,7 @@ private:
     const unsigned int dim = mesh.mesh_dimension();
 
     // Boundary info for the current mesh
-    const BoundaryInfo& boundary_info = *mesh.boundary_info;
+    const BoundaryInfo& boundary_info = mesh.get_boundary_info();
 
     unsigned int n_vec_dim = FEInterface::n_vec_dim(mesh, fe_type);
 
@@ -336,11 +335,11 @@ private:
       variable.first_scalar_number();
 
     // Get FE objects of the appropriate type
-    AutoPtr<FEGenericBase<OutputType> > fe = FEGenericBase<OutputType>::build(dim, fe_type);
+    UniquePtr<FEGenericBase<OutputType> > fe = FEGenericBase<OutputType>::build(dim, fe_type);
 
     // Prepare variables for projection
-    AutoPtr<QBase> qedgerule (fe_type.default_quadrature_rule(1));
-    AutoPtr<QBase> qsiderule (fe_type.default_quadrature_rule(dim-1));
+    UniquePtr<QBase> qedgerule (fe_type.default_quadrature_rule(1));
+    UniquePtr<QBase> qsiderule (fe_type.default_quadrature_rule(dim-1));
 
     // The values of the shape functions at the quadrature
     // points
@@ -352,7 +351,7 @@ private:
 
     const FEContinuity cont = fe->get_continuity();
 
-    if (cont == C_ONE)
+    if ( (cont == C_ONE) && (fe_type.family != SUBDIVISION) )
       {
         // We'll need gradient data for a C1 projection
         libmesh_assert(g || g_fem);
@@ -384,13 +383,13 @@ private:
     // If our supplied functions require a FEMContext, and if we have
     // an initialized solution to use with that FEMContext, then
     // create one
-    AutoPtr<FEMContext> context;
+    UniquePtr<FEMContext> context;
     if (f_fem)
       {
         libmesh_assert(f_system);
         if (f_system->current_local_solution->initialized())
           {
-            context = AutoPtr<FEMContext>(new FEMContext(*f_system));
+            context = UniquePtr<FEMContext>(new FEMContext(*f_system));
             f_fem->init_context(*context);
             if (g_fem)
               g_fem->init_context(*context);
@@ -401,6 +400,16 @@ private:
     for (ConstElemRange::const_iterator elem_it=range.begin(); elem_it != range.end(); ++elem_it)
       {
         const Elem* elem = *elem_it;
+
+        // We only calculate Dirichlet constraints on active
+        // elements
+        if (!elem->active())
+          continue;
+
+        // Per-subdomain variables don't need to be projected on
+        // elements where they're not active
+        if (!variable.active_on_subdomain(elem->subdomain_id()))
+          continue;
 
         // There's a chicken-and-egg problem with FEMFunction-based
         // Dirichlet constraints: we can't evaluate the FEMFunction
@@ -416,16 +425,6 @@ private:
         // setting initial conditions anyway.
         if (f_system && context.get())
           context->pre_fe_reinit(*f_system, elem);
-
-        // We only calculate Dirichlet constraints on active
-        // elements
-        if (!elem->active())
-          continue;
-
-        // Per-subdomain variables don't need to be projected on
-        // elements where they're not active
-        if (!variable.active_on_subdomain(elem->subdomain_id()))
-          continue;
 
         // Find out which nodes, edges and sides are on a requested
         // boundary:
@@ -529,7 +528,7 @@ private:
               }
             // Assume that C_ZERO elements have a single nodal
             // value shape function
-            else if (cont == C_ZERO)
+            else if ( (cont == C_ZERO) || (fe_type.family == SUBDIVISION) )
               {
                 libmesh_assert_equal_to (nc, n_vec_dim);
                 for( unsigned int c = 0; c < n_vec_dim; c++ )
@@ -703,7 +702,7 @@ private:
               for (unsigned int qp=0; qp<n_qp; qp++)
                 {
                   // solution at the quadrature point
-                  OutputNumber fineval = 0;
+                  OutputNumber fineval(0);
                   libMesh::RawAccessor<OutputNumber> f_accessor( fineval, dim );
 
                   for( unsigned int c = 0; c < n_vec_dim; c++)
@@ -825,7 +824,7 @@ private:
               for (unsigned int qp=0; qp<n_qp; qp++)
                 {
                   // solution at the quadrature point
-                  OutputNumber fineval = 0;
+                  OutputNumber fineval(0);
                   libMesh::RawAccessor<OutputNumber> f_accessor( fineval, dim );
 
                   for( unsigned int c = 0; c < n_vec_dim; c++)
@@ -1037,6 +1036,7 @@ void DofMap::create_dof_constraints(const MeshBase& mesh, Real time)
   // We might get constraint equations from AMR hanging nodes in 2D/3D
   // or from boundary conditions in any dimension
   const bool possible_local_constraints = false
+    || !mesh.n_elem()
 #ifdef LIBMESH_ENABLE_AMR
     || mesh.mesh_dimension() > 1
 #endif
@@ -1053,8 +1053,7 @@ void DofMap::create_dof_constraints(const MeshBase& mesh, Real time)
 #if defined(LIBMESH_ENABLE_PERIODIC) || defined(LIBMESH_ENABLE_DIRICHLET) || defined(LIBMESH_ENABLE_AMR)
   libmesh_assert(this->comm().verify(mesh.is_serial()));
 
-  if (!mesh.is_serial())
-    this->comm().max(possible_global_constraints);
+  this->comm().max(possible_global_constraints);
 #endif
 
   if (!possible_global_constraints)
@@ -1063,6 +1062,7 @@ void DofMap::create_dof_constraints(const MeshBase& mesh, Real time)
       // their last remaining dirichlet/periodic/user constraint?
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
       _dof_constraints.clear();
+      _stashed_dof_constraints.clear();
       _primal_constraint_values.clear();
       _adjoint_constraint_values.clear();
 #endif
@@ -1080,35 +1080,25 @@ void DofMap::create_dof_constraints(const MeshBase& mesh, Real time)
   // u_a = u_b is collocated at the nodes of side a, which gives
   // one row of the constraint matrix.
 
-  // define the range of elements of interest
-  ConstElemRange range;
-  if (possible_local_constraints)
-    {
-      // With SerialMesh or a serial ParallelMesh, every processor
-      // computes every constraint
-      MeshBase::const_element_iterator
-        elem_begin = mesh.elements_begin(),
-        elem_end   = mesh.elements_end();
+  // Processors only compute their local constraints
+  ConstElemRange range (mesh.local_elements_begin(),
+                        mesh.local_elements_end());
 
-      // With a parallel ParallelMesh, processors compute only
-      // their local constraints
-      if (!mesh.is_serial())
-        {
-          elem_begin = mesh.local_elements_begin();
-          elem_end   = mesh.local_elements_end();
-        }
-
-      // set the range to contain the specified elements
-      range.reset (elem_begin, elem_end);
-    }
-  else
-    range.reset (mesh.elements_end(), mesh.elements_end());
+  // Global computation fails if we're using a FEMFunctionBase BC on a
+  // SerialMesh in parallel
+  // ConstElemRange range (mesh.elements_begin(),
+  //                       mesh.elements_end());
 
   // compute_periodic_constraints requires a point_locator() from our
-  // Mesh, that point_locator() construction is threaded.  Rather than
-  // nest threads within threads we'll make sure it's preconstructed.
+  // Mesh, but point_locator() construction is parallel and threaded.
+  // Rather than nest threads within threads we'll make sure it's
+  // preconstructed.
 #ifdef LIBMESH_ENABLE_PERIODIC
-  if (!_periodic_boundaries->empty() && !range.empty())
+  bool need_point_locator = !_periodic_boundaries->empty() && !range.empty();
+
+  this->comm().max(need_point_locator);
+
+  if (need_point_locator)
     mesh.sub_point_locator();
 #endif
 
@@ -1128,6 +1118,7 @@ void DofMap::create_dof_constraints(const MeshBase& mesh, Real time)
 
   // recalculate dof constraints from scratch
   _dof_constraints.clear();
+  _stashed_dof_constraints.clear();
   _primal_constraint_values.clear();
   _adjoint_constraint_values.clear();
 
@@ -1926,7 +1917,7 @@ void DofMap::enforce_constraints_exactly (const System &system,
 
   NumericVector<Number> *v_local  = NULL; // will be initialized below
   NumericVector<Number> *v_global = NULL; // will be initialized below
-  AutoPtr<NumericVector<Number> > v_built;
+  UniquePtr<NumericVector<Number> > v_built;
   if (v->type() == SERIAL)
     {
       v_built = NumericVector<Number>::build(this->comm());
@@ -2024,7 +2015,7 @@ void DofMap::enforce_adjoint_constraints_exactly
 
   NumericVector<Number> *v_local  = NULL; // will be initialized below
   NumericVector<Number> *v_global = NULL; // will be initialized below
-  AutoPtr<NumericVector<Number> > v_built;
+  UniquePtr<NumericVector<Number> > v_built;
   if (v.type() == SERIAL)
     {
       v_built = NumericVector<Number>::build(this->comm());
@@ -2452,11 +2443,11 @@ void DofMap::build_constraint_matrix_and_vector
       if ((C.n() == Cnew.m()) &&          // If the constraint matrix
           (Cnew.n() == elem_dofs.size())) // is constrained...
         {
-          C.right_multiply(Cnew);
-
           // If x = Cy + h and y = Dz + g
           // Then x = (CD)z + (Cg + h)
           C.vector_mult_add(H, 1, Hnew);
+
+          C.right_multiply(Cnew);
         }
 
       libmesh_assert_equal_to (C.n(), elem_dofs.size());
@@ -2486,6 +2477,12 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
   this->comm().max(has_constraints);
   if (!has_constraints)
     return;
+
+  // If we have heterogenous adjoint constraints we need to
+  // communicate those too.
+  const unsigned int max_qoi_num =
+    _adjoint_constraint_values.empty() ?
+    0 : _adjoint_constraint_values.rbegin()->first;
 
   // We might have calculated constraints for constrained dofs
   // which have support on other processors.
@@ -2574,6 +2571,10 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
         std::vector<std::vector<dof_id_type> > pushed_keys(pushed_ids_size);
         std::vector<std::vector<Real> > pushed_vals(pushed_ids_size);
         std::vector<Number> pushed_rhss(pushed_ids_size);
+
+        std::vector<std::vector<Number> >
+          pushed_adj_rhss(max_qoi_num,
+                          std::vector<Number>(pushed_ids_size));
         std::set<dof_id_type>::const_iterator it = pushed_ids[procup].begin();
         for (std::size_t i = 0; it != pushed_ids[procup].end();
              ++i, ++it)
@@ -2595,6 +2596,25 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
             pushed_rhss[i] =
               (rhsit == _primal_constraint_values.end()) ?
               0 : rhsit->second;
+
+            for (unsigned int q = 0; q != max_qoi_num; ++q)
+              {
+                AdjointDofConstraintValues::const_iterator adjoint_map_it =
+                  _adjoint_constraint_values.find(q);
+
+                if (adjoint_map_it == _adjoint_constraint_values.end())
+                  continue;
+
+                const DofConstraintValueMap &constraint_map =
+                  adjoint_map_it->second;
+
+                DofConstraintValueMap::const_iterator rhsit =
+                  constraint_map.find(pushed_id);
+
+                pushed_adj_rhss[q][i] =
+                  (rhsit == constraint_map.end()) ?
+                  0 : rhsit->second;
+              }
           }
 
 #ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
@@ -2629,6 +2649,7 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
         std::vector<std::vector<dof_id_type> > pushed_keys_to_me;
         std::vector<std::vector<Real> > pushed_vals_to_me;
         std::vector<Number> pushed_rhss_to_me;
+        std::vector<std::vector<Number> > pushed_adj_rhss_to_me;
         this->comm().send_receive(procup, pushed_ids_from_me,
                                   procdown, pushed_ids_to_me);
         this->comm().send_receive(procup, pushed_keys,
@@ -2637,6 +2658,8 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
                                   procdown, pushed_vals_to_me);
         this->comm().send_receive(procup, pushed_rhss,
                                   procdown, pushed_rhss_to_me);
+        this->comm().send_receive(procup, pushed_adj_rhss,
+                                  procdown, pushed_adj_rhss_to_me);
         libmesh_assert_equal_to (pushed_ids_to_me.size(), pushed_keys_to_me.size());
         libmesh_assert_equal_to (pushed_ids_to_me.size(), pushed_vals_to_me.size());
         libmesh_assert_equal_to (pushed_ids_to_me.size(), pushed_rhss_to_me.size());
@@ -2685,10 +2708,35 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
                   {
                     row[pushed_keys_to_me[i][j]] = pushed_vals_to_me[i][j];
                   }
+                if (libmesh_isnan(pushed_rhss_to_me[i]))
+                  libmesh_assert(pushed_keys_to_me[i].empty());
                 if (pushed_rhss_to_me[i] != Number(0))
                   _primal_constraint_values[constrained] = pushed_rhss_to_me[i];
                 else
                   _primal_constraint_values.erase(constrained);
+
+                for (unsigned int q = 0; q != max_qoi_num; ++q)
+                  {
+                    AdjointDofConstraintValues::iterator adjoint_map_it =
+                      _adjoint_constraint_values.find(q);
+
+                    if ((adjoint_map_it == _adjoint_constraint_values.end()) &&
+                        pushed_adj_rhss_to_me[q][constrained] == Number(0))
+                      continue;
+
+                    if (adjoint_map_it == _adjoint_constraint_values.end())
+                      adjoint_map_it = _adjoint_constraint_values.insert
+                        (std::make_pair(q,DofConstraintValueMap())).first;
+
+                    DofConstraintValueMap &constraint_map =
+                      adjoint_map_it->second;
+
+                    if (pushed_adj_rhss_to_me[q][i] != Number(0))
+                      constraint_map[constrained] =
+                        pushed_adj_rhss_to_me[q][i];
+                    else
+                      constraint_map.erase(constrained);
+                  }
               }
           }
 
@@ -2865,6 +2913,7 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
                                         this->n_processors());
           std::vector<dof_id_type> dof_request_to_fill,
             node_request_to_fill;
+
           this->comm().send_receive(procup, requested_dof_ids[procup],
                                     procdown, dof_request_to_fill);
           this->comm().send_receive(procup, requested_node_ids[procup],
@@ -2877,6 +2926,9 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
           std::vector<std::vector<Real> > dof_row_vals(dof_request_to_fill.size()),
             node_row_vals(node_request_to_fill.size());
           std::vector<Number> dof_row_rhss(dof_request_to_fill.size());
+          std::vector<std::vector<Number> >
+            dof_adj_rhss(max_qoi_num,
+                         std::vector<Number>(dof_request_to_fill.size()));
           std::vector<Point>  node_row_rhss(node_request_to_fill.size());
           for (std::size_t i=0; i != dof_request_to_fill.size(); ++i)
             {
@@ -2902,6 +2954,37 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
                     _primal_constraint_values.find(constrained);
                   dof_row_rhss[i] = (rhsit == _primal_constraint_values.end()) ?
                     0 : rhsit->second;
+
+                  for (unsigned int q = 0; q != max_qoi_num; ++q)
+                    {
+                      AdjointDofConstraintValues::const_iterator adjoint_map_it =
+                        _adjoint_constraint_values.find(q);
+
+                      if (adjoint_map_it == _adjoint_constraint_values.end())
+                        continue;
+
+                      const DofConstraintValueMap &constraint_map =
+                        adjoint_map_it->second;
+
+                      DofConstraintValueMap::const_iterator rhsit =
+                        constraint_map.find(constrained);
+                      dof_adj_rhss[q][i] = (rhsit == constraint_map.end()) ?
+                        0 : rhsit->second;
+                    }
+                }
+              else
+                {
+                  // Get NaN from Real, where it should exist, not
+                  // from Number, which may be std::complex, in which
+                  // case quiet_NaN() silently returns zero, rather
+                  // than sanely returning NaN or throwing an
+                  // exception or sending Stroustrop hate mail.
+                  dof_row_rhss[i] =
+                    std::numeric_limits<Real>::quiet_NaN();
+
+                  // Make sure we don't get caught by "!isnan(NaN)"
+                  // bugs again.
+                  libmesh_assert(libmesh_isnan(dof_row_rhss[i]));
                 }
             }
 
@@ -2950,6 +3033,7 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
           std::vector<std::vector<Real> > dof_filled_vals,
             node_filled_vals;
           std::vector<Number> dof_filled_rhss;
+          std::vector<std::vector<Number> > adj_filled_rhss;
           std::vector<Point> node_filled_rhss;
           this->comm().send_receive(procdown, dof_row_keys,
                                     procup, dof_filled_keys);
@@ -2957,6 +3041,8 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
                                     procup, dof_filled_vals);
           this->comm().send_receive(procdown, dof_row_rhss,
                                     procup, dof_filled_rhss);
+          this->comm().send_receive(procdown, dof_adj_rhss,
+                                    procup, adj_filled_rhss);
 #ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
           this->comm().send_receive(procdown, node_row_keys,
                                     procup, node_filled_keys);
@@ -2967,14 +3053,19 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
 
           // Constraining nodes might not even exist on our subset of
           // a distributed mesh, so let's make them exist.
-          this->comm().send_receive_packed_range
-            (procdown, &mesh, nodes_requested.begin(), nodes_requested.end(),
-             procup,   &mesh, mesh_inserter_iterator<Node>(mesh));
+          if (!mesh.is_serial())
+            this->comm().send_receive_packed_range
+              (procdown, &mesh, nodes_requested.begin(), nodes_requested.end(),
+               procup,   &mesh, mesh_inserter_iterator<Node>(mesh));
 
 #endif // LIBMESH_ENABLE_NODE_CONSTRAINTS
           libmesh_assert_equal_to (dof_filled_keys.size(), requested_dof_ids[procup].size());
           libmesh_assert_equal_to (dof_filled_vals.size(), requested_dof_ids[procup].size());
           libmesh_assert_equal_to (dof_filled_rhss.size(), requested_dof_ids[procup].size());
+#ifndef NDEBUG
+          for (unsigned int q=0; q != adj_filled_rhss.size(); ++q)
+            libmesh_assert_equal_to (adj_filled_rhss[q].size(), requested_dof_ids[procup].size());
+#endif
           libmesh_assert_equal_to (node_filled_keys.size(), requested_node_ids[procup].size());
           libmesh_assert_equal_to (node_filled_vals.size(), requested_node_ids[procup].size());
           libmesh_assert_equal_to (node_filled_rhss.size(), requested_node_ids[procup].size());
@@ -2983,8 +3074,7 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
           for (std::size_t i=0; i != requested_dof_ids[procup].size(); ++i)
             {
               libmesh_assert_equal_to (dof_filled_keys[i].size(), dof_filled_vals[i].size());
-              // FIXME - what about empty p constraints!?
-              if (!dof_filled_keys[i].empty())
+              if (!libmesh_isnan(dof_filled_rhss[i]))
                 {
                   dof_id_type constrained = requested_dof_ids[procup][i];
                   DofConstraintRow &row = _dof_constraints[constrained];
@@ -2995,8 +3085,32 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
                   else
                     _primal_constraint_values.erase(constrained);
 
+                  for (unsigned int q = 0; q != max_qoi_num; ++q)
+                    {
+                      AdjointDofConstraintValues::iterator adjoint_map_it =
+                        _adjoint_constraint_values.find(q);
+
+                      if ((adjoint_map_it == _adjoint_constraint_values.end()) &&
+                          adj_filled_rhss[q][constrained] == Number(0))
+                        continue;
+
+                      if (adjoint_map_it == _adjoint_constraint_values.end())
+                        adjoint_map_it = _adjoint_constraint_values.insert
+                          (std::make_pair(q,DofConstraintValueMap())).first;
+
+                      DofConstraintValueMap &constraint_map =
+                        adjoint_map_it->second;
+
+                      if (adj_filled_rhss[q][i] != Number(0))
+                        constraint_map[constrained] =
+                          adj_filled_rhss[q][i];
+                      else
+                        constraint_map.erase(constrained);
+                    }
+
                   // And prepare to check for more recursive constraints
-                  unexpanded_dofs.insert(constrained);
+                  if (!dof_filled_keys[i].empty())
+                    unexpanded_dofs.insert(constrained);
                 }
             }
 
@@ -3037,11 +3151,9 @@ void DofMap::allgather_recursive_constraints(MeshBase& mesh)
 
 void DofMap::process_constraints (MeshBase& mesh)
 {
-  // With a parallelized Mesh, we've computed our local constraints,
-  // but they may depend on non-local constraints that we'll need to
-  // take into account.
-  if (!mesh.is_serial())
-    this->allgather_recursive_constraints(mesh);
+  // We've computed our local constraints, but they may depend on
+  // non-local constraints that we'll need to take into account.
+  this->allgather_recursive_constraints(mesh);
 
   // Create a set containing the DOFs we already depend on
   typedef std::set<dof_id_type> RCSet;
@@ -3132,8 +3244,7 @@ void DofMap::process_constraints (MeshBase& mesh)
   // others are on processors which are aware of that constraint, yet
   // we need such awareness for sparsity pattern generation.  So send
   // other processors any constraints they might need to know about.
-  if (!mesh.is_serial())
-    this->scatter_constraints(mesh);
+  this->scatter_constraints(mesh);
 
   // Now that we have our root constraint dependencies sorted out, add
   // them to the send_list
@@ -3336,9 +3447,10 @@ void DofMap::scatter_constraints(MeshBase& mesh)
 
       // Constraining nodes might not even exist on our subset of
       // a distributed mesh, so let's make them exist.
-      this->comm().send_receive_packed_range
-        (procup, &mesh, pushed_nodes.begin(), pushed_nodes.end(),
-         procdown, &mesh, mesh_inserter_iterator<Node>(mesh));
+      if (!mesh.is_serial())
+        this->comm().send_receive_packed_range
+          (procup, &mesh, pushed_nodes.begin(), pushed_nodes.end(),
+           procdown, &mesh, mesh_inserter_iterator<Node>(mesh));
 
       libmesh_assert_equal_to (pushed_node_ids_to_me.size(), pushed_node_keys_to_me.size());
       libmesh_assert_equal_to (pushed_node_ids_to_me.size(), pushed_node_vals_to_me.size());

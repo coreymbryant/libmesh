@@ -44,6 +44,8 @@
 #include "libmesh/elem.h"
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/libmesh_logging.h"
+#include "libmesh/rb_data_serialization.h"
+#include "libmesh/rb_data_deserialization.h"
 
 // local includes
 #include "rb_classes.h"
@@ -78,6 +80,9 @@ int main(int argc, char** argv) {
 #elif defined(LIBMESH_DEFAULT_SINGLE_PRECISION)
   // XDR binary support requires double precision
   libmesh_example_requires(false, "--disable-singleprecision");
+#elif defined(LIBMESH_DEFAULT_TRIPLE_PRECISION)
+  // I have no idea why long double isn't working here... [RHS]
+  libmesh_example_requires(false, "double precision");
 #endif
 
   // This example only works if libMesh was compiled for 3D
@@ -125,19 +130,19 @@ int main(int argc, char** argv) {
       bool found_side_max_x = false, found_side_max_y = false, found_side_max_z = false;
       for(unsigned int side=0; side<elem->n_sides(); side++)
         {
-          if( mesh.boundary_info->has_boundary_id(elem, side, BOUNDARY_ID_MAX_X))
+          if( mesh.get_boundary_info().has_boundary_id(elem, side, BOUNDARY_ID_MAX_X))
             {
               side_max_x = side;
               found_side_max_x = true;
             }
 
-          if( mesh.boundary_info->has_boundary_id(elem, side, BOUNDARY_ID_MAX_Y))
+          if( mesh.get_boundary_info().has_boundary_id(elem, side, BOUNDARY_ID_MAX_Y))
             {
               side_max_y = side;
               found_side_max_y = true;
             }
 
-          if( mesh.boundary_info->has_boundary_id(elem, side, BOUNDARY_ID_MAX_Z))
+          if( mesh.get_boundary_info().has_boundary_id(elem, side, BOUNDARY_ID_MAX_Z))
             {
               side_max_z = side;
               found_side_max_z = true;
@@ -155,7 +160,7 @@ int main(int argc, char** argv) {
                   elem->is_node_on_side(n, side_max_y) &&
                   elem->is_node_on_side(n, side_max_z) )
                 {
-                  mesh.boundary_info->add_node(elem->get_node(n), NODE_BOUNDARY_ID);
+                  mesh.get_boundary_info().add_node(elem->get_node(n), NODE_BOUNDARY_ID);
                 }
             }
         }
@@ -200,6 +205,10 @@ int main(int argc, char** argv) {
 
   if(!online_mode) // Perform the Offline stage of the RB method
     {
+      // Use CG solver.  This echoes the Petsc command line options set
+      // in run.sh, but also works for non-PETSc linear solvers.
+      rb_con.get_linear_solver()->set_solver_type(CG);
+
       // Read in the data that defines this problem from the specified text file
       rb_con.process_parameters_file(parameters_filename);
 
@@ -217,7 +226,12 @@ int main(int argc, char** argv) {
       rb_con.train_reduced_basis();
 
       // Write out the data that will subsequently be required for the Evaluation stage
-      rb_con.get_rb_evaluation().write_offline_data_to_files();
+#if defined(LIBMESH_HAVE_CAPNPROTO)
+      RBDataSerialization::RBEvaluationSerialization rb_eval_writer(rb_con.get_rb_evaluation());
+      rb_eval_writer.write_to_file("rb_eval.bin");
+#else
+      rb_con.get_rb_evaluation().legacy_write_offline_data_to_files();
+#endif
 
       // If requested, write out the RB basis functions for visualization purposes
       if(store_basis_functions)
@@ -229,7 +243,12 @@ int main(int argc, char** argv) {
   else // Perform the Online stage of the RB method
     {
       // Read in the reduced basis data
-      rb_eval.read_offline_data_from_files();
+#if defined(LIBMESH_HAVE_CAPNPROTO)
+      RBDataDeserialization::RBEvaluationDeserialization rb_eval_reader(rb_eval);
+      rb_eval_reader.read_from_file("rb_eval.bin", /*read_error_bound_data*/ true);
+#else
+      rb_eval.legacy_read_offline_data_from_files();
+#endif
 
       // Iinitialize online parameters
       Real online_x_scaling = infile("online_x_scaling", 0.);
@@ -320,7 +339,7 @@ void compute_stresses(EquationSystems& es)
 
   const DofMap& dof_map = system.get_dof_map();
   FEType fe_type = dof_map.variable_type(u_var);
-  AutoPtr<FEBase> fe (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
   QGauss qrule (dim, fe_type.default_quadrature_order());
   fe->attach_quadrature_rule (&qrule);
 

@@ -284,9 +284,9 @@ void ExodusII_IO::read (const std::string& fname)
 
         std::string sideset_name = exio_helper->get_side_set_name(i);
         if (!sideset_name.empty())
-          mesh.boundary_info->sideset_name
-            (cast_int<boundary_id_type>
-              (exio_helper->get_side_set_id(i))) = sideset_name;
+          mesh.get_boundary_info().sideset_name
+            (cast_int<boundary_id_type>(exio_helper->get_side_set_id(i)))
+            = sideset_name;
       }
 
     for (unsigned int e=0; e<exio_helper->elem_list.size(); e++)
@@ -299,8 +299,7 @@ void ExodusII_IO::read (const std::string& fname)
         // 3.) Subtract 1 from that, since libmesh is "zero"-based,
         //     even when the Exodus numbering doesn't start with 1.
         dof_id_type libmesh_elem_id =
-          cast_int<dof_id_type>
-            (exio_helper->elem_num_map[exio_helper->elem_list[e] - 1] - 1);
+          cast_int<dof_id_type>(exio_helper->elem_num_map[exio_helper->elem_list[e] - 1] - 1);
 
         // Set any relevant node/edge maps for this element
         Elem * elem = mesh.elem(libmesh_elem_id);
@@ -308,7 +307,7 @@ void ExodusII_IO::read (const std::string& fname)
         const ExodusII_IO_Helper::Conversion conv = em.assign_conversion(elem->type());
 
         // Add this (elem,side,id) triplet to the BoundaryInfo object.
-        mesh.boundary_info->add_side
+        mesh.get_boundary_info().add_side
           (libmesh_elem_id,
            cast_int<unsigned short>(conv.get_side_map(exio_helper->side_list[e]-1)),
            cast_int<boundary_id_type>(exio_helper->id_list[e]));
@@ -326,7 +325,7 @@ void ExodusII_IO::read (const std::string& fname)
 
         std::string nodeset_name = exio_helper->get_node_set_name(nodeset);
         if (!nodeset_name.empty())
-          mesh.boundary_info->nodeset_name(nodeset_id) = nodeset_name;
+          mesh.get_boundary_info().nodeset_name(nodeset_id) = nodeset_name;
 
         exio_helper->read_nodeset(nodeset);
 
@@ -336,8 +335,8 @@ void ExodusII_IO::read (const std::string& fname)
             // indcies into the node_num_map array, so we have to map
             // them.  See comment above.
             int libmesh_node_id = exio_helper->node_num_map[exio_helper->node_list[node] - 1] - 1;
-            mesh.boundary_info->add_node(cast_int<dof_id_type>(libmesh_node_id),
-                                         nodeset_id);
+            mesh.get_boundary_info().add_node(cast_int<dof_id_type>(libmesh_node_id),
+                                              nodeset_id);
           }
       }
   }
@@ -427,11 +426,14 @@ void ExodusII_IO::copy_nodal_solution(System& system,
       if (!node)
         libmesh_error_msg("Error! Mesh returned NULL pointer for node " << i);
 
-      dof_id_type dof_index = node->dof_number(system.number(), var_num, 0);
+      if (node->n_comp(system.number(), var_num) > 0)
+        {
+          dof_id_type dof_index = node->dof_number(system.number(), var_num, 0);
 
-      // If the dof_index is local to this processor, set the value
-      if ((dof_index >= system.solution->first_local_index()) && (dof_index < system.solution->last_local_index()))
-        system.solution->set (dof_index, exio_helper->nodal_var_values[i]);
+          // If the dof_index is local to this processor, set the value
+          if ((dof_index >= system.solution->first_local_index()) && (dof_index < system.solution->last_local_index()))
+            system.solution->set (dof_index, exio_helper->nodal_var_values[i]);
+        }
     }
 
   system.solution->close();
@@ -448,24 +450,37 @@ void ExodusII_IO::copy_elemental_solution(System& system,
   if (!exio_helper->opened_for_reading)
     libmesh_error_msg("ERROR, ExodusII file must be opened for reading before copying an elemental solution!");
 
-  exio_helper->read_elemental_var_values(exodus_var_name, timestep);
+  // Map from element ID to elemental variable value.  We need to use
+  // a map here rather than a vector (e.g. elem_var_values) since the
+  // libmesh element numbering can contain "holes".  This is the case
+  // if we are reading elemental var values from an adaptively refined
+  // mesh that has not been sequentially renumbered.
+  std::map<dof_id_type, Real> elem_var_value_map;
+  exio_helper->read_elemental_var_values(exodus_var_name, timestep, elem_var_value_map);
 
   const unsigned int var_num = system.variable_number(system_var_name);
   if (system.variable_type(var_num) != FEType(CONSTANT, MONOMIAL))
     libmesh_error_msg("Error! Trying to copy elemental solution into a variable that is not of CONSTANT MONOMIAL type.");
 
-  for (unsigned int i=0; i<exio_helper->elem_var_values.size(); ++i)
+  std::map<dof_id_type, Real>::iterator
+    it = elem_var_value_map.begin(),
+    end = elem_var_value_map.end();
+
+  for (; it!=end; ++it)
     {
-      const Elem * elem = MeshInput<MeshBase>::mesh().query_elem(i);
+      const Elem * elem = MeshInput<MeshBase>::mesh().query_elem(it->first);
 
       if (!elem)
-        libmesh_error_msg("Error! Mesh returned NULL pointer for elem " << i);
+        libmesh_error_msg("Error! Mesh returned NULL pointer for elem " << it->first);
 
-      dof_id_type dof_index = elem->dof_number(system.number(), var_num, 0);
+      if (elem->n_comp(system.number(), var_num) > 0)
+        {
+          dof_id_type dof_index = elem->dof_number(system.number(), var_num, 0);
 
-      // If the dof_index is local to this processor, set the value
-      if ((dof_index >= system.solution->first_local_index()) && (dof_index < system.solution->last_local_index()))
-        system.solution->set (dof_index, exio_helper->elem_var_values[i]);
+          // If the dof_index is local to this processor, set the value
+          if ((dof_index >= system.solution->first_local_index()) && (dof_index < system.solution->last_local_index()))
+            system.solution->set (dof_index, it->second);
+        }
     }
 
   system.solution->close();
@@ -761,7 +776,7 @@ void ExodusII_IO::write (const std::string& fname)
   if(MeshOutput<MeshBase>::mesh().processor_id())
     return;
 
-  if( (mesh.boundary_info->n_edge_conds() > 0) &&
+  if( (mesh.get_boundary_info().n_edge_conds() > 0) &&
       _verbose )
     {
       libMesh::out << "Warning: Mesh contains edge boundary IDs, but these "
@@ -874,7 +889,7 @@ void ExodusII_IO::write_nodal_data_common(std::string fname,
           exio_helper->write_sidesets(mesh);
           exio_helper->write_nodesets(mesh);
 
-          if( (mesh.boundary_info->n_edge_conds() > 0) &&
+          if( (mesh.get_boundary_info().n_edge_conds() > 0) &&
               _verbose )
             {
               libMesh::out << "Warning: Mesh contains edge boundary IDs, but these "

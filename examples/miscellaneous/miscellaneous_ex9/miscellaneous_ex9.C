@@ -176,9 +176,9 @@ void assemble_poisson(EquationSystems& es,
 
   FEType fe_type = dof_map.variable_type(0);
 
-  AutoPtr<FEBase> fe (FEBase::build(dim, fe_type));
-  AutoPtr<FEBase> fe_elem_face (FEBase::build(dim, fe_type));
-  AutoPtr<FEBase> fe_neighbor_face (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe_elem_face (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe_neighbor_face (FEBase::build(dim, fe_type));
 
   QGauss qrule (dim, fe_type.default_quadrature_order());
   QGauss qface(dim-1, fe_type.default_quadrature_order());
@@ -234,7 +234,7 @@ void assemble_poisson(EquationSystems& es,
         for (unsigned int side=0; side<elem->n_sides(); side++)
           if (elem->neighbor(side) == NULL)
             {
-              if( mesh.boundary_info->has_boundary_id (elem,side,MIN_Z_BOUNDARY) )
+              if( mesh.get_boundary_info().has_boundary_id (elem,side,MIN_Z_BOUNDARY) )
                 {
                   fe_elem_face->reinit(elem, side);
 
@@ -256,7 +256,7 @@ void assemble_poisson(EquationSystems& es,
           if (elem->neighbor(side) == NULL)
             {
               // Found the lower side of the crack. Assemble terms due to lower and upper in here.
-              if( mesh.boundary_info->has_boundary_id (elem,side,CRACK_BOUNDARY_LOWER) )
+              if( mesh.get_boundary_info().has_boundary_id (elem,side,CRACK_BOUNDARY_LOWER) )
                 {
                   fe_elem_face->reinit(elem, side);
 

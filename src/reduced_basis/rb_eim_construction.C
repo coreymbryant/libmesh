@@ -157,12 +157,10 @@ void RBEIMConstruction::init_data()
 {
   // set the coupling matrix to be diagonal
   _coupling_matrix.resize(n_vars());
-  for(unsigned int var1=0; var1<n_vars(); var1++)
-    for(unsigned int var2=0; var2<n_vars(); var2++)
-      {
-        unsigned char value = (var1==var2) ? 1 : 0;
-        _coupling_matrix(var1,var2) = value;
-      }
+
+  // resize zeroed the matrix; we just need to set diagonal entries
+  for(unsigned int var=0; var<n_vars(); var++)
+    _coupling_matrix(var,var) = 1;
 
   this->get_dof_map()._dof_coupling = &_coupling_matrix;
 
@@ -190,24 +188,17 @@ void RBEIMConstruction::initialize_rb_construction(bool skip_matrix_assembly,
                                     vars);
   _mesh_function->init();
 
-  // Load up the inner product matrix
-  // We only need one matrix in this class, so we
-  // can set matrix to inner_product_matrix here
-  {
-    matrix->zero();
-    matrix->close();
-    matrix->add(1., *inner_product_matrix);
-  }
-
+  // inner_product_solver performs solves with the same matrix every time
+  // hence we can set reuse_preconditioner(true).
+  inner_product_solver->reuse_preconditioner(true);
 }
 
-Real RBEIMConstruction::train_reduced_basis(const std::string& directory_name,
-                                            const bool resize_rb_eval_data)
+Real RBEIMConstruction::train_reduced_basis(const bool resize_rb_eval_data)
 {
   // precompute all the parametrized functions that we'll use in the greedy
   initialize_parametrized_functions_in_training_set();
 
-  return Parent::train_reduced_basis(directory_name, resize_rb_eval_data);
+  return Parent::train_reduced_basis(resize_rb_eval_data);
 }
 
 Number RBEIMConstruction::evaluate_mesh_function(unsigned int var_number,
@@ -297,13 +288,16 @@ void RBEIMConstruction::enrich_RB_space()
   // by looping over the mesh
   Point optimal_point;
   Number optimal_value = 0.;
-  unsigned int optimal_var;
-  dof_id_type optimal_elem_id;
+  unsigned int optimal_var = 0;
+  dof_id_type optimal_elem_id = DofObject::invalid_id;
+
+  // Initialize largest_abs_value to be negative so that it definitely gets updated.
+  Real largest_abs_value = -1.;
 
   // Compute truth representation via projection
   MeshBase& mesh = this->get_mesh();
 
-  AutoPtr<DGFEMContext> c = this->build_context();
+  UniquePtr<DGFEMContext> c = this->build_context();
   DGFEMContext &context  = cast_ref<DGFEMContext&>(*c);
 
   this->init_context(context);
@@ -323,24 +317,27 @@ void RBEIMConstruction::enrich_RB_space()
           for(unsigned int qp=0; qp<n_qpoints; qp++)
             {
               Number value = context.interior_value(var, qp);
+              Real abs_value = std::abs(value);
 
-              if( std::abs(value) > std::abs(optimal_value) )
+              if( abs_value > largest_abs_value )
                 {
-                  FEBase* elem_fe = NULL;
-                  context.get_element_fe( var, elem_fe );
                   optimal_value = value;
-                  optimal_point = elem_fe->get_xyz()[qp];
+                  largest_abs_value = abs_value;
                   optimal_var = var;
                   optimal_elem_id = (*el)->id();
+
+                  FEBase* elem_fe = NULL;
+                  context.get_element_fe( var, elem_fe );
+                  optimal_point = elem_fe->get_xyz()[qp];
                 }
 
             }
         }
     }
 
-  Real global_abs_value = std::abs(optimal_value);
+  // Find out which processor has the largest of the abs values
   unsigned int proc_ID_index;
-  this->comm().maxloc(global_abs_value, proc_ID_index);
+  this->comm().maxloc(largest_abs_value, proc_ID_index);
 
   // Broadcast the optimal point from proc_ID_index
   this->comm().broadcast(optimal_point, proc_ID_index);
@@ -349,6 +346,9 @@ void RBEIMConstruction::enrich_RB_space()
   this->comm().broadcast(optimal_var, proc_ID_index);
   this->comm().broadcast(optimal_value, proc_ID_index);
   this->comm().broadcast(optimal_elem_id, proc_ID_index);
+
+  // In debug mode, assert that we found an optimal_elem_id
+  libmesh_assert_not_equal_to(optimal_elem_id, DofObject::invalid_id);
 
   // Scale the solution
   solution->scale(1./optimal_value);
@@ -466,12 +466,6 @@ Real RBEIMConstruction::truth_solve(int plot_solution)
 {
   START_LOG("truth_solve()", "RBEIMConstruction");
 
-  //  matrix should have been set to inner_product_matrix during initialization
-  //  {
-  //    matrix->zero();
-  //    matrix->add(1., *inner_product_matrix);
-  //  }
-
   int training_parameters_found_index = -1;
   if( _parametrized_functions_in_training_set_initialized )
     {
@@ -503,7 +497,7 @@ Real RBEIMConstruction::truth_solve(int plot_solution)
       // Compute truth representation via projection
       const MeshBase& mesh = this->get_mesh();
 
-      AutoPtr<DGFEMContext> c = this->build_context();
+      UniquePtr<DGFEMContext> c = this->build_context();
       DGFEMContext &context  = cast_ref<DGFEMContext&>(*c);
 
       this->init_context(context);
@@ -528,26 +522,23 @@ Real RBEIMConstruction::truth_solve(int plot_solution)
 
           // Loop over qp before var because parametrized functions often use
           // some caching based on qp.
-          for(unsigned int qp=0; qp<n_qpoints; qp++)
-          {
-            for(unsigned int var=0; var<n_vars(); var++)
+          for (unsigned int qp=0; qp<n_qpoints; qp++)
             {
-              FEBase* elem_fe = NULL;
-              context.get_element_fe( var, elem_fe );
-              const std::vector<std::vector<Real> >& phi = elem_fe->get_phi();
+              for (unsigned int var=0; var<n_vars(); var++)
+                {
+                  FEBase* elem_fe = NULL;
+                  context.get_element_fe( var, elem_fe );
+                  const std::vector<std::vector<Real> >& phi = elem_fe->get_phi();
 
-              DenseSubVector<Number>& subresidual_var = context.get_elem_residual( var );
+                  DenseSubVector<Number>& subresidual_var = context.get_elem_residual( var );
 
-              unsigned int n_var_dofs = cast_int<unsigned int>
-                (context.get_dof_indices( var ).size());
+                  unsigned int n_var_dofs = cast_int<unsigned int>(context.get_dof_indices( var ).size());
 
-              Number eval_result = eim_eval.evaluate_parametrized_function(var, xyz[qp], *(*el));
-              for(unsigned int i=0; i != n_var_dofs; i++)
-              {
-                subresidual_var(i) += JxW[qp] * eval_result * phi[i][qp];
-              }
+                  Number eval_result = eim_eval.evaluate_parametrized_function(var, xyz[qp], *(*el));
+                  for (unsigned int i=0; i != n_var_dofs; i++)
+                    subresidual_var(i) += JxW[qp] * eval_result * phi[i][qp];
+                }
             }
-          }
 
           // Apply constraints, e.g. periodic constraints
           this->get_dof_map().constrain_element_vector(context.get_elem_residual(), context.get_dof_indices() );
@@ -558,18 +549,10 @@ Real RBEIMConstruction::truth_solve(int plot_solution)
 
       // Solve to find the best fit, then solution stores the truth representation
       // of the function to be approximated
-      solve();
-      if(assert_convergence)
-      {
-        check_convergence();
-      }
+      solve_for_matrix_and_rhs(*inner_product_solver, *inner_product_matrix, *rhs);
 
-      if(reuse_preconditioner)
-        {
-          // After we've done a solve we can now reuse the preconditioner
-          // because the matrix is not changing
-          linear_solver->reuse_preconditioner(true);
-        }
+      if (assert_convergence)
+        check_convergence(*inner_product_solver);
     }
 
   if(plot_solution > 0)

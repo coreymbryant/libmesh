@@ -22,7 +22,7 @@
 
 // Local includes
 #include "libmesh/system_norm.h"
-#include "libmesh/unsteady_solver.h"
+#include "libmesh/first_order_unsteady_solver.h"
 
 // C++ includes
 
@@ -48,13 +48,13 @@ class System;
 
 // ------------------------------------------------------------
 // Solver class definition
-class AdaptiveTimeSolver : public UnsteadySolver
+class AdaptiveTimeSolver : public FirstOrderUnsteadySolver
 {
 public:
   /**
    * The parent class
    */
-  typedef UnsteadySolver Parent;
+  typedef FirstOrderUnsteadySolver Parent;
 
   /**
    * Constructor. Requires a reference to the system
@@ -102,12 +102,18 @@ public:
   /**
    * An implicit linear or nonlinear solver to use at each timestep.
    */
-  virtual AutoPtr<DiffSolver> &diff_solver();
+  virtual UniquePtr<DiffSolver> &diff_solver();
+
+  /**
+   * An implicit linear solver to use for adjoint and sensitivity
+   * problems.
+   */
+  virtual UniquePtr<LinearSolver<Number> > &linear_solver();
 
   /**
    * This object is used to take timesteps
    */
-  AutoPtr<UnsteadySolver> core_time_solver;
+  UniquePtr<UnsteadySolver> core_time_solver;
 
   /**
    * Error calculations are done in this norm, DISCRETE_L2 by default.

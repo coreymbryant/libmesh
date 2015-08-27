@@ -40,7 +40,6 @@ class DifferentiablePhysics;
 class DifferentiableSystem;
 class ParameterVector;
 class SystemNorm;
-class TimeSolver;
 
 /**
  * This is a generic class that defines a solver to handle
@@ -181,12 +180,12 @@ public:
   /**
    * An implicit linear or nonlinear solver to use at each timestep.
    */
-  virtual AutoPtr<DiffSolver> &diff_solver() { return _diff_solver; }
+  virtual UniquePtr<DiffSolver> &diff_solver() { return _diff_solver; }
 
   /**
    * An implicit linear solver to use for adjoint and sensitivity problems.
    */
-  virtual AutoPtr<LinearSolver<Number> > &linear_solver() { return _linear_solver; }
+  virtual UniquePtr<LinearSolver<Number> > &linear_solver() { return _linear_solver; }
 
   /**
    * Print extra debugging information if quiet ==  false.
@@ -246,12 +245,12 @@ protected:
   /**
    * An implicit linear or nonlinear solver to use at each timestep.
    */
-  AutoPtr<DiffSolver> _diff_solver;
+  UniquePtr<DiffSolver> _diff_solver;
 
   /**
    * An implicit linear solver to use for adjoint problems.
    */
-  AutoPtr<LinearSolver<Number> > _linear_solver;
+  UniquePtr<LinearSolver<Number> > _linear_solver;
 
   /**
    * A reference to the system we are solving.
@@ -259,16 +258,11 @@ protected:
   sys_type& _system;
 
   /**
-   * Serial vector of _system.get_vector("_old_nonlinear_solution")
-   */
-  AutoPtr<NumericVector<Number> > old_local_nonlinear_solution;
-
-  /**
-   * An AutoPtr to a SolutionHistory object. Default is
+   * An UniquePtr to a SolutionHistory object. Default is
    * NoSolutionHistory, which the user can override by declaring a
    * different kind of SolutionHistory in the application
    */
-  AutoPtr<SolutionHistory> solution_history;
+  UniquePtr<SolutionHistory> solution_history;
 
   /**
    * Definitions of argument types for use in refactoring subclasses.

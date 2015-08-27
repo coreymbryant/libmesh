@@ -132,14 +132,14 @@ public:
   /**
    * Creates a vector which has the same type, size and partitioning
    * as this vector, but whose data is all zero.  Returns it in an \p
-   * AutoPtr.
+   * UniquePtr.
    */
-  virtual AutoPtr<NumericVector<T> > zero_clone () const;
+  virtual UniquePtr<NumericVector<T> > zero_clone () const;
 
   /**
-   * Creates a copy of this vector and returns it in an \p AutoPtr.
+   * Creates a copy of this vector and returns it in an \p UniquePtr.
    */
-  AutoPtr<NumericVector<T> > clone () const;
+  UniquePtr<NumericVector<T> > clone () const;
 
   /**
    * Change the dimension of the vector to \p N. The reserved memory for
@@ -347,22 +347,17 @@ public:
   void add (const T a, const NumericVector<T>& v);
 
   /**
-   * \f$ U+=v \f$ where \p v is a \p std::vector<T>
-   * and you
-   * want to specify WHERE to add it
+   * We override two NumericVector<T>::add_vector() methods but don't
+   * want to hide the other defaults.
    */
-  void add_vector (const std::vector<T>& v,
-                   const std::vector<numeric_index_type>& dof_indices);
+  using NumericVector<T>::add_vector;
 
   /**
-   * \f$ U+=V \f$ where U and V are type
-   * \p NumericVector<T> and you
-   * want to specify WHERE to add
-   * the \p NumericVector<T> V
+   * \f$ U+=v \f$ where v is a pointer and each \p dof_indices[i]
+   * specifies where to add value \p v[i]
    */
-  void add_vector (const NumericVector<T>& V,
+  void add_vector (const T* v,
                    const std::vector<numeric_index_type>& dof_indices);
-
 
   /**
    * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
@@ -372,15 +367,6 @@ public:
                    const SparseMatrix<T> &A);
 
   /**
-   * \f$U+=V \f$ where U and V are type
-   * DenseVector<T> and you
-   * want to specify WHERE to add
-   * the DenseVector<T> V
-   */
-  void add_vector (const DenseVector<T>& V,
-                   const std::vector<numeric_index_type>& dof_indices);
-
-  /**
    * \f$U+=A*V\f$, add the product of the transpose of a \p SparseMatrix \p A_trans
    * and a \p NumericVector \p V to \p this, where \p this=U.
    */
@@ -388,35 +374,16 @@ public:
                              const SparseMatrix<T> &A_trans);
 
   /**
-   * \f$ U=v \f$ where v is a \p std::vector<T>
+   * We override one NumericVector<T>::insert() method but don't want
+   * to hide the other defaults
+   */
+  using NumericVector<T>::insert;
+
+  /**
+   * \f$ U=v \f$ where v is a \p T[] or T*
    * and you want to specify WHERE to insert it
    */
-  virtual void insert (const std::vector<T>& v,
-                       const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$U=V\f$, where U and V are type
-   * NumericVector<T> and you
-   * want to specify WHERE to insert
-   * the NumericVector<T> V
-   */
-  virtual void insert (const NumericVector<T>& V,
-                       const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$ U=V \f$ where V is type
-   * DenseVector<T> and you
-   * want to specify WHERE to insert it
-   */
-  virtual void insert (const DenseVector<T>& V,
-                       const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$ U=V \f$ where V is type
-   * DenseSubVector<T> and you
-   * want to specify WHERE to insert it
-   */
-  virtual void insert (const DenseSubVector<T>& V,
+  virtual void insert (const T* v,
                        const std::vector<numeric_index_type>& dof_indices);
 
   /**
@@ -631,19 +598,19 @@ private:
 template <typename T>
 inline
 EpetraVector<T>::EpetraVector (const Parallel::Communicator &comm,
-                               const ParallelType type)
-  : NumericVector<T>(comm, type),
-    _destroy_vec_on_exit(true),
-    myFirstID_(0),
-    myNumIDs_(0),
-    myCoefs_(NULL),
-    nonlocalIDs_(NULL),
-    nonlocalElementSize_(NULL),
-    numNonlocalIDs_(0),
-    allocatedNonlocalLength_(0),
-    nonlocalCoefs_(NULL),
-    last_edit(0),
-    ignoreNonLocalEntries_(false)
+                               const ParallelType type) :
+  NumericVector<T>(comm, type),
+  _destroy_vec_on_exit(true),
+  myFirstID_(0),
+  myNumIDs_(0),
+  myCoefs_(NULL),
+  nonlocalIDs_(NULL),
+  nonlocalElementSize_(NULL),
+  numNonlocalIDs_(0),
+  allocatedNonlocalLength_(0),
+  nonlocalCoefs_(NULL),
+  last_edit(0),
+  ignoreNonLocalEntries_(false)
 {
   this->_type = type;
 }
@@ -654,19 +621,19 @@ template <typename T>
 inline
 EpetraVector<T>::EpetraVector (const Parallel::Communicator &comm,
                                const numeric_index_type n,
-                               const ParallelType type)
-  : NumericVector<T>(comm, type),
-    _destroy_vec_on_exit(true),
-    myFirstID_(0),
-    myNumIDs_(0),
-    myCoefs_(NULL),
-    nonlocalIDs_(NULL),
-    nonlocalElementSize_(NULL),
-    numNonlocalIDs_(0),
-    allocatedNonlocalLength_(0),
-    nonlocalCoefs_(NULL),
-    last_edit(0),
-    ignoreNonLocalEntries_(false)
+                               const ParallelType type) :
+  NumericVector<T>(comm, type),
+  _destroy_vec_on_exit(true),
+  myFirstID_(0),
+  myNumIDs_(0),
+  myCoefs_(NULL),
+  nonlocalIDs_(NULL),
+  nonlocalElementSize_(NULL),
+  numNonlocalIDs_(0),
+  allocatedNonlocalLength_(0),
+  nonlocalCoefs_(NULL),
+  last_edit(0),
+  ignoreNonLocalEntries_(false)
 
 {
   this->init(n, n, false, type);
@@ -679,19 +646,19 @@ inline
 EpetraVector<T>::EpetraVector (const Parallel::Communicator &comm,
                                const numeric_index_type n,
                                const numeric_index_type n_local,
-                               const ParallelType type)
-  : NumericVector<T>(comm, type),
-    _destroy_vec_on_exit(true),
-    myFirstID_(0),
-    myNumIDs_(0),
-    myCoefs_(NULL),
-    nonlocalIDs_(NULL),
-    nonlocalElementSize_(NULL),
-    numNonlocalIDs_(0),
-    allocatedNonlocalLength_(0),
-    nonlocalCoefs_(NULL),
-    last_edit(0),
-    ignoreNonLocalEntries_(false)
+                               const ParallelType type) :
+  NumericVector<T>(comm, type),
+  _destroy_vec_on_exit(true),
+  myFirstID_(0),
+  myNumIDs_(0),
+  myCoefs_(NULL),
+  nonlocalIDs_(NULL),
+  nonlocalElementSize_(NULL),
+  numNonlocalIDs_(0),
+  allocatedNonlocalLength_(0),
+  nonlocalCoefs_(NULL),
+  last_edit(0),
+  ignoreNonLocalEntries_(false)
 {
   this->init(n, n_local, false, type);
 }
@@ -702,19 +669,19 @@ EpetraVector<T>::EpetraVector (const Parallel::Communicator &comm,
 template <typename T>
 inline
 EpetraVector<T>::EpetraVector(Epetra_Vector & v,
-                              const Parallel::Communicator &comm)
-  : NumericVector<T>(comm, AUTOMATIC),
-    _destroy_vec_on_exit(false),
-    myFirstID_(0),
-    myNumIDs_(0),
-    myCoefs_(NULL),
-    nonlocalIDs_(NULL),
-    nonlocalElementSize_(NULL),
-    numNonlocalIDs_(0),
-    allocatedNonlocalLength_(0),
-    nonlocalCoefs_(NULL),
-    last_edit(0),
-    ignoreNonLocalEntries_(false)
+                              const Parallel::Communicator &comm) :
+  NumericVector<T>(comm, AUTOMATIC),
+  _destroy_vec_on_exit(false),
+  myFirstID_(0),
+  myNumIDs_(0),
+  myCoefs_(NULL),
+  nonlocalIDs_(NULL),
+  nonlocalElementSize_(NULL),
+  numNonlocalIDs_(0),
+  allocatedNonlocalLength_(0),
+  nonlocalCoefs_(NULL),
+  last_edit(0),
+  ignoreNonLocalEntries_(false)
 {
   _vec = &v;
 
@@ -745,19 +712,19 @@ EpetraVector<T>::EpetraVector (const Parallel::Communicator &comm,
                                const numeric_index_type n,
                                const numeric_index_type n_local,
                                const std::vector<numeric_index_type>& ghost,
-                               const ParallelType type)
-  : NumericVector<T>(comm, AUTOMATIC),
-    _destroy_vec_on_exit(true),
-    myFirstID_(0),
-    myNumIDs_(0),
-    myCoefs_(NULL),
-    nonlocalIDs_(NULL),
-    nonlocalElementSize_(NULL),
-    numNonlocalIDs_(0),
-    allocatedNonlocalLength_(0),
-    nonlocalCoefs_(NULL),
-    last_edit(0),
-    ignoreNonLocalEntries_(false)
+                               const ParallelType type) :
+  NumericVector<T>(comm, AUTOMATIC),
+  _destroy_vec_on_exit(true),
+  myFirstID_(0),
+  myNumIDs_(0),
+  myCoefs_(NULL),
+  nonlocalIDs_(NULL),
+  nonlocalElementSize_(NULL),
+  numNonlocalIDs_(0),
+  allocatedNonlocalLength_(0),
+  nonlocalCoefs_(NULL),
+  last_edit(0),
+  ignoreNonLocalEntries_(false)
 {
   this->init(n, n_local, ghost, false, type);
 }
@@ -925,9 +892,9 @@ void EpetraVector<T>::zero ()
 
 template <typename T>
 inline
-AutoPtr<NumericVector<T> > EpetraVector<T>::zero_clone () const
+UniquePtr<NumericVector<T> > EpetraVector<T>::zero_clone () const
 {
-  AutoPtr<NumericVector<T> > cloned_vector
+  UniquePtr<NumericVector<T> > cloned_vector
     (new EpetraVector<T>(this->comm(), AUTOMATIC));
 
   cloned_vector->init(*this);
@@ -939,9 +906,9 @@ AutoPtr<NumericVector<T> > EpetraVector<T>::zero_clone () const
 
 template <typename T>
 inline
-AutoPtr<NumericVector<T> > EpetraVector<T>::clone () const
+UniquePtr<NumericVector<T> > EpetraVector<T>::clone () const
 {
-  AutoPtr<NumericVector<T> > cloned_vector
+  UniquePtr<NumericVector<T> > cloned_vector
     (new EpetraVector<T>(this->comm(), AUTOMATIC));
 
   cloned_vector->init(*this, true);
@@ -1063,5 +1030,5 @@ void EpetraVector<T>::swap (NumericVector<T> &other)
 } // namespace libMesh
 
 
-#endif // #ifdef HAVE_EPETRA
+#endif // #ifdef LIBMESH_HAVE_TRILINOS
 #endif // LIBMESH_TRILINOS_EPETRA_VECTOR_H

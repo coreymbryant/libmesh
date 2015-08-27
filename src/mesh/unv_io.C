@@ -570,7 +570,7 @@ void UNVIO::groups_in (std::istream& in_file)
 
       // Associate this group_number with the group_name in the BoundaryInfo object.
       if (is_sideset_group)
-        mesh.boundary_info->sideset_name
+        mesh.get_boundary_info().sideset_name
           (cast_int<boundary_id_type>(group_number)) = group_name;
 
       if (is_subdomain_group)
@@ -597,7 +597,7 @@ void UNVIO::groups_in (std::istream& in_file)
             // this algorithm...
             for (unsigned short sn=0; sn<elem->n_sides(); sn++)
               {
-                AutoPtr<Elem> side (elem->build_side(sn));
+                UniquePtr<Elem> side (elem->build_side(sn));
 
                 // Build up a node_ids vector, which is the key
                 std::vector<dof_id_type> node_ids(side->n_nodes());
@@ -615,7 +615,8 @@ void UNVIO::groups_in (std::istream& in_file)
                     Elem* lower_dim_elem = iter->second;
 
                     // Add boundary information based on the lower-dimensional element's subdomain id.
-                    mesh.boundary_info->add_side(elem, sn, lower_dim_elem->subdomain_id());
+                    mesh.get_boundary_info().add_side
+                      (elem, sn, lower_dim_elem->subdomain_id());
                   }
               }
           }
@@ -695,7 +696,7 @@ void UNVIO::elements_in (std::istream& in_file)
           in_file >> dummy >> dummy >> dummy;
         }
 
-       // read node labels (1-based)
+      // read node labels (1-based)
       for (unsigned int j=1; j<=n_nodes; j++)
         in_file >> node_labels[j];
 

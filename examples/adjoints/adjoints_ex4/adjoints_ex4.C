@@ -15,7 +15,7 @@
 /* License along with this library; if not, write to the Free Software */
 /* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  U$ */
 
-// <h1>Adjoints Example 1 - Laplace Equation in the L-Shaped Domain with Adjoint based mesh refinement</h1>
+// <h1>Adjoints Example 1 - Laplace Equation in the L-Shaped Domain with Adjoint based error estimation</h1>
 //
 // This example solves the Laplace equation on the classic "L-shaped"
 // domain with adaptive mesh refinement. The exact
@@ -129,12 +129,12 @@ void set_system_parameters(LaplaceSystem &system, FEMParameters &param)
 
   // No transient time solver
   system.time_solver =
-    AutoPtr<TimeSolver>(new SteadySolver(system));
+    UniquePtr<TimeSolver>(new SteadySolver(system));
 
   // Nonlinear solver options
   {
     NewtonSolver *solver = new NewtonSolver(system);
-    system.time_solver->diff_solver() = AutoPtr<DiffSolver>(solver);
+    system.time_solver->diff_solver() = UniquePtr<DiffSolver>(solver);
 
     solver->quiet                       = param.solver_quiet;
     solver->max_nonlinear_iterations    = param.max_nonlinear_iterations;
@@ -160,10 +160,10 @@ void set_system_parameters(LaplaceSystem &system, FEMParameters &param)
 
 #ifdef LIBMESH_ENABLE_AMR
 
-AutoPtr<MeshRefinement> build_mesh_refinement(MeshBase &mesh,
+UniquePtr<MeshRefinement> build_mesh_refinement(MeshBase &mesh,
                                               FEMParameters &param)
 {
-  AutoPtr<MeshRefinement> mesh_refinement(new MeshRefinement(mesh));
+  MeshRefinement* mesh_refinement = new MeshRefinement(mesh);
   mesh_refinement->coarsen_by_parents() = true;
   mesh_refinement->absolute_global_tolerance() = param.global_tolerance;
   mesh_refinement->nelem_target()      = param.nelem_target;
@@ -171,28 +171,24 @@ AutoPtr<MeshRefinement> build_mesh_refinement(MeshBase &mesh,
   mesh_refinement->coarsen_fraction()  = param.coarsen_fraction;
   mesh_refinement->coarsen_threshold() = param.coarsen_threshold;
 
-  return mesh_refinement;
+  return UniquePtr<MeshRefinement>(mesh_refinement);
 }
 
 // This is where declare the adjoint refined error estimator. This estimator builds an error bound
 // for Q(u) - Q(u_h), by solving the adjoint problem on a finer Finite Element space. For more details
 // see the description of the Adjoint Refinement Error Estimator in adjoint_refinement_error_estimator.C
-AutoPtr<AdjointRefinementEstimator> build_adjoint_refinement_error_estimator(QoISet &qois)
+UniquePtr<AdjointRefinementEstimator> build_adjoint_refinement_error_estimator(QoISet &qois)
 {
-  AutoPtr<AdjointRefinementEstimator> error_estimator;
-
   std::cout<<"Computing the error estimate using the Adjoint Refinement Error Estimator"<<std::endl<<std::endl;
 
   AdjointRefinementEstimator *adjoint_refinement_estimator = new AdjointRefinementEstimator;
-
-  error_estimator.reset (adjoint_refinement_estimator);
 
   adjoint_refinement_estimator->qoi_set() = qois;
 
   // We enrich the FE space for the dual problem by doing 2 uniform h refinements
   adjoint_refinement_estimator->number_h_refinements = 2;
 
-  return error_estimator;
+  return UniquePtr<AdjointRefinementEstimator>(adjoint_refinement_estimator);
 }
 
 #endif // LIBMESH_ENABLE_AMR
@@ -209,6 +205,9 @@ int main (int argc, char** argv)
   libmesh_example_requires(false, "--enable-amr");
 #else
 
+  // This doesn't converge with Eigen BICGSTAB for some reason...
+  libmesh_example_requires(libMesh::default_solver_package() != EIGEN_SOLVERS, "--enable-petsc");
+
   std::cout << "Started " << argv[0] << std::endl;
 
   // Make sure the general input file exists, and parse it
@@ -220,7 +219,7 @@ int main (int argc, char** argv)
   GetPot infile("general.in");
 
   // Read in parameters from the input file
-  FEMParameters param;
+  FEMParameters param(init.comm());
   param.read(infile);
 
   // Skip this default-2D example if libMesh was compiled as 1D-only.
@@ -231,7 +230,7 @@ int main (int argc, char** argv)
   Mesh mesh(init.comm());
 
   // And an object to refine it
-  AutoPtr<MeshRefinement> mesh_refinement =
+  UniquePtr<MeshRefinement> mesh_refinement =
     build_mesh_refinement(mesh, param);
 
   // And an EquationSystems to run on it
@@ -366,7 +365,7 @@ int main (int argc, char** argv)
         ErrorVector QoI_elementwise_error;
 
         // Build an adjoint refinement error estimator object
-        AutoPtr<AdjointRefinementEstimator> adjoint_refinement_error_estimator =
+        UniquePtr<AdjointRefinementEstimator> adjoint_refinement_error_estimator =
           build_adjoint_refinement_error_estimator(qois);
 
         // Estimate the error in each element using the Adjoint Refinement estimator
@@ -507,7 +506,7 @@ int main (int argc, char** argv)
         ErrorVector QoI_elementwise_error;
 
         // Build an adjoint refinement error estimator object
-        AutoPtr<AdjointRefinementEstimator> adjoint_refinement_error_estimator =
+        UniquePtr<AdjointRefinementEstimator> adjoint_refinement_error_estimator =
           build_adjoint_refinement_error_estimator(qois);
 
         // Estimate the error in each element using the Adjoint Refinement estimator
@@ -532,6 +531,21 @@ int main (int argc, char** argv)
                  << std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(1)) /
           std::abs(QoI_1_computed - QoI_1_exact) << std::endl << std::endl;
 
+        // Hard coded assert to ensure that the actual numbers we are getting are what they should be
+
+	// The effectivity index isn't exactly reproduceable at single precision
+        // libmesh_assert_less(std::abs(std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(0)) / std::abs(QoI_0_computed - QoI_0_exact) - 0.84010976704434637), 1.e-5);
+        // libmesh_assert_less(std::abs(std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(1)) / std::abs(QoI_1_computed - QoI_1_exact) - 0.48294428289950514), 1.e-5);
+
+        // But the effectivity indices should always be sane
+        libmesh_assert_less(std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(0)) / std::abs(QoI_0_computed - QoI_0_exact), 2.5);
+        libmesh_assert_greater(std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(0)) / std::abs(QoI_0_computed - QoI_0_exact), .4);
+        libmesh_assert_less(std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(1)) / std::abs(QoI_1_computed - QoI_1_exact), 2.5);
+        libmesh_assert_greater(std::abs(adjoint_refinement_error_estimator->get_global_QoI_error_estimate(1)) / std::abs(QoI_1_computed - QoI_1_exact), .4);
+
+        // And the computed errors should still be low
+        libmesh_assert_less(std::abs(QoI_0_computed - QoI_0_exact), 2e-4);
+        libmesh_assert_less(std::abs(QoI_1_computed - QoI_1_exact), 2e-4);
       }
   }
 

@@ -25,7 +25,6 @@
 // Local includes
 #include "libmesh/elem.h"
 #include "libmesh/elem_range.h"
-#include "libmesh/location_maps.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/mesh_communication.h"
 #include "libmesh/mesh_tools.h"
@@ -35,6 +34,7 @@
 #include "libmesh/serial_mesh.h"
 #include "libmesh/sphere.h"
 #include "libmesh/threads.h"
+#include "libmesh/string_to_enum.h"
 
 #ifdef DEBUG
 #  include "libmesh/remote_elem.h"
@@ -404,7 +404,7 @@ void MeshTools::find_boundary_nodes (const MeshBase& mesh,
     for (unsigned int s=0; s<(*el)->n_neighbors(); s++)
       if ((*el)->neighbor(s) == NULL) // on the boundary
         {
-          const AutoPtr<Elem> side((*el)->build_side(s));
+          const UniquePtr<Elem> side((*el)->build_side(s));
 
           for (unsigned int n=0; n<side->n_nodes(); n++)
             on_boundary[side->node(n)] = true;
@@ -704,15 +704,21 @@ unsigned int MeshTools::n_p_levels (const MeshBase& mesh)
 
 void MeshTools::find_nodal_neighbors(const MeshBase&,
                                      const Node& node,
-                                     std::vector<std::vector<const Elem*> >& nodes_to_elem_map,
+                                     const std::vector<std::vector<const Elem*> >& nodes_to_elem_map,
                                      std::vector<const Node*>& neighbors)
 {
   // We'll refer back to the Node ID several times
   dof_id_type global_id = node.id();
 
+  // We'll construct a std::set<const Node*> for more efficient
+  // searching while finding the nodal neighbors, and return it to the
+  // user in a std::vector.
+  std::set<const Node*> neighbor_set;
+
   // Iterators to iterate through the elements that include this node
-  std::vector<const Elem*>::const_iterator el     = nodes_to_elem_map[global_id].begin();
-  std::vector<const Elem*>::const_iterator end_el = nodes_to_elem_map[global_id].end();
+  std::vector<const Elem*>::const_iterator
+    el = nodes_to_elem_map[global_id].begin(),
+    end_el = nodes_to_elem_map[global_id].end();
 
   // Look through the elements that contain this node
   // find the local node id... then find the side that
@@ -732,6 +738,90 @@ void MeshTools::find_nodal_neighbors(const MeshBase&,
 
           // Make sure it was found
           libmesh_assert_not_equal_to(local_node_number, libMesh::invalid_uint);
+
+          // If this element has no edges, the edge-based algorithm below doesn't make sense.
+          if (elem->n_edges() == 0)
+            {
+              switch (elem->type())
+                {
+                case EDGE2:
+                  {
+                    switch (local_node_number)
+                      {
+                      case 0:
+                        // The other node is a nodal neighbor
+                        neighbor_set.insert(elem->get_node(1));
+                        break;
+
+                      case 1:
+                        // The other node is a nodal neighbor
+                        neighbor_set.insert(elem->get_node(0));
+                        break;
+
+                      default:
+                        libmesh_error_msg("Invalid local node number: " << local_node_number << " found." << std::endl);
+                      }
+                    break;
+                  }
+
+                case EDGE3:
+                  {
+                    switch (local_node_number)
+                      {
+                        // The outside nodes have node 2 as a neighbor
+                      case 0:
+                      case 1:
+                        neighbor_set.insert(elem->get_node(2));
+                        break;
+
+                        // The middle node has the outer nodes as neighbors
+                      case 2:
+                        neighbor_set.insert(elem->get_node(0));
+                        neighbor_set.insert(elem->get_node(1));
+                        break;
+
+                      default:
+                        libmesh_error_msg("Invalid local node number: " << local_node_number << " found." << std::endl);
+                      }
+                    break;
+                  }
+
+                case EDGE4:
+                  {
+                    switch (local_node_number)
+                      {
+                      case 0:
+                        // The left-middle node is a nodal neighbor
+                        neighbor_set.insert(elem->get_node(2));
+                        break;
+
+                      case 1:
+                        // The right-middle node is a nodal neighbor
+                        neighbor_set.insert(elem->get_node(3));
+                        break;
+
+                        // The left-middle node
+                      case 2:
+                        neighbor_set.insert(elem->get_node(0));
+                        neighbor_set.insert(elem->get_node(3));
+                        break;
+
+                        // The right-middle node
+                      case 3:
+                        neighbor_set.insert(elem->get_node(1));
+                        neighbor_set.insert(elem->get_node(2));
+                        break;
+
+                      default:
+                        libmesh_error_msg("Invalid local node number: " << local_node_number << " found." << std::endl);
+                      }
+                    break;
+                  }
+
+                default:
+                  libmesh_error_msg("Unrecognized ElemType: " << Utility::enum_to_string(elem->type()) << std::endl);
+                }
+            }
 
           // Index of the current edge
           unsigned current_edge = 0;
@@ -765,21 +855,19 @@ void MeshTools::find_nodal_neighbors(const MeshBase&,
                   // Make sure we found something
                   libmesh_assert(node_to_save != NULL);
 
-                  // Search to see if we've already found this one
-                  std::vector<const Node*>::const_iterator result = std::find(neighbors.begin(),
-                                                                              neighbors.end(),
-                                                                              node_to_save);
-
-                  // If we didn't already have it, add it to the vector
-                  if (result == neighbors.end())
-                    neighbors.push_back(node_to_save);
+                  neighbor_set.insert(node_to_save);
                 }
 
               // Keep looking for edges, node may be on more than one edge
               current_edge++;
             }
-        }
-    }
+        } // if (elem->active())
+    } // for
+
+  // Assign the entries from the set to the vector.  Note: this
+  // replaces any existing contents in neighbors and modifies its size
+  // accordingly.
+  neighbors.assign(neighbor_set.begin(), neighbor_set.end());
 }
 
 
@@ -887,18 +975,10 @@ void MeshTools::find_hanging_nodes_and_parents(const MeshBase& mesh, std::map<do
 
 
 
-void MeshTools::correct_node_proc_ids
-(MeshBase &mesh,
- LocationMap<Node> &loc_map)
+void MeshTools::correct_node_proc_ids (MeshBase &mesh)
 {
   // This function must be run on all processors at once
   libmesh_parallel_only(mesh.comm());
-
-  // We'll need the new_nodes_map to answer other processors'
-  // requests.  It should never be empty unless we don't have any
-  // nodes.
-  libmesh_assert(mesh.nodes_begin() == mesh.nodes_end() ||
-                 !loc_map.empty());
 
   // Fix all nodes' processor ids.  Coarsening may have left us with
   // nodes which are no longer touched by any elements of the same
@@ -936,8 +1016,7 @@ void MeshTools::correct_node_proc_ids
   // Those two passes will correct every node that touches a local
   // element, but we can't be sure about nodes touching remote
   // elements.  Fix those now.
-  MeshCommunication().make_node_proc_ids_parallel_consistent
-    (mesh, loc_map);
+  MeshCommunication().make_node_proc_ids_parallel_consistent (mesh);
 }
 
 
@@ -1122,6 +1201,44 @@ void MeshTools::libmesh_assert_valid_amr_elem_ids(const MeshBase &mesh)
         {
           libmesh_assert_greater_equal (elem->id(), parent->id());
           libmesh_assert_greater_equal (elem->processor_id(), parent->processor_id());
+        }
+    }
+}
+
+
+
+void MeshTools::libmesh_assert_valid_amr_interior_parents(const MeshBase &mesh)
+{
+  const MeshBase::const_element_iterator el_end =
+    mesh.elements_end();
+  for (MeshBase::const_element_iterator el =
+         mesh.elements_begin(); el != el_end; ++el)
+    {
+      const Elem* elem = *el;
+      libmesh_assert (elem);
+
+      // We can skip to the next element if we're full-dimension
+      // and therefore don't have any interior parents
+      if (elem->dim() >= LIBMESH_DIM)
+        continue;
+
+      const Elem* ip = elem->interior_parent();
+
+      const Elem* parent = elem->parent();
+
+      if (ip && (ip != remote_elem) && parent)
+        {
+          libmesh_assert_equal_to (ip->top_parent(),
+                                   elem->top_parent()->interior_parent());
+
+          if (ip->level() == elem->level())
+            libmesh_assert_equal_to (ip->parent(),
+                                     parent->interior_parent());
+          else
+            {
+              libmesh_assert_less (ip->level(), elem->level());
+              libmesh_assert_equal_to (ip, parent->interior_parent());
+            }
         }
     }
 }
@@ -1436,6 +1553,35 @@ void MeshTools::libmesh_assert_valid_neighbors(const MeshBase &mesh)
       const Elem* elem = *el;
       libmesh_assert (elem);
       elem->libmesh_assert_valid_neighbors();
+    }
+
+  if (mesh.n_processors() == 1)
+    return;
+
+  libmesh_parallel_only(mesh.comm());
+
+  for (dof_id_type i=0; i != mesh.max_elem_id(); ++i)
+    {
+      const Elem *elem = mesh.query_elem(i);
+
+      const unsigned int my_n_neigh = elem ? elem->n_neighbors() : 0;
+      unsigned int n_neigh = my_n_neigh;
+      mesh.comm().max(n_neigh);
+      if (elem)
+        libmesh_assert_equal_to (my_n_neigh, n_neigh);
+
+      for (unsigned int n = 0; n != n_neigh; ++n)
+        {
+          dof_id_type my_neighbor = DofObject::invalid_id; // NULL
+          dof_id_type* p_my_neighbor = NULL;
+          if (elem && elem->neighbor(n) != remote_elem)
+            {
+              p_my_neighbor = &my_neighbor;
+              if (elem->neighbor(n))
+                my_neighbor = elem->neighbor(n)->id();
+            }
+          mesh.comm().semiverify(p_my_neighbor);
+        }
     }
 }
 

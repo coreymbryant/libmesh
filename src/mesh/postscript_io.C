@@ -39,14 +39,14 @@ const float PostscriptIO::_bezier_transform[3][3] =
   };
 
 
-PostscriptIO::PostscriptIO (const MeshBase& mesh_in)
-  : MeshOutput<MeshBase> (mesh_in),
-    shade_value(0.0),
-    line_width(0.5),
-    //_M(3,3),
-    _offset(0., 0.),
-    _scale(1.0),
-    _current_point(0., 0.)
+PostscriptIO::PostscriptIO (const MeshBase& mesh_in) :
+  MeshOutput<MeshBase> (mesh_in),
+  shade_value(0.0),
+  line_width(0.5),
+  //_M(3,3),
+  _offset(0., 0.),
+  _scale(1.0),
+  _current_point(0., 0.)
 {
   // This code is still undergoing some development.
   libmesh_experimental();
@@ -241,7 +241,7 @@ void PostscriptIO::plot_quadratic_elem(const Elem* elem)
   for (unsigned int ns=0; ns<elem->n_sides(); ++ns)
     {
       // Build the quadratic side
-      AutoPtr<Elem> side = elem->build_side(ns);
+      UniquePtr<Elem> side = elem->build_side(ns);
 
       // Be sure it's quadratic (Edge2).  Eventually we could
       // handle cubic elements as well...

@@ -41,7 +41,6 @@ namespace libMesh
 {
 
 // forward declarations
-template <typename T> class AutoPtr;
 template <typename T> class SparseMatrix;
 template <typename T> class NumericVector;
 template <typename T> class ShellMatrix;
@@ -94,8 +93,7 @@ protected:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-EigenPreconditioner<T>::EigenPreconditioner
-  (const libMesh::Parallel::Communicator &comm_in) :
+EigenPreconditioner<T>::EigenPreconditioner(const libMesh::Parallel::Communicator &comm_in) :
   Preconditioner<T>(comm_in)
 {
 }

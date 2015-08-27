@@ -142,6 +142,7 @@ void set_system_parameters(HeatSystem &system, FEMParameters &param)
   system.print_jacobian_norms    = param.print_jacobian_norms;
   system.print_jacobians         = param.print_jacobians;
   system.print_element_jacobians = param.print_element_jacobians;
+  system.print_element_residuals = param.print_element_residuals;
 
   // Solve this as a time-dependent or steady system
   if (param.transient)
@@ -159,11 +160,11 @@ void set_system_parameters(HeatSystem &system, FEMParameters &param)
         libmesh_error_msg("This example (and unsteady adjoints in libMesh) only support Backward Euler and explicit methods.");
 
       system.time_solver =
-        AutoPtr<TimeSolver>(innersolver);
+        UniquePtr<TimeSolver>(innersolver);
     }
   else
     system.time_solver =
-      AutoPtr<TimeSolver>(new SteadySolver(system));
+      UniquePtr<TimeSolver>(new SteadySolver(system));
 
   // The Memory Solution History object we will set the system SolutionHistory object to
   MemorySolutionHistory heatsystem_solution_history(system);
@@ -205,7 +206,7 @@ void set_system_parameters(HeatSystem &system, FEMParameters &param)
     {
 #ifdef LIBMESH_HAVE_PETSC
       PetscDiffSolver *solver = new PetscDiffSolver(system);
-      system.time_solver->diff_solver() = AutoPtr<DiffSolver>(solver);
+      system.time_solver->diff_solver() = UniquePtr<DiffSolver>(solver);
 #else
       libmesh_error_msg("This example requires libMesh to be compiled with PETSc support.");
 #endif
@@ -213,7 +214,7 @@ void set_system_parameters(HeatSystem &system, FEMParameters &param)
   else
     {
       NewtonSolver *solver = new NewtonSolver(system);
-      system.time_solver->diff_solver() = AutoPtr<DiffSolver>(solver);
+      system.time_solver->diff_solver() = UniquePtr<DiffSolver>(solver);
 
       solver->quiet                       = param.solver_quiet;
       solver->verbose                     = param.solver_verbose;
@@ -260,7 +261,7 @@ int main (int argc, char** argv)
   GetPot infile("general.in");
 
   // Read in parameters from the input file
-  FEMParameters param;
+  FEMParameters param(init.comm());
   param.read(infile);
 
   // Create a mesh with the given dimension, distributed
@@ -268,7 +269,7 @@ int main (int argc, char** argv)
   Mesh mesh(init.comm(), param.dimension);
 
   // And an object to refine it
-  AutoPtr<MeshRefinement> mesh_refinement(new MeshRefinement(mesh));
+  UniquePtr<MeshRefinement> mesh_refinement(new MeshRefinement(mesh));
 
   // And an EquationSystems to run on it
   EquationSystems equation_systems (mesh);
@@ -514,6 +515,12 @@ int main (int argc, char** argv)
 
       // Print it out
       std::cout<<"Sensitivity of QoI 0 w.r.t parameter 0 is: " << sensitivity_0_0 << std::endl;
+
+      // Hard coded assert to ensure that the actual numbers we are
+      // getting are what they should be
+      // The 2e-4 tolerance is chosen to ensure success even with
+      // 32-bit floats
+      libmesh_assert_less(std::abs(sensitivity_0_0 - (-5.37173)), 2.e-4);
 
 #ifdef NDEBUG
     }

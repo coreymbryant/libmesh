@@ -75,6 +75,8 @@ public:
 
   const Parallel::Communicator& comm() const { return _comm; }
 
+  Parallel::Communicator& comm() { return _comm; }
+
 private:
   Parallel::Communicator _comm;
 };
@@ -99,6 +101,11 @@ bool closed ();
  * Toggle hardware trap floating point exceptions
  */
 void enableFPE(bool on);
+
+/**
+ * Toggle libMesh reporting of segmentation faults
+ */
+void enableSEGV(bool on);
 
 /**
  * @returns true if the argument \p arg was specified on the command line,

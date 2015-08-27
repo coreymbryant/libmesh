@@ -174,19 +174,15 @@ void XdrIO::write (const std::string& name)
   // convenient reference to our mesh
   const MeshBase &mesh = MeshOutput<MeshBase>::mesh();
 
-  header_id_type
-    n_elem     = mesh.n_elem(),
-    n_nodes    = mesh.n_nodes();
+  header_id_type n_elem  = mesh.n_elem();
+  header_id_type n_nodes = mesh.n_nodes();
 
   libmesh_assert(n_elem == mesh.n_elem());
   libmesh_assert(n_nodes == mesh.n_nodes());
 
-  header_id_type n_bcs =
-    cast_int<header_id_type>(mesh.boundary_info->n_boundary_conds());
-  header_id_type n_nodesets =
-    cast_int<header_id_type>(mesh.boundary_info->n_nodeset_conds());
-  unsigned int
-    n_p_levels = MeshTools::n_p_levels (mesh);
+  header_id_type n_bcs = cast_int<header_id_type>(mesh.get_boundary_info().n_boundary_conds());
+  header_id_type n_nodesets = cast_int<header_id_type>(mesh.get_boundary_info().n_nodeset_conds());
+  unsigned int n_p_levels = MeshTools::n_p_levels (mesh);
 
   bool write_parallel_files = this->write_parallel();
 
@@ -288,7 +284,7 @@ void XdrIO::write (const std::string& name)
       this->write_serialized_nodesets (io, n_nodesets);
     }
 
-  if(mesh.boundary_info->n_edge_conds() > 0)
+  if(mesh.get_boundary_info().n_edge_conds() > 0)
     {
       libMesh::out << "Warning: Mesh contains edge boundary IDs, but these "
                    << "are not supported by the XDR format."
@@ -478,7 +474,7 @@ void XdrIO::write_serialized_connectivity (Xdr &io, const dof_id_type libmesh_db
                 for (dof_id_type node=0; node<n_nodes; node++, ++recv_conn_iter)
                   output_buffer.push_back(*recv_conn_iter);
 
-                io.data_stream 
+                io.data_stream
                   (&output_buffer[0],
                    cast_int<unsigned int>(output_buffer.size()),
                    cast_int<unsigned int>(output_buffer.size()));
@@ -840,7 +836,7 @@ void XdrIO::write_serialized_bcs (Xdr &io, const header_id_type n_bcs) const
   const MeshBase &mesh = MeshOutput<MeshBase>::mesh();
 
   // and our boundary info object
-  const BoundaryInfo &boundary_info = *mesh.boundary_info;
+  const BoundaryInfo &boundary_info = mesh.get_boundary_info();
 
   // Version 0.9.2+ introduces entity names
   write_serialized_bc_names(io, boundary_info, true);  // sideset names
@@ -928,7 +924,7 @@ void XdrIO::write_serialized_nodesets (Xdr &io, const header_id_type n_nodesets)
   const MeshBase &mesh = MeshOutput<MeshBase>::mesh();
 
   // and our boundary info object
-  const BoundaryInfo &boundary_info = *mesh.boundary_info;
+  const BoundaryInfo &boundary_info = mesh.get_boundary_info();
 
   // Version 0.9.2+ introduces entity names
   write_serialized_bc_names(io, boundary_info, false);  // nodeset names
@@ -1114,6 +1110,9 @@ void XdrIO::read (const std::string& name)
   mesh.reserve_elem(n_elem);
   mesh.reserve_nodes(n_nodes);
 
+  // Our mesh is pre-partitioned as it's created
+  this->set_n_partitions(this->n_processors());
+
   /**
    * We are future proofing the layout of this file by adding in size information for all stored types.
    * TODO: All types are stored as the same size. Use the size information to pack things efficiently.
@@ -1250,8 +1249,8 @@ void XdrIO::read_serialized_connectivity (Xdr &io, const dof_id_type n_elem, std
        last_elem<n_elem; blk++)
     {
       first_elem = cast_int<dof_id_type>(blk*io_blksize);
-      last_elem  = std::min(cast_int<dof_id_type>((blk+1)*io_blksize),
-                            n_elem);
+      last_elem  = cast_int<dof_id_type>(std::min(cast_int<std::size_t>((blk+1)*io_blksize),
+                                                  cast_int<std::size_t>(n_elem)));
 
       conn.clear();
 
@@ -1432,7 +1431,7 @@ void XdrIO::read_serialized_nodes (Xdr &io, const dof_id_type n_nodes)
   // Get the nodes in blocks.
   std::vector<Real> coords;
   std::pair<std::vector<dof_id_type>::iterator,
-    std::vector<dof_id_type>::iterator> pos;
+            std::vector<dof_id_type>::iterator> pos;
   pos.first = needed_nodes.begin();
 
   for (std::size_t blk=0, first_node=0, last_node=0; last_node<n_nodes; blk++)
@@ -1484,7 +1483,7 @@ void XdrIO::read_serialized_bcs (Xdr &io, T)
   MeshBase &mesh = MeshInput<MeshBase>::mesh();
 
   // and our boundary info object
-  BoundaryInfo &boundary_info = *mesh.boundary_info;
+  BoundaryInfo &boundary_info = mesh.get_boundary_info();
 
   // Version 0.9.2+ introduces unique ids
   read_serialized_bc_names(io, boundary_info, true);  // sideset names
@@ -1562,7 +1561,7 @@ void XdrIO::read_serialized_nodesets (Xdr &io, T)
   MeshBase &mesh = MeshInput<MeshBase>::mesh();
 
   // and our boundary info object
-  BoundaryInfo &boundary_info = *mesh.boundary_info;
+  BoundaryInfo &boundary_info = mesh.get_boundary_info();
 
   // Version 0.9.2+ introduces unique ids
   read_serialized_bc_names(io, boundary_info, false); // nodeset names

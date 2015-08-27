@@ -29,7 +29,7 @@
 // Local Includes -----------------------------------
 #include "libmesh/libmesh_common.h"
 #include "libmesh/libmesh.h" // libMesh::invalid_uint
-#include "libmesh/location_maps.h"
+#include "libmesh/topology_map.h"
 #include "libmesh/elem.h"
 #include "libmesh/point_locator_base.h"
 #include "libmesh/parallel_object.h"
@@ -218,16 +218,16 @@ public:
 
   /**
    * Refines and coarsens user-requested elements. Will also
-   * refine/coarsen additional elements to satisy level-one rule.
+   * refine/coarsen additional elements to satisfy level-one rule.
    * It is possible that for a given set of refinement flags there
    * is actually no change upon calling this member function.  Consequently,
    * this function returns \p true if the mesh actually changed (hence
    * data needs to be projected) and \p false otherwise.
    *
-   * The argument \p maintain_level_one is now deprecated; use the option
-   * face_level_mismatch_limit() instead.
+   * This function used to take an argument, \p maintain_level_one -
+   * new code should use face_level_mismatch_limit() instead.
    */
-  bool refine_and_coarsen_elements (const bool maintain_level_one=true);
+  bool refine_and_coarsen_elements ();
 
   /**
    * Only coarsens the user-requested elements. Some elements
@@ -237,10 +237,10 @@ public:
    * this function returns \p true if the mesh actually changed (hence
    * data needs to be projected) and \p false otherwise.
    *
-   * The argument \p maintain_level_one is now deprecated; use the option
-   * face_level_mismatch_limit() instead.
+   * This function used to take an argument, \p maintain_level_one -
+   * new code should use face_level_mismatch_limit() instead.
    */
-  bool coarsen_elements (const bool maintain_level_one=true);
+  bool coarsen_elements ();
 
   /**
    * Only refines the user-requested elements.
@@ -249,10 +249,10 @@ public:
    * this function returns \p true if the mesh actually changed (hence
    * data needs to be projected) and \p false otherwise.
    *
-   * The argument \p maintain_level_one is now deprecated; use the option
-   * face_level_mismatch_limit() instead.
+   * This function used to take an argument, \p maintain_level_one -
+   * new code should use face_level_mismatch_limit() instead.
    */
-  bool refine_elements (const bool maintain_level_one=true);
+  bool refine_elements ();
 
   /**
    * Uniformly refines the mesh \p n times.
@@ -298,15 +298,16 @@ public:
   bool test_unflagged (bool libmesh_assert_yes = false);
 
   /**
-   * Add point \p p to the mesh. The function returns a pointer to
-   * the new node.
-   * The processor_id is assigned to the new node (only if no existing
-   * node is found.  The tolerance \p tol tells the method how far away
-   * from p to search for existing nodes.
+   * Add a node to the mesh.  The node should be node n of child c of
+   * parent Elem parent.  The function returns a pointer to a suitable
+   * existing node, or creates a new node and returns a pointer to it
+   * if necessary.
+   * The processor_id is assigned to any newly created node.
    */
-  Node* add_point (const Point& p,
-                   const processor_id_type proc_id,
-                   const Real tol);
+  Node* add_node (const Elem& parent,
+                  unsigned int child,
+                  unsigned int node,
+                  processor_id_type proc_id);
 
   /**
    * Adds the element \p elem to the mesh.
@@ -425,6 +426,43 @@ public:
   unsigned char& node_level_mismatch_limit();
 
   /**
+   * If \p overrefined_boundary_limit is set to a nonnegative value,
+   * then refinement and coarsening will produce meshes in which the
+   * refinement level of a boundary element is no more than that many
+   * levels greater than the level of any of its interior neighbors.
+   *
+   * This may be counter-intuitive in the 1D-embedded-in-3D case: an
+   * edge has *more* interior neighbors than a face containing that
+   * edge.
+   *
+   * If \p overrefined_boundary_limit is negative, then level
+   * differences will be unlimited.
+   *
+   * \p overrefined_boundary_limit is 0 by default.  This implies that
+   * adaptive coarsening can only be done on an interior element if
+   * any boundary elements on its sides are simultaneously coarsened.
+   */
+  signed char& overrefined_boundary_limit();
+
+  /**
+   * If \p underrefined_boundary_limit is set to a nonnegative value,
+   * then refinement and coarsening will produce meshes in which the
+   * refinement level of an element is no more than that many
+   * levels greater than the level of any boundary elements on its
+   * sides.
+   *
+   * If \p underrefined_boundary_limit is negative, then level
+   * differences will be unlimited.
+   *
+   * \p underrefined_boundary_limit is 0 by default.  This implies that
+   * adaptive coarsening can only be done on a boundary element if
+   * any interior elements it is on the side of are simultaneously
+   * coarsened.
+   */
+  signed char& underrefined_boundary_limit();
+
+
+  /**
    * Copy refinement flags on ghost elements from their
    * local processors.  Return true if any flags changed.
    */
@@ -432,16 +470,23 @@ public:
 
   /**
    * Returns the state of the _enforce_mismatch_limit_prior_to_refinement flag.
-   * Defaults to false. 
-   * */
-  bool get_enforce_mismatch_limit_prior_to_refinement() ;
+   * Defaults to false.
+   * Deprecated - use enforce_mismatch_limit_prior_to_refinement() instead.
+   */
+  bool get_enforce_mismatch_limit_prior_to_refinement();
 
   /**
-   * Set _enforce_mismatch_limit_prior_to_refinement option. 
-   * Defaults to false. 
-   * */
-  void set_enforce_mismatch_limit_prior_to_refinement( 
-      bool enforce ) ;
+   * Set _enforce_mismatch_limit_prior_to_refinement option.
+   * Defaults to false.
+   * Deprecated - use enforce_mismatch_limit_prior_to_refinement() instead.
+   */
+  void set_enforce_mismatch_limit_prior_to_refinement(bool enforce);
+
+  /**
+   * Get/set the _enforce_mismatch_limit_prior_to_refinement flag.
+   * The default value for this flag is false.
+   */
+  bool& enforce_mismatch_limit_prior_to_refinement();
 
 private:
 
@@ -471,7 +516,15 @@ private:
    */
   bool _refine_elements ();
 
-
+  /**
+   * Smooths refinement flags according to current settings.
+   *
+   * It is possible that for a given set of refinement flags there
+   * is actually no change upon calling this member function.  Consequently,
+   * this function returns \p true if the flags actually changed (hence
+   * data needs to be projected) and \p false otherwise.
+   */
+  void _smooth_flags (bool refining, bool coarsening);
 
   //------------------------------------------------------
   // "Smoothing" algorthms for refined meshes
@@ -480,66 +533,65 @@ private:
    * This algorithm restricts the maximum level mismatch
    * at any node in the mesh.  Calling this with \p max_mismatch
    * equal to 1 would transform this mesh:
-   \verbatim
-   o---o---o---o---o-------o-------o
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o       |       |
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o-------o-------o
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o       |       |
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o-------o-------o
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   o-------o-------o               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   o-------o-------o---------------o
-   \endverbatim
-
+   * \verbatim
+   * o---o---o---o---o-------o-------o
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o       |       |
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o-------o-------o
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o       |       |
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o-------o-------o
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * o-------o-------o               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * o-------o-------o---------------o
+   * \endverbatim
+   *
    * into this:
-
-   \verbatim
-   o---o---o---o---o-------o-------o
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o       |       |
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o-------o-------o
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o       |       |
-   |   |   |   |   |       |       |
-   |   |   |   |   |       |       |
-   o---o---o---o---o-------o-------o
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   o-------o-------o.......o.......o
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   o-------o-------o-------o-------o
-   \endverbatim
-   by refining the indicated element
-
-  */
+   *
+   * \verbatim
+   * o---o---o---o---o-------o-------o
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o       |       |
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o-------o-------o
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o       |       |
+   * |   |   |   |   |       |       |
+   * |   |   |   |   |       |       |
+   * o---o---o---o---o-------o-------o
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * o-------o-------o.......o.......o
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * o-------o-------o-------o-------o
+   * \endverbatim
+   * by refining the indicated element
+   */
   bool limit_level_mismatch_at_node (const unsigned int max_mismatch);
 
   /*
@@ -549,58 +601,71 @@ private:
    */
   bool limit_level_mismatch_at_edge (const unsigned int max_mismatch);
 
+  /*
+   * This algorithm flags interior elements for refinement as needed
+   * to prevent corresponding boundary element refinement mismatch
+   * from exceeding the given limit.
+   */
+  bool limit_overrefined_boundary (const unsigned int max_mismatch);
+
+  /*
+   * This algorithm flags boundary elements for refinement as needed
+   * to prevent corresponding interior element refinement mismatch
+   * from exceeding the given limit.
+   */
+  bool limit_underrefined_boundary (const unsigned int max_mismatch);
+
   /**
    * This algorithm selects an element for refinement
    * if all of its neighbors are (or will be) refined.
    * This algorithm will transform this mesh:
-   \verbatim
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |       |   |   |
-   |   |   |       |   |   |
-   o---o---o       o---o---o
-   |   |   |       |   |   |
-   |   |   |       |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   \endverbatim
-
-   into this:
-   \verbatim
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   :   |   |   |
-   |   |   |   :   |   |   |
-   o---o---o...o...o---o---o
-   |   |   |   :   |   |   |
-   |   |   |   :   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   |   |   |   |   |   |   |
-   |   |   |   |   |   |   |
-   o---o---o---o---o---o---o
-   \endverbatim
-
-   by refining the indicated element
-
-  */
+   * \verbatim
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |       |   |   |
+   * |   |   |       |   |   |
+   * o---o---o       o---o---o
+   * |   |   |       |   |   |
+   * |   |   |       |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * \endverbatim
+   *
+   * into this:
+   * \verbatim
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   :   |   |   |
+   * |   |   |   :   |   |   |
+   * o---o---o...o...o---o---o
+   * |   |   |   :   |   |   |
+   * |   |   |   :   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * |   |   |   |   |   |   |
+   * |   |   |   |   |   |   |
+   * o---o---o---o---o---o---o
+   * \endverbatim
+   *
+   * by refining the indicated element
+   */
   bool eliminate_unrefined_patches ();
 
 
@@ -653,7 +718,7 @@ private:
   /**
    * Data structure that holds the new nodes information.
    */
-  LocationMap<Node> _new_nodes_map;
+  TopologyMap _new_nodes_map;
 
   /**
    * Reference to the mesh.
@@ -688,76 +753,91 @@ private:
   unsigned char _face_level_mismatch_limit, _edge_level_mismatch_limit,
     _node_level_mismatch_limit;
 
+  signed char _overrefined_boundary_limit,
+              _underrefined_boundary_limit;
+
   /**
-   * This option enforces the mismatch level prior to refinement by checking 
+   * This option enforces the mismatch level prior to refinement by checking
    * if refining any element marked for refinement \b would cause a mismatch
-   * greater than the limit. Applies to all mismatch methods. 
+   * greater than the limit. Applies to all mismatch methods.
    *
    * Calling this with \p node_level_mismatch_limit() = 1
    * would transform this mesh:
-   \verbatim
-   o-------o-------o-------o-------o
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   o-------o---o---o-------o-------o
-   |       |   :   |       |       |
-   |       |   :   |       |       |
-   |       o...o...o       |       |
-   |       |   :   |       |       |
-   |       |   :   |       |       |
-   o-------o---o---o-------o-------o
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   o-------o-------o               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   |       |       |               |
-   o-------o-------o---------------o
-   \endverbatim
-
+   * \verbatim
+   * o-------o-------o-------o-------o
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * o-------o---o---o-------o-------o
+   * |       |   :   |       |       |
+   * |       |   :   |       |       |
+   * |       o...o...o       |       |
+   * |       |   :   |       |       |
+   * |       |   :   |       |       |
+   * o-------o---o---o-------o-------o
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * o-------o-------o               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * |       |       |               |
+   * o-------o-------o---------------o
+   * \endverbatim
+   *
    * into this:
-
-   \verbatim
-   o-------o-------o-------o-------o
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   o-------o-------o-------o-------o
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   |       |       |       |       |
-   o-------o-------o-------o-------o
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   o-------o-------o.......o.......o
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   |       |       |       :       |
-   o-------o-------o-------o-------o
-   \endverbatim
-   by moving the refinement flag to the indicated element.
-
-   Default value is false. 
-
-  */
+   *
+   * \verbatim
+   * o-------o-------o-------o-------o
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * o-------o-------o-------o-------o
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * |       |       |       |       |
+   * o-------o-------o-------o-------o
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * o-------o-------o.......o.......o
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * |       |       |       :       |
+   * o-------o-------o-------o-------o
+   * \endverbatim
+   * by moving the refinement flag to the indicated element.
+   *
+   * Default value is false.
+   */
   bool _enforce_mismatch_limit_prior_to_refinement;
+
+  /**
+   * This helper function enforces the desired mismatch limits prior
+   * to refinement.  It is called from the
+   * MeshRefinement::limit_level_mismatch_at_edge() and
+   * MeshRefinement::limit_level_mismatch_at_node() functions.
+   * Returns true if this enforcement caused the refinement flags for
+   * elem to change, false otherwise.
+   */
+  enum NeighborType {POINT, EDGE};
+  bool enforce_mismatch_limit_prior_to_refinement(Elem* elem,
+                                                  NeighborType nt,
+                                                  unsigned max_mismatch);
 
 #ifdef LIBMESH_ENABLE_PERIODIC
   PeriodicBoundaries * _periodic_boundaries;
@@ -826,16 +906,34 @@ inline unsigned char& MeshRefinement::node_level_mismatch_limit()
   return _node_level_mismatch_limit;
 }
 
+inline signed char& MeshRefinement::overrefined_boundary_limit()
+{
+  return _overrefined_boundary_limit;
+}
+
+inline signed char& MeshRefinement::underrefined_boundary_limit()
+{
+  return _underrefined_boundary_limit;
+}
+
 inline bool MeshRefinement::get_enforce_mismatch_limit_prior_to_refinement()
+{
+  libmesh_deprecated();
+  return enforce_mismatch_limit_prior_to_refinement();
+}
+
+inline void MeshRefinement::set_enforce_mismatch_limit_prior_to_refinement(bool enforce)
+{
+  libmesh_deprecated();
+  enforce_mismatch_limit_prior_to_refinement() = enforce;
+}
+
+inline bool& MeshRefinement::enforce_mismatch_limit_prior_to_refinement()
 {
   return _enforce_mismatch_limit_prior_to_refinement;
 }
 
-inline void MeshRefinement::set_enforce_mismatch_limit_prior_to_refinement( 
-    bool enforce )
-{
-  _enforce_mismatch_limit_prior_to_refinement = enforce;
-}
+
 
 } // namespace libMesh
 

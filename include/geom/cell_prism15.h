@@ -134,16 +134,16 @@ public:
 
   /**
    * Builds a \p QUAD8 or \p TRI6 built coincident with face i.
-   * The \p AutoPtr<Elem> handles the memory aspect.
+   * The \p UniquePtr<Elem> handles the memory aspect.
    */
-  AutoPtr<Elem> build_side (const unsigned int i,
-                            bool proxy) const;
+  UniquePtr<Elem> build_side (const unsigned int i,
+                              bool proxy) const;
 
   /**
    * Builds a \p EDGE3 or \p INFEDGE2 coincident with edge i.
-   * The \p AutoPtr<Elem> handles the memory aspect.
+   * The \p UniquePtr<Elem> handles the memory aspect.
    */
-  AutoPtr<Elem> build_edge (const unsigned int i) const;
+  UniquePtr<Elem> build_edge (const unsigned int i) const;
 
   virtual void connectivity(const unsigned int sc,
                             const IOPackage iop,
@@ -201,10 +201,18 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int,
-                          const unsigned int,
-                          const unsigned int) const
-  { libmesh_not_implemented(); return 0.; }
+  float embedding_matrix (const unsigned int i,
+                          const unsigned int j,
+                          const unsigned int k) const
+  { return _embedding_matrix[i][j][k]; }
+
+  /**
+   * Matrix that computes new nodal locations/solution values
+   * from current nodes/solution.
+   */
+  static const float _embedding_matrix[8][15][15];
+
+  LIBMESH_ENABLE_TOPOLOGY_CACHES;
 
 #endif
 

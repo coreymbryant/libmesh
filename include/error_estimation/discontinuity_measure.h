@@ -72,15 +72,16 @@ public:
                                                                const Point& p,
                                                                const std::string& var_name));
 
+  virtual ErrorEstimatorType type() const
+  { return DISCONTINUITY_MEASURE;}
+
 protected:
 
   /**
    * An initialization function, for requesting specific data from the FE
    * objects
    */
-  virtual void initialize(const System& system,
-                          ErrorVector& error_per_cell,
-                          bool estimate_parent_error);
+  virtual void init_context(FEMContext &c);
 
   /**
    * The function which calculates a normal derivative jump based error
@@ -94,11 +95,6 @@ protected:
    * Returns true if the flux bc function is in fact defined on the current side.
    */
   virtual bool boundary_side_integration();
-
-  /**
-   * A pointer to the current System
-   */
-  const System *my_system;
 
   /**
    * Pointer to function that returns BC information.

@@ -101,25 +101,23 @@ AC_DEFUN([LIBMESH_SET_METHODS],
                             [methods used to build libMesh (opt,dbg,devel,prof,oprof)]),
              [for method in ${withval} ; do
                 # make sure each method specified makes sense
-	        case "${method}" in
-		    optimized|opt)      ;;
-		    debug|dbg)          ;;
-		    devel)              ;;
-		    profiling|pro|prof) ;;
-		    oprofile|oprof)     ;;
-                    *)
-			AC_MSG_ERROR(bad value ${method} for --with-methods)
-			;;
+                case "${method}" in
+                  optimized|opt)      ;;
+                  debug|dbg)          ;;
+                  devel)              ;;
+                  profiling|pro|prof) ;;
+                  oprofile|oprof)     ;;
+                  *)                  AC_MSG_ERROR(bad value ${method} for --with-methods) ;;
                 esac
               done
-	      METHODS=${withval}],
-              [
-	       # default METHOD is opt if not specified.
-	        if (test "x${METHODS}" = x); then
-  		  METHODS="dbg devel opt"
-   		  AC_MSG_RESULT([No build methods specified, defaulting to "$METHODS"])
- 		fi
-	      ])
+              METHODS=${withval}],
+             [
+               # default METHOD is opt if not specified.
+               if (test "x${METHODS}" = x); then
+                 METHODS="dbg devel opt"
+                 AC_MSG_RESULT([No build methods specified, defaulting to "$METHODS"])
+               fi
+             ])
 
  AC_MSG_RESULT([<<< Configuring libMesh with methods "$METHODS" >>>])
 
@@ -155,19 +153,36 @@ AC_DEFUN([LIBMESH_SET_METHODS],
  CXXFLAGS_OPROF="$CXXFLAGS_OPT $OPROFILE_FLAGS"
  CFLAGS_OPROF="$CFLAGS_OPT $OPROFILE_FLAGS"
 
+ # The PROF and OPROF methods are derived from opt, but we don't want
+ # to turn on address sanitizer stuff in prof/oprof mode just because
+ # it got turned on in opt mode.  Hence this second round of setting
+ # all the flags vars...
+ CXXFLAGS_OPT="$CXXFLAGS_OPT $SANITIZE_OPT_FLAGS"
+ CFLAGS_OPT="$CFLAGS_OPT $SANITIZE_OPT_FLAGS"
+
+ CXXFLAGS_DBG="$CXXFLAGS_DBG $SANITIZE_DBG_FLAGS"
+ CFLAGS_DBG="$CFLAGS_DBG $SANITIZE_DBG_FLAGS"
+
+ CXXFLAGS_DEVEL="$CXXFLAGS_DEVEL $SANITIZE_DEVEL_FLAGS"
+ CFLAGS_DEVEL="$CFLAGS_DEVEL $SANITIZE_DEVEL_FLAGS"
+
+ CXXFLAGS_PROF="$CXXFLAGS_PROF $SANITIZE_PROF_FLAGS"
+ CFLAGS_PROF="$CFLAGS_PROF $SANITIZE_PROF_FLAGS"
+
+ CXXFLAGS_OPROF="$CXXFLAGS_OPROF $SANITIZE_OPROF_FLAGS"
+ CFLAGS_OPROF="$CFLAGS_OPROF $SANITIZE_OPROF_FLAGS"
+
  #AC_CONFIG_FILES(Make.common:Make.common.in)
 
  # conditionally compile selected methods
  for method in ${METHODS}; do
      case "${method}" in
-         optimized|opt)      build_opt=yes   ;;
-         debug|dbg)          build_dbg=yes   ;;
-         devel)              build_devel=yes ;;
-         profiling|pro|prof) build_prof=yes  ;;
-         oprofile|oprof)     build_oprof=yes ;;
-         *)
-	     AC_MSG_ERROR(bad value ${method} for --with-methods)
-	     ;;
+       optimized|opt)      build_opt=yes   ;;
+       debug|dbg)          build_dbg=yes   ;;
+       devel)              build_devel=yes ;;
+       profiling|pro|prof) build_prof=yes  ;;
+       oprofile|oprof)     build_oprof=yes ;;
+       *)                  AC_MSG_ERROR(bad value ${method} for --with-methods) ;;
      esac
  done
 

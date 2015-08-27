@@ -49,13 +49,39 @@ femsystem_mutex assembly_mutex;
 void assemble_unconstrained_element_system
 (const FEMSystem& _sys,
  const bool _get_jacobian,
+ const bool _constrain_heterogeneously,
  FEMContext &_femcontext)
 {
+  if (_sys.print_element_solutions)
+    {
+      std::streamsize old_precision = libMesh::out.precision();
+      libMesh::out.precision(16);
+      if (_femcontext.has_elem())
+        libMesh::out << "U_elem " << _femcontext.get_elem().id();
+      else
+        libMesh::out << "U_scalar ";
+      libMesh::out << " = " << _femcontext.get_elem_solution() << std::endl;
+
+      if (_sys.use_fixed_solution)
+        {
+          if (_femcontext.has_elem())
+            libMesh::out << "Ufixed_elem " << _femcontext.get_elem().id();
+          else
+            libMesh::out << "Ufixed_scalar ";
+          libMesh::out << " = " << _femcontext.get_elem_fixed_solution() << std::endl;
+          libMesh::out.precision(old_precision);
+        }
+    }
+
+  // We need jacobians to do heterogeneous residual constraints
+  const bool need_jacobian =
+    _get_jacobian || _constrain_heterogeneously;
+
   bool jacobian_computed =
-    _sys.time_solver->element_residual(_get_jacobian, _femcontext);
+    _sys.time_solver->element_residual(need_jacobian, _femcontext);
 
   // Compute a numeric jacobian if we have to
-  if (_get_jacobian && !jacobian_computed)
+  if (need_jacobian && !jacobian_computed)
     {
       // Make sure we didn't compute a jacobian and lie about it
       libmesh_assert_equal_to (_femcontext.get_elem_jacobian().l1_norm(), 0.0);
@@ -65,7 +91,7 @@ void assemble_unconstrained_element_system
 
   // Compute a numeric jacobian if we're asked to verify the
   // analytic jacobian we got
-  if (_get_jacobian && jacobian_computed &&
+  if (need_jacobian && jacobian_computed &&
       _sys.verify_analytic_jacobians != 0.0)
     {
       DenseMatrix<Number> analytic_jacobian(_femcontext.get_elem_jacobian());
@@ -131,18 +157,18 @@ void assemble_unconstrained_element_system
       // jacobian contribution separately.
       /* PB: We also need to account for the case when the user wants to
          use numerical Jacobians and not analytic Jacobians */
-      if ( (_sys.verify_analytic_jacobians != 0.0 && _get_jacobian) ||
-           (!jacobian_computed && _get_jacobian) )
+      if ( (_sys.verify_analytic_jacobians != 0.0 && need_jacobian) ||
+           (!jacobian_computed && need_jacobian) )
 #endif // ifndef DEBUG
         {
           old_jacobian = _femcontext.get_elem_jacobian();
           _femcontext.get_elem_jacobian().zero();
         }
       jacobian_computed =
-        _sys.time_solver->side_residual(_get_jacobian, _femcontext);
+        _sys.time_solver->side_residual(need_jacobian, _femcontext);
 
       // Compute a numeric jacobian if we have to
-      if (_get_jacobian && !jacobian_computed)
+      if (need_jacobian && !jacobian_computed)
         {
           // In DEBUG mode, we've already set elem_jacobian == 0,
           // so we can make sure side_residual didn't compute a
@@ -158,7 +184,7 @@ void assemble_unconstrained_element_system
 
       // Compute a numeric jacobian if we're asked to verify the
       // analytic jacobian we got
-      if (_get_jacobian && jacobian_computed &&
+      if (need_jacobian && jacobian_computed &&
           _sys.verify_analytic_jacobians != 0.0)
         {
           DenseMatrix<Number> analytic_jacobian(_femcontext.get_elem_jacobian());
@@ -206,7 +232,7 @@ void assemble_unconstrained_element_system
       // In DEBUG mode, we've set elem_jacobian == 0, and we
       // may still need to add the old jacobian back
 #ifdef DEBUG
-      if (_get_jacobian && jacobian_computed &&
+      if (need_jacobian && jacobian_computed &&
           _sys.verify_analytic_jacobians == 0.0)
         {
           _femcontext.get_elem_jacobian() += old_jacobian;
@@ -219,22 +245,68 @@ void add_element_system
 (const FEMSystem& _sys,
  const bool _get_residual,
  const bool _get_jacobian,
+ const bool _constrain_heterogeneously,
  FEMContext &_femcontext)
 {
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
+  if (_get_residual && _sys.print_element_residuals)
+    {
+      std::streamsize old_precision = libMesh::out.precision();
+      libMesh::out.precision(16);
+      if (_femcontext.has_elem())
+        libMesh::out << "Rraw_elem " << _femcontext.get_elem().id();
+      else
+        libMesh::out << "Rraw_scalar ";
+      libMesh::out << " = " << _femcontext.get_elem_residual() << std::endl;
+      libMesh::out.precision(old_precision);
+    }
+
   // We turn off the asymmetric constraint application;
   // enforce_constraints_exactly() should be called in the solver
   if (_get_residual && _get_jacobian)
-    _sys.get_dof_map().constrain_element_matrix_and_vector
-      (_femcontext.get_elem_jacobian(), _femcontext.get_elem_residual(),
-       _femcontext.get_dof_indices(), false);
+    {
+      if (_constrain_heterogeneously)
+        _sys.get_dof_map().heterogenously_constrain_element_matrix_and_vector
+          (_femcontext.get_elem_jacobian(),
+           _femcontext.get_elem_residual(),
+           _femcontext.get_dof_indices(), false);
+      else
+        _sys.get_dof_map().constrain_element_matrix_and_vector
+          (_femcontext.get_elem_jacobian(),
+           _femcontext.get_elem_residual(),
+           _femcontext.get_dof_indices(), false);
+    }
   else if (_get_residual)
-    _sys.get_dof_map().constrain_element_vector
-      (_femcontext.get_elem_residual(), _femcontext.get_dof_indices(), false);
+    {
+      if (_constrain_heterogeneously)
+        _sys.get_dof_map().heterogenously_constrain_element_vector
+          (_femcontext.get_elem_jacobian(),
+           _femcontext.get_elem_residual(),
+           _femcontext.get_dof_indices(), false);
+      else
+        _sys.get_dof_map().constrain_element_vector
+          (_femcontext.get_elem_residual(), _femcontext.get_dof_indices(), false);
+    }
   else if (_get_jacobian)
-    _sys.get_dof_map().constrain_element_matrix
-      (_femcontext.get_elem_jacobian(), _femcontext.get_dof_indices(), false);
+    {
+      // Heterogeneous and homogeneous constraints are the same on the
+      // matrix
+      _sys.get_dof_map().constrain_element_matrix
+        (_femcontext.get_elem_jacobian(), _femcontext.get_dof_indices(), false);
+    }
 #endif // #ifdef LIBMESH_ENABLE_CONSTRAINTS
+
+  if (_get_residual && _sys.print_element_residuals)
+    {
+      std::streamsize old_precision = libMesh::out.precision();
+      libMesh::out.precision(16);
+      if (_femcontext.has_elem())
+        libMesh::out << "R_elem " << _femcontext.get_elem().id();
+      else
+        libMesh::out << "R_scalar ";
+      libMesh::out << " = " << _femcontext.get_elem_residual() << std::endl;
+      libMesh::out.precision(old_precision);
+    }
 
   if (_get_jacobian && _sys.print_element_jacobians)
     {
@@ -270,17 +342,19 @@ public:
    */
   AssemblyContributions(FEMSystem &sys,
                         bool get_residual,
-                        bool get_jacobian) :
+                        bool get_jacobian,
+                        bool constrain_heterogeneously) :
     _sys(sys),
     _get_residual(get_residual),
-    _get_jacobian(get_jacobian) {}
+    _get_jacobian(get_jacobian),
+    _constrain_heterogeneously(constrain_heterogeneously) {}
 
   /**
    * operator() for use with Threads::parallel_for().
    */
   void operator()(const ConstElemRange &range) const
   {
-    AutoPtr<DiffContext> con = _sys.build_context();
+    UniquePtr<DiffContext> con = _sys.build_context();
     FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
     _sys.init_context(_femcontext);
 
@@ -293,10 +367,12 @@ public:
         _femcontext.elem_fe_reinit();
 
         assemble_unconstrained_element_system
-          (_sys, _get_jacobian, _femcontext);
+          (_sys, _get_jacobian, _constrain_heterogeneously,
+           _femcontext);
 
         add_element_system
-          (_sys, _get_residual, _get_jacobian, _femcontext);
+          (_sys, _get_residual, _get_jacobian,
+           _constrain_heterogeneously, _femcontext);
       }
   }
 
@@ -304,7 +380,7 @@ private:
 
   FEMSystem& _sys;
 
-  const bool _get_residual, _get_jacobian;
+  const bool _get_residual, _get_jacobian, _constrain_heterogeneously;
 };
 
 class PostprocessContributions
@@ -321,7 +397,7 @@ public:
    */
   void operator()(const ConstElemRange &range) const
   {
-    AutoPtr<DiffContext> con = _sys.build_context();
+    UniquePtr<DiffContext> con = _sys.build_context();
     FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
     _sys.init_context(_femcontext);
 
@@ -384,9 +460,24 @@ public:
    */
   void operator()(const ConstElemRange &range)
   {
-    AutoPtr<DiffContext> con = _sys.build_context();
+    UniquePtr<DiffContext> con = _sys.build_context();
     FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
     _diff_qoi.init_context(_femcontext);
+
+    std::vector<bool> have_heterogenous_qoi_bc(_sys.qoi.size(), false);
+    bool have_some_heterogenous_qoi_bc = false;
+#ifdef LIBMESH_ENABLE_CONSTRAINTS
+    for (unsigned int q=0; q != _sys.qoi.size(); ++q)
+      if (_qoi_indices.has_index(q) &&
+          _sys.get_dof_map().has_heterogenous_adjoint_constraints(q))
+        {
+          have_heterogenous_qoi_bc[q] = true;
+          have_some_heterogenous_qoi_bc = true;
+        }
+#endif
+
+    if (have_some_heterogenous_qoi_bc)
+      _sys.init_context(_femcontext);
 
     for (ConstElemRange::const_iterator elem_it = range.begin();
          elem_it != range.end(); ++elem_it)
@@ -395,12 +486,59 @@ public:
 
         _femcontext.pre_fe_reinit(_sys, el);
 
-        if (_diff_qoi.assemble_qoi_elements)
+        // We might have some heterogenous dofs here; let's see for
+        // certain
+#ifdef LIBMESH_ENABLE_CONSTRAINTS
+        if (have_some_heterogenous_qoi_bc)
           {
-            _femcontext.elem_fe_reinit();
-
-            _diff_qoi.element_qoi(_femcontext, _qoi_indices);
+            have_some_heterogenous_qoi_bc = false;
+            for (unsigned int q=0; q != _sys.qoi.size(); ++q)
+              {
+                if (have_heterogenous_qoi_bc[q])
+                  {
+                    have_heterogenous_qoi_bc[q] = false;
+                    for (unsigned int d=0;
+                         d != _femcontext.get_dof_indices().size(); ++d)
+                      if (_sys.get_dof_map().has_heterogenous_adjoint_constraint
+                          (q, _femcontext.get_dof_indices()[d]) != Number(0))
+                        {
+                          have_some_heterogenous_qoi_bc = true;
+                          have_heterogenous_qoi_bc[q] = true;
+                          break;
+                        }
+                  }
+              }
           }
+#endif
+
+        if (_diff_qoi.assemble_qoi_elements ||
+            have_some_heterogenous_qoi_bc)
+          _femcontext.elem_fe_reinit();
+
+        if (_diff_qoi.assemble_qoi_elements)
+          _diff_qoi.element_qoi(_femcontext, _qoi_indices);
+
+        // If we have some heterogenous dofs here, those are
+        // themselves part of a regularized flux QoI which the library
+        // handles integrating
+#ifdef LIBMESH_ENABLE_CONSTRAINTS
+        if (have_some_heterogenous_qoi_bc)
+          {
+            _sys.time_solver->element_residual(false, _femcontext);
+
+            for (unsigned int q=0; q != _sys.qoi.size(); ++q)
+              {
+                if (have_heterogenous_qoi_bc[q])
+                  {
+                    for (unsigned int d=0;
+                         d != _femcontext.get_dof_indices().size(); ++d)
+                      this->qoi[q] -= _femcontext.get_elem_residual()(d) *
+                        _sys.get_dof_map().has_heterogenous_adjoint_constraint(q, _femcontext.get_dof_indices()[d]);
+                  }
+              }
+
+          }
+#endif
 
         for (_femcontext.side = 0;
              _femcontext.side != _femcontext.get_elem().n_sides();
@@ -444,17 +582,39 @@ public:
    * constructor to set context
    */
   QoIDerivativeContributions(FEMSystem &sys, const QoISet& qoi_indices,
-                             DifferentiableQoI &qoi ) :
-    _sys(sys), _qoi_indices(qoi_indices), _qoi(qoi) {}
+                             DifferentiableQoI &qoi,
+                             bool include_liftfunc,
+                             bool apply_constraints ) :
+    _sys(sys),
+    _qoi_indices(qoi_indices),
+    _qoi(qoi),
+    _include_liftfunc(include_liftfunc),
+    _apply_constraints(apply_constraints) {}
 
   /**
    * operator() for use with Threads::parallel_for().
    */
   void operator()(const ConstElemRange &range) const
   {
-    AutoPtr<DiffContext> con = _sys.build_context();
+    UniquePtr<DiffContext> con = _sys.build_context();
     FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
     _qoi.init_context(_femcontext);
+
+    bool have_some_heterogenous_qoi_bc = false;
+#ifdef LIBMESH_ENABLE_CONSTRAINTS
+    std::vector<bool> have_heterogenous_qoi_bc(_sys.qoi.size(), false);
+    if (_include_liftfunc || _apply_constraints)
+      for (unsigned int q=0; q != _sys.qoi.size(); ++q)
+        if (_qoi_indices.has_index(q) &&
+            _sys.get_dof_map().has_heterogenous_adjoint_constraints(q))
+          {
+            have_heterogenous_qoi_bc[q] = true;
+            have_some_heterogenous_qoi_bc = true;
+          }
+#endif
+
+    if (have_some_heterogenous_qoi_bc)
+      _sys.init_context(_femcontext);
 
     for (ConstElemRange::const_iterator elem_it = range.begin();
          elem_it != range.end(); ++elem_it)
@@ -463,12 +623,81 @@ public:
 
         _femcontext.pre_fe_reinit(_sys, el);
 
-        if (_qoi.assemble_qoi_elements)
+        // We might have some heterogenous dofs here; let's see for
+        // certain
+#ifdef LIBMESH_ENABLE_CONSTRAINTS
+        bool elem_has_some_heterogenous_qoi_bc = false;
+        std::vector<bool> elem_has_heterogenous_qoi_bc(_sys.qoi.size(), false);
+        if (have_some_heterogenous_qoi_bc)
           {
-            _femcontext.elem_fe_reinit();
-
-            _qoi.element_qoi_derivative(_femcontext, _qoi_indices);
+            for (unsigned int q=0; q != _sys.qoi.size(); ++q)
+              {
+                if (have_heterogenous_qoi_bc[q])
+                  {
+                    for (unsigned int d=0;
+                         d != _femcontext.get_dof_indices().size(); ++d)
+                      if (_sys.get_dof_map().has_heterogenous_adjoint_constraint
+                          (q, _femcontext.get_dof_indices()[d]) != Number(0))
+                        {
+                          elem_has_some_heterogenous_qoi_bc = true;
+                          elem_has_heterogenous_qoi_bc[q] = true;
+                          break;
+                        }
+                  }
+              }
           }
+#endif
+
+        // If we're going to call a user integral, then we need FE
+        // information to call element_qoi.
+        // If we're going to evaluate lift-function-based components
+        // of a QoI, then we need FE information to assemble the
+        // element residual.
+        if (_qoi.assemble_qoi_elements ||
+            (_include_liftfunc &&
+             elem_has_some_heterogenous_qoi_bc))
+          _femcontext.elem_fe_reinit();
+
+        if (_qoi.assemble_qoi_elements)
+          _qoi.element_qoi_derivative(_femcontext, _qoi_indices);
+
+#ifdef LIBMESH_ENABLE_CONSTRAINTS
+        // If we need to use heterogenous dofs here, we need the
+        // Jacobian either for the regularized flux QoI integration
+        // and/or for constraint application.
+        if ((_include_liftfunc || _apply_constraints) &&
+            elem_has_some_heterogenous_qoi_bc)
+          _sys.time_solver->element_residual(true, _femcontext);
+
+        // If we have some heterogenous dofs here, those are
+        // themselves part of a regularized flux QoI which the library
+        // may handle integrating
+        if (_include_liftfunc && elem_has_some_heterogenous_qoi_bc)
+          {
+            for (unsigned int q=0; q != _sys.qoi.size(); ++q)
+              {
+                if (elem_has_heterogenous_qoi_bc[q])
+                  {
+                    for (unsigned int i=0;
+                         i != _femcontext.get_dof_indices().size(); ++i)
+                      {
+                        Number liftfunc_val =
+                          _sys.get_dof_map().has_heterogenous_adjoint_constraint(q, _femcontext.get_dof_indices()[i]);
+
+                        if (liftfunc_val != Number(0))
+                          {
+                            for (unsigned int j=0;
+                                 j != _femcontext.get_dof_indices().size(); ++j)
+                              _femcontext.get_qoi_derivatives()[q](j) -=
+                                _femcontext.get_elem_jacobian()(i,j) *
+                                liftfunc_val;
+                          }
+                      }
+                  }
+              }
+          }
+#endif
+
 
         for (_femcontext.side = 0;
              _femcontext.side != _femcontext.get_elem().n_sides();
@@ -500,43 +729,50 @@ public:
           // We'll need to see if any heterogenous constraints apply
           // to the QoI dofs on this element *or* to any of the dofs
           // they depend on, so let's get those dependencies
-          _sys.get_dof_map().constrain_nothing(_femcontext.get_dof_indices());
+          if (_apply_constraints)
+            _sys.get_dof_map().constrain_nothing(_femcontext.get_dof_indices());
 #endif
 
           for (unsigned int i=0; i != _sys.qoi.size(); ++i)
             if (_qoi_indices.has_index(i))
               {
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
-                bool has_heterogenous_constraint = false;
-                for (unsigned int d=0;
-                     d != _femcontext.get_dof_indices().size(); ++d)
-                  if (_sys.get_dof_map().has_heterogenous_adjoint_constraint
-                      (i, _femcontext.get_dof_indices()[d]))
-                    {
-                      has_heterogenous_constraint = true;
-                      break;
-                    }
-
-                _femcontext.get_dof_indices() = original_dofs;
-
-                // If we're going to need K to impose a heterogenous
-                // constraint then we either already have it or we
-                // need to compute it
-                if (has_heterogenous_constraint)
+                if (_apply_constraints)
                   {
-                    assemble_unconstrained_element_system
-                      (_sys, true, _femcontext);
+#ifndef NDEBUG
+                    bool has_heterogenous_constraint = false;
+                    for (unsigned int d=0;
+                         d != _femcontext.get_dof_indices().size(); ++d)
+                      if (_sys.get_dof_map().has_heterogenous_adjoint_constraint
+                          (i, _femcontext.get_dof_indices()[d]) != Number(0))
+                        {
+                          has_heterogenous_constraint = true;
+                          libmesh_assert(elem_has_heterogenous_qoi_bc[i]);
+                          libmesh_assert(elem_has_some_heterogenous_qoi_bc);
+                          break;
+                        }
+#else
+                    bool has_heterogenous_constraint =
+                      elem_has_heterogenous_qoi_bc[i];
+#endif
 
-                    _sys.get_dof_map().heterogenously_constrain_element_vector
-                      (_femcontext.get_elem_jacobian(),
-                       _femcontext.get_qoi_derivatives()[i],
-                       _femcontext.get_dof_indices(), false, i);
-                  }
-                else
-                  {
-                    _sys.get_dof_map().constrain_element_vector
-                      (_femcontext.get_qoi_derivatives()[i],
-                       _femcontext.get_dof_indices(), false);
+                    _femcontext.get_dof_indices() = original_dofs;
+
+                    // If we're going to need K to impose a heterogenous
+                    // constraint, we may not have already computed it above.
+                    if (has_heterogenous_constraint)
+                      {
+                        _sys.get_dof_map().heterogenously_constrain_element_vector
+                          (_femcontext.get_elem_jacobian(),
+                           _femcontext.get_qoi_derivatives()[i],
+                           _femcontext.get_dof_indices(), false, i);
+                      }
+                    else
+                      {
+                        _sys.get_dof_map().constrain_element_vector
+                          (_femcontext.get_qoi_derivatives()[i],
+                           _femcontext.get_dof_indices(), false);
+                      }
                   }
 #endif
 
@@ -552,6 +788,7 @@ private:
   FEMSystem& _sys;
   const QoISet& _qoi_indices;
   DifferentiableQoI& _qoi;
+  bool _include_liftfunc, _apply_constraints;
 };
 
 
@@ -597,7 +834,8 @@ void FEMSystem::init_data ()
 }
 
 
-void FEMSystem::assembly (bool get_residual, bool get_jacobian)
+void FEMSystem::assembly (bool get_residual, bool get_jacobian,
+                          bool apply_heterogeneous_constraints)
 {
   libmesh_assert(get_residual || get_jacobian);
   std::string log_name;
@@ -664,84 +902,98 @@ void FEMSystem::assembly (bool get_residual, bool get_jacobian)
 
   // Build the residual and jacobian contributions on every active
   // mesh element on this processor
-  Threads::parallel_for(elem_range.reset(mesh.active_local_elements_begin(),
-                                         mesh.active_local_elements_end()),
-                        AssemblyContributions(*this, get_residual, get_jacobian));
+  Threads::parallel_for
+    (elem_range.reset(mesh.active_local_elements_begin(),
+                      mesh.active_local_elements_end()),
+     AssemblyContributions(*this, get_residual, get_jacobian,
+                           apply_heterogeneous_constraints));
+
+  // Check and see if we have SCALAR variables
+  bool have_scalar = false;
+  for(unsigned int i=0; i != this->n_variable_groups(); ++i)
+    {
+      if( this->variable_group(i).type().family == SCALAR )
+        {
+          have_scalar = true;
+          break;
+        }
+    }
 
   // SCALAR dofs are stored on the last processor, so we'll evaluate
-  // their equation terms there
-  if ( this->processor_id() == (this->n_processors()-1) )
-  {
-    AutoPtr<DiffContext> con = this->build_context();
-    FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
-    this->init_context(_femcontext);
-    _femcontext.pre_fe_reinit(*this, NULL);
+  // their equation terms there and only if we have a SCALAR variable
+  if ( this->processor_id() == (this->n_processors()-1) && have_scalar )
+    {
+      UniquePtr<DiffContext> con = this->build_context();
+      FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
+      this->init_context(_femcontext);
+      _femcontext.pre_fe_reinit(*this, NULL);
 
-    bool jacobian_computed =
-      this->time_solver->nonlocal_residual(get_jacobian, _femcontext);
+      bool jacobian_computed =
+        this->time_solver->nonlocal_residual(get_jacobian, _femcontext);
 
-    // Nonlocal residuals are likely to be length 0, in which case we
-    // don't need to do any more.  And we shouldn't try to do any
-    // more; lots of DenseVector/DenseMatrix code assumes rank>0.
-    if (_femcontext.get_elem_residual().size())
-      {
-        // Compute a numeric jacobian if we have to
-        if (get_jacobian && !jacobian_computed)
-          {
-            // Make sure we didn't compute a jacobian and lie about it
-            libmesh_assert_equal_to (_femcontext.get_elem_jacobian().l1_norm(), 0.0);
-            // Logging of numerical jacobians is done separately
-            this->numerical_nonlocal_jacobian(_femcontext);
-          }
+      // Nonlocal residuals are likely to be length 0, in which case we
+      // don't need to do any more.  And we shouldn't try to do any
+      // more; lots of DenseVector/DenseMatrix code assumes rank>0.
+      if (_femcontext.get_elem_residual().size())
+        {
+          // Compute a numeric jacobian if we have to
+          if (get_jacobian && !jacobian_computed)
+            {
+              // Make sure we didn't compute a jacobian and lie about it
+              libmesh_assert_equal_to (_femcontext.get_elem_jacobian().l1_norm(), 0.0);
+              // Logging of numerical jacobians is done separately
+              this->numerical_nonlocal_jacobian(_femcontext);
+            }
 
-        // Compute a numeric jacobian if we're asked to verify the
-        // analytic jacobian we got
-        if (get_jacobian && jacobian_computed &&
-            this->verify_analytic_jacobians != 0.0)
-          {
-            DenseMatrix<Number> analytic_jacobian(_femcontext.get_elem_jacobian());
+          // Compute a numeric jacobian if we're asked to verify the
+          // analytic jacobian we got
+          if (get_jacobian && jacobian_computed &&
+              this->verify_analytic_jacobians != 0.0)
+            {
+              DenseMatrix<Number> analytic_jacobian(_femcontext.get_elem_jacobian());
 
-            _femcontext.get_elem_jacobian().zero();
-            // Logging of numerical jacobians is done separately
-            this->numerical_nonlocal_jacobian(_femcontext);
+              _femcontext.get_elem_jacobian().zero();
+              // Logging of numerical jacobians is done separately
+              this->numerical_nonlocal_jacobian(_femcontext);
 
-            Real analytic_norm = analytic_jacobian.l1_norm();
-            Real numerical_norm = _femcontext.get_elem_jacobian().l1_norm();
+              Real analytic_norm = analytic_jacobian.l1_norm();
+              Real numerical_norm = _femcontext.get_elem_jacobian().l1_norm();
 
-            // If we can continue, we'll probably prefer the analytic jacobian
-            analytic_jacobian.swap(_femcontext.get_elem_jacobian());
+              // If we can continue, we'll probably prefer the analytic jacobian
+              analytic_jacobian.swap(_femcontext.get_elem_jacobian());
 
-            // The matrix "analytic_jacobian" will now hold the error matrix
-            analytic_jacobian.add(-1.0, _femcontext.get_elem_jacobian());
-            Real error_norm = analytic_jacobian.l1_norm();
+              // The matrix "analytic_jacobian" will now hold the error matrix
+              analytic_jacobian.add(-1.0, _femcontext.get_elem_jacobian());
+              Real error_norm = analytic_jacobian.l1_norm();
 
-            Real relative_error = error_norm /
-              std::max(analytic_norm, numerical_norm);
+              Real relative_error = error_norm /
+                std::max(analytic_norm, numerical_norm);
 
-            if (relative_error > this->verify_analytic_jacobians)
-              {
-                libMesh::err << "Relative error " << relative_error
-                             << " detected in analytic jacobian on nonlocal dofs!"
-                             << std::endl;
+              if (relative_error > this->verify_analytic_jacobians)
+                {
+                  libMesh::err << "Relative error " << relative_error
+                               << " detected in analytic jacobian on nonlocal dofs!"
+                               << std::endl;
 
-                std::streamsize old_precision = libMesh::out.precision();
-                libMesh::out.precision(16);
-                libMesh::out << "J_analytic nonlocal = "
-                             << _femcontext.get_elem_jacobian() << std::endl;
-                analytic_jacobian.add(1.0, _femcontext.get_elem_jacobian());
-                libMesh::out << "J_numeric nonlocal = "
-                             << analytic_jacobian << std::endl;
+                  std::streamsize old_precision = libMesh::out.precision();
+                  libMesh::out.precision(16);
+                  libMesh::out << "J_analytic nonlocal = "
+                               << _femcontext.get_elem_jacobian() << std::endl;
+                  analytic_jacobian.add(1.0, _femcontext.get_elem_jacobian());
+                  libMesh::out << "J_numeric nonlocal = "
+                               << analytic_jacobian << std::endl;
 
-                libMesh::out.precision(old_precision);
+                  libMesh::out.precision(old_precision);
 
-                libmesh_error_msg("Relative error too large, exiting!");
-              }
-          }
+                  libmesh_error_msg("Relative error too large, exiting!");
+                }
+            }
 
-        add_element_system
-          (*this, get_residual, get_jacobian, _femcontext);
-      }
-  }
+          add_element_system
+            (*this, get_residual, get_jacobian,
+             apply_heterogeneous_constraints, _femcontext);
+        }
+    }
 
   if (get_residual && (print_residual_norms || print_residuals))
     this->rhs->close();
@@ -800,7 +1052,7 @@ void FEMSystem::mesh_position_set()
 
   MeshBase& mesh = this->get_mesh();
 
-  AutoPtr<DiffContext> con = this->build_context();
+  UniquePtr<DiffContext> con = this->build_context();
   FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
   this->init_context(_femcontext);
 
@@ -891,7 +1143,9 @@ void FEMSystem::assemble_qoi (const QoISet &qoi_indices)
 
 
 
-void FEMSystem::assemble_qoi_derivative (const QoISet& qoi_indices)
+void FEMSystem::assemble_qoi_derivative (const QoISet& qoi_indices,
+                                         bool include_liftfunc,
+                                         bool apply_constraints)
 {
   START_LOG("assemble_qoi_derivative()", "FEMSystem");
 
@@ -909,7 +1163,9 @@ void FEMSystem::assemble_qoi_derivative (const QoISet& qoi_indices)
   Threads::parallel_for(elem_range.reset(mesh.active_local_elements_begin(),
                                          mesh.active_local_elements_end()),
                         QoIDerivativeContributions(*this, qoi_indices,
-                                                   *(this->diff_qoi)));
+                                                   *(this->diff_qoi),
+                                                   include_liftfunc,
+                                                   apply_constraints));
 
   STOP_LOG("assemble_qoi_derivative()", "FEMSystem");
 }
@@ -1046,11 +1302,9 @@ void FEMSystem::numerical_nonlocal_jacobian (FEMContext &context) const
 
 
 
-AutoPtr<DiffContext> FEMSystem::build_context ()
+UniquePtr<DiffContext> FEMSystem::build_context ()
 {
   FEMContext* fc = new FEMContext(*this);
-
-  AutoPtr<DiffContext> ap(fc);
 
   DifferentiablePhysics* phys = this->get_physics();
 
@@ -1062,12 +1316,12 @@ AutoPtr<DiffContext> FEMSystem::build_context ()
   fc->set_mesh_y_var(phys->get_mesh_y_var());
   fc->set_mesh_z_var(phys->get_mesh_z_var());
 
-  ap->set_deltat_pointer( &deltat );
+  fc->set_deltat_pointer( &deltat );
 
   // If we are solving the adjoint problem, tell that to the Context
-  ap->is_adjoint() = this->get_time_solver().is_adjoint();
+  fc->is_adjoint() = this->get_time_solver().is_adjoint();
 
-  return ap;
+  return UniquePtr<DiffContext>(fc);
 }
 
 
@@ -1138,7 +1392,7 @@ void FEMSystem::mesh_position_get()
   const MeshBase::const_element_iterator end_el =
     mesh.active_local_elements_end();
 
-  AutoPtr<DiffContext> con = this->build_context();
+  UniquePtr<DiffContext> con = this->build_context();
   FEMContext &_femcontext = cast_ref<FEMContext&>(*con);
   this->init_context(_femcontext);
 

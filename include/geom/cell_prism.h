@@ -43,6 +43,18 @@ public:
   Prism(const unsigned int nn, Elem* p, Node** nodelinkdata);
 
   /**
+   * @returns the \p Point associated with local \p Node \p i,
+   * in master element rather than physical coordinates.
+   */
+  Point master_point (const unsigned int i) const
+  {
+    libmesh_assert_less(i, this->n_nodes());
+    return Point(_master_points[i][0],
+                 _master_points[i][1],
+                 _master_points[i][2]);
+  }
+
+  /**
    * @returns 6.  All prism-derivatives are guaranteed to have at
    * least 6 nodes.
    */
@@ -97,7 +109,7 @@ public:
    * @returns a primitive triangle or quad for
    * face i.
    */
-  AutoPtr<Elem> side (const unsigned int i) const;
+  UniquePtr<Elem> side (const unsigned int i) const;
 
 
 
@@ -127,6 +139,11 @@ protected:
    * Vector that names the child vertex index for each second order node.
    */
   static const unsigned short int _second_order_vertex_child_index[18];
+
+  /**
+   * Master element node locations
+   */
+  static const Real _master_points[18][3];
 };
 
 
@@ -137,6 +154,9 @@ inline
 Prism::Prism(const unsigned int nn, Elem* p, Node** nodelinkdata) :
   Cell(nn, Prism::n_sides(), p, _elemlinks_data, nodelinkdata)
 {
+  // Make sure the interior parent isn't undefined
+  if (LIBMESH_DIM > 3)
+    this->set_interior_parent(NULL);
 }
 
 } // namespace libMesh

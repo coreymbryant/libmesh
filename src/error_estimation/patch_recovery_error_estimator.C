@@ -289,10 +289,10 @@ void PatchRecoveryErrorEstimator::EstimateError::operator()(const ConstElemRange
             (fe_type.order + elem->p_level());
 
           // Finite element object for use in this patch
-          AutoPtr<FEBase> fe (FEBase::build (dim, fe_type));
+          UniquePtr<FEBase> fe (FEBase::build (dim, fe_type));
 
           // Build an appropriate Gaussian quadrature rule
-          AutoPtr<QBase> qrule (fe_type.default_quadrature_rule(dim));
+          UniquePtr<QBase> qrule (fe_type.default_quadrature_rule(dim));
 
           // Tell the finite element about the quadrature rule.
           fe->attach_quadrature_rule (qrule.get());
@@ -442,7 +442,7 @@ void PatchRecoveryErrorEstimator::EstimateError::operator()(const ConstElemRange
 
                       // Patch RHS contributions
                       for (unsigned int i=0; i<psi.size(); i++)
-                        F(i) = JxW[qp]*u_h*psi[i];
+                        F(i) += JxW[qp]*u_h*psi[i];
 
                     }
                   else if (error_estimator.error_norm.type(var) == H1_SEMINORM ||

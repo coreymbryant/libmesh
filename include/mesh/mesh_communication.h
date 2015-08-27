@@ -35,7 +35,6 @@ namespace libMesh
 class MeshBase;
 class ParallelMesh;
 class BoundaryInfo;
-template <typename T> class LocationMap;
 
 
 
@@ -156,6 +155,11 @@ public:
    */
   void assign_global_indices (MeshBase &) const;
 
+  /**
+   * Throw an error if we have any index clashes in the numbering used by
+   * assign_global_indices.
+   */
+  void check_for_duplicate_global_indices (MeshBase & ) const;
 
   /**
    * This method determines a globally unique, partition-agnostic
@@ -178,16 +182,14 @@ public:
    * assuming all processor ids are parallel consistent, this function makes
    * all other ids parallel consistent.
    */
-  void make_node_ids_parallel_consistent (MeshBase &,
-                                          LocationMap<Node> &);
+  void make_node_ids_parallel_consistent (MeshBase &);
 
   /**
    * Assuming all processor ids on nodes touching local elements
    * are parallel consistent, this function makes all other processor ids
    * parallel consistent as well.
    */
-  void make_node_proc_ids_parallel_consistent (MeshBase &,
-                                               LocationMap<Node> &);
+  void make_node_proc_ids_parallel_consistent (MeshBase &);
 
   /**
    * Copy processor_ids and ids on ghost nodes from their
@@ -195,8 +197,7 @@ public:
    * which turns out to be useful for other code which wants to add
    * nodes to a distributed mesh.
    */
-  void make_nodes_parallel_consistent (MeshBase &,
-                                       LocationMap<Node> &);
+  void make_nodes_parallel_consistent (MeshBase &);
 };
 
 

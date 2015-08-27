@@ -13,6 +13,19 @@ oprof_libs =
 # it in case someone includes this Makefile?
 AM_LDFLAGS   = $(libmesh_LDFLAGS)
 
+if LIBMESH_ENABLE_CAPNPROTO
+  SUBDIRS    += capnproto
+  opt_libs   += capnproto/libopt.la
+  dbg_libs   += capnproto/libdbg.la
+  devel_libs += capnproto/libdevel.la
+  prof_libs  += capnproto/libprof.la
+  oprof_libs += capnproto/liboprof.la
+endif
+
+if LIBMESH_INSTALL_HINNANT_UNIQUE_PTR
+  SUBDIRS += unique_ptr
+endif
+
 if LIBMESH_INSTALL_INTERNAL_BOOST
    SUBDIRS += boost/include
 endif
@@ -181,12 +194,14 @@ endif
 endif
 
 if LIBMESH_ENABLE_PARMETIS
+if BUILD_METIS
   SUBDIRS    += parmetis
   opt_libs   += parmetis/libopt.la
   dbg_libs   += parmetis/libdbg.la
   devel_libs += parmetis/libdevel.la
   prof_libs  += parmetis/libprof.la
   oprof_libs += parmetis/liboprof.la
+endif
 endif
 
 if LIBMESH_ENABLE_SFC

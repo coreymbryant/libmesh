@@ -134,7 +134,7 @@ int main(int argc, char** argv)
         oldbcid = BoundaryInfo::invalid_id;
     }
 
-  AutoPtr<FEBase> fe = FEBase::build(dim, FEType(FIRST,LAGRANGE));
+  UniquePtr<FEBase> fe = FEBase::build(dim, FEType(FIRST,LAGRANGE));
   QGauss qface(dim-1, CONSTANT);
   fe->attach_quadrature_rule(&qface);
   const std::vector<Point> &face_points = fe->get_xyz();
@@ -168,10 +168,10 @@ int main(int argc, char** argv)
               n(2) > minnormal(2) && n(2) < maxnormal(2))
             {
               if (matcholdbcid &&
-                  mesh.boundary_info->boundary_id(elem, s) != oldbcid)
+                  mesh.get_boundary_info().boundary_id(elem, s) != oldbcid)
                 continue;
-              mesh.boundary_info->remove_side(elem, s);
-              mesh.boundary_info->add_side(elem, s, bcid);
+              mesh.get_boundary_info().remove_side(elem, s);
+              mesh.get_boundary_info().add_side(elem, s, bcid);
               //libMesh::out << "Set element " << elem->id() << " side " << s <<
               //                " to boundary " << bcid << std::endl;
             }

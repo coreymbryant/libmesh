@@ -197,37 +197,24 @@ void PetscVector<T>::add (const numeric_index_type i, const T value)
 
 
 template <typename T>
-void PetscVector<T>::add_vector (const std::vector<T>& v,
+void PetscVector<T>::add_vector (const T* v,
                                  const std::vector<numeric_index_type>& dof_indices)
 {
   // If we aren't adding anything just return
-  if(v.empty() || dof_indices.empty())
+  if(dof_indices.empty())
     return;
 
   this->_restore_array();
-  libmesh_assert_equal_to (v.size(), dof_indices.size());
 
   PetscErrorCode ierr=0;
   const PetscInt * i_val = reinterpret_cast<const PetscInt*>(&dof_indices[0]);
-  const PetscScalar * petsc_value = static_cast<const PetscScalar*>(&v[0]);
+  const PetscScalar * petsc_value = static_cast<const PetscScalar*>(v);
 
-  ierr = VecSetValues (_vec, cast_int<PetscInt>(v.size()), i_val,
-                       petsc_value, ADD_VALUES);
+  ierr = VecSetValues (_vec, cast_int<PetscInt>(dof_indices.size()),
+                       i_val, petsc_value, ADD_VALUES);
   LIBMESH_CHKERRABORT(ierr);
 
   this->_is_closed = false;
-}
-
-
-
-template <typename T>
-void PetscVector<T>::add_vector (const NumericVector<T>& V,
-                                 const std::vector<numeric_index_type>& dof_indices)
-{
-  libmesh_assert_equal_to (V.size(), dof_indices.size());
-
-  for (unsigned int i=0; i<V.size(); i++)
-    this->add (dof_indices[i], V(i));
 }
 
 
@@ -251,17 +238,6 @@ void PetscVector<T>::add_vector (const NumericVector<T>& V_in,
   LIBMESH_CHKERRABORT(ierr);
 }
 
-
-
-template <typename T>
-void PetscVector<T>::add_vector (const DenseVector<T>& V,
-                                 const std::vector<numeric_index_type>& dof_indices)
-{
-  libmesh_assert_equal_to (V.size(), dof_indices.size());
-
-  for (unsigned int i=0; i<V.size(); i++)
-    this->add (dof_indices[i], V(i));
-}
 
 
 template <typename T>
@@ -309,7 +285,7 @@ void PetscVector<T>::add_vector_conjugate_transpose (const NumericVector<T>& V_i
 
   // Store a temporary copy since MatMultHermitianTransposeAdd doesn't seem to work
   // TODO: Find out why MatMultHermitianTransposeAdd doesn't work, might be a PETSc bug?
-  AutoPtr< NumericVector<Number> > this_clone = this->clone();
+  UniquePtr< NumericVector<Number> > this_clone = this->clone();
 
   // The const_cast<> is not elegant, but it is required since PETSc
   // is not const-correct.
@@ -450,49 +426,20 @@ void PetscVector<T>::add (const T a_in, const NumericVector<T>& v_in)
 
 
 template <typename T>
-void PetscVector<T>::insert (const std::vector<T>& v,
+void PetscVector<T>::insert (const T* v,
                              const std::vector<numeric_index_type>& dof_indices)
 {
-  libmesh_assert_equal_to (v.size(), dof_indices.size());
+  if (dof_indices.empty())
+    return;
 
-  for (unsigned int i=0; i<v.size(); i++)
-    this->set (dof_indices[i], v[i]);
-}
+  this->_restore_array();
 
+  PetscErrorCode ierr=0;
+  PetscInt *idx_values = numeric_petsc_cast(&dof_indices[0]);
+  ierr = VecSetValues (_vec, dof_indices.size(), idx_values, v, INSERT_VALUES);
+  LIBMESH_CHKERRABORT(ierr);
 
-
-template <typename T>
-void PetscVector<T>::insert (const NumericVector<T>& V,
-                             const std::vector<numeric_index_type>& dof_indices)
-{
-  libmesh_assert_equal_to (V.size(), dof_indices.size());
-
-  for (unsigned int i=0; i<V.size(); i++)
-    this->set (dof_indices[i], V(i));
-}
-
-
-
-template <typename T>
-void PetscVector<T>::insert (const DenseVector<T>& V,
-                             const std::vector<numeric_index_type>& dof_indices)
-{
-  libmesh_assert_equal_to (V.size(), dof_indices.size());
-
-  for (unsigned int i=0; i<V.size(); i++)
-    this->set (dof_indices[i], V(i));
-}
-
-
-
-template <typename T>
-void PetscVector<T>::insert (const DenseSubVector<T>& V,
-                             const std::vector<numeric_index_type>& dof_indices)
-{
-  libmesh_assert_equal_to (V.size(), dof_indices.size());
-
-  for (unsigned int i=0; i<V.size(); i++)
-    this->set (dof_indices[i], V(i));
+  this->_is_closed = false;
 }
 
 
@@ -1477,6 +1424,107 @@ void PetscVector<T>::create_subvector(NumericVector<T>& subvector,
   ierr = LibMeshISDestroy(&subvector_is);    LIBMESH_CHKERRABORT(ierr);
   ierr = LibMeshVecScatterDestroy(&scatter); LIBMESH_CHKERRABORT(ierr);
 
+}
+
+
+
+template <typename T>
+void PetscVector<T>::_get_array() const
+{
+  libmesh_assert (this->initialized());
+  if(!_array_is_present)
+    {
+      PetscErrorCode ierr=0;
+      if(this->type() != GHOSTED)
+        {
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+          // have an older PETSc than that, we'll do an ugly
+          // const_cast and call VecGetArray() instead.
+          ierr = VecGetArray(_vec, const_cast<PetscScalar**>(&_values));
+#else
+          ierr = VecGetArrayRead(_vec, &_values);
+#endif
+          LIBMESH_CHKERRABORT(ierr);
+        }
+      else
+        {
+          ierr = VecGhostGetLocalForm (_vec,&_local_form);
+          LIBMESH_CHKERRABORT(ierr);
+
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+          // have an older PETSc than that, we'll do an ugly
+          // const_cast and call VecGetArray() instead.
+          ierr = VecGetArray(_local_form, const_cast<PetscScalar**>(&_values));
+#else
+          ierr = VecGetArrayRead(_local_form, &_values);
+#endif
+          LIBMESH_CHKERRABORT(ierr);
+#ifndef NDEBUG
+          PetscInt my_local_size = 0;
+          ierr = VecGetLocalSize(_local_form, &my_local_size);
+          LIBMESH_CHKERRABORT(ierr);
+          _local_size = static_cast<numeric_index_type>(my_local_size);
+#endif
+        }
+
+      { // cache ownership range
+        PetscInt petsc_first=0, petsc_last=0;
+        ierr = VecGetOwnershipRange (_vec, &petsc_first, &petsc_last);
+        LIBMESH_CHKERRABORT(ierr);
+        _first = static_cast<numeric_index_type>(petsc_first);
+        _last = static_cast<numeric_index_type>(petsc_last);
+      }
+
+      _array_is_present = true;
+    }
+}
+
+
+
+template <typename T>
+void PetscVector<T>::_restore_array() const
+{
+  libmesh_assert (this->initialized());
+  if(_array_is_present)
+    {
+      PetscErrorCode ierr=0;
+      if(this->type() != GHOSTED)
+        {
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+          // have an older PETSc than that, we'll do an ugly
+          // const_cast and call VecRestoreArray() instead.
+          ierr = VecRestoreArray (_vec, const_cast<PetscScalar**>(&_values));
+#else
+          ierr = VecRestoreArrayRead (_vec, &_values);
+#endif
+
+          LIBMESH_CHKERRABORT(ierr);
+          _values = NULL;
+        }
+      else
+        {
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+          // have an older PETSc than that, we'll do an ugly
+          // const_cast and call VecRestoreArray() instead.
+          ierr = VecRestoreArray (_local_form, const_cast<PetscScalar**>(&_values));
+#else
+          ierr = VecRestoreArrayRead (_local_form, &_values);
+#endif
+          LIBMESH_CHKERRABORT(ierr);
+          _values = NULL;
+          ierr = VecGhostRestoreLocalForm (_vec,&_local_form);
+          LIBMESH_CHKERRABORT(ierr);
+          _local_form = NULL;
+#ifndef NDEBUG
+          _local_size = 0;
+#endif
+        }
+      _array_is_present = false;
+    }
 }
 
 

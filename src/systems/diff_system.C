@@ -30,7 +30,7 @@ DifferentiableSystem::DifferentiableSystem
  const std::string& name_in,
  const unsigned int number_in) :
   Parent      (es, name_in, number_in),
-  time_solver (NULL),
+  time_solver (),
   deltat(1.),
   print_solution_norms(false),
   print_solutions(false),
@@ -38,6 +38,8 @@ DifferentiableSystem::DifferentiableSystem
   print_residuals(false),
   print_jacobian_norms(false),
   print_jacobians(false),
+  print_element_solutions(false),
+  print_element_residuals(false),
   print_element_jacobians(false),
   _diff_physics(this),
   diff_qoi(this)
@@ -112,13 +114,11 @@ void DifferentiableSystem::init_data ()
 
 
 
-AutoPtr<DiffContext> DifferentiableSystem::build_context ()
+UniquePtr<DiffContext> DifferentiableSystem::build_context ()
 {
-  AutoPtr<DiffContext> ap(new DiffContext(*this));
-
-  ap->set_deltat_pointer( &this->deltat );
-
-  return ap;
+  DiffContext* context = new DiffContext(*this);
+  context->set_deltat_pointer( &this->deltat );
+  return UniquePtr<DiffContext>(context);
 }
 
 

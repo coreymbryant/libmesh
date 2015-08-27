@@ -63,7 +63,7 @@ unsigned int packable_size (const Node* node, const MeshBase* mesh)
 #endif
     header_size + LIBMESH_DIM*idtypes_per_Real +
     node->packed_indexing_size() +
-    1 + mesh->boundary_info->n_boundary_ids(node);
+    1 + mesh->get_boundary_info().n_boundary_ids(node);
 }
 
 
@@ -161,7 +161,7 @@ void pack (const Node* node,
 
   // Add any nodal boundary condition ids
   std::vector<boundary_id_type> bcs =
-    mesh->boundary_info->boundary_ids(node);
+    mesh->get_boundary_info().boundary_ids(node);
 
   libmesh_assert(bcs.size() < std::numeric_limits<largest_id_type>::max());
 
@@ -211,18 +211,23 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
       libmesh_assert_equal_to (node->processor_id(), processor_id);
 
       // We currently don't communicate mesh motion via packed Nodes,
-      // so it should be safe to assume (and assert) that Node
-      // locations are consistent between processors
-#ifndef NDEBUG
+      // so it should usually be safe to assume (and assert) that Node
+      // locations are consistent between processors.
+      //
+      // There may be exceptions due to rounding in file I/O, so we'll
+      // only assert equality to within a tight tolerance, and we'll
+      // believe the sender's node locations over our own if we don't
+      // own the node.
       for (unsigned int i=0; i != LIBMESH_DIM; ++i)
         {
-          const Real* idtypes_as_Real = reinterpret_cast<const Real*>(&(*in));
-          libmesh_assert_equal_to ((*node)(i), *idtypes_as_Real);
+          const Real& idtypes_as_Real = *(reinterpret_cast<const Real*>(&(*in)));
+          libmesh_assert_less_equal ((*node)(i), idtypes_as_Real + (std::max(Real(1),idtypes_as_Real)*TOLERANCE*TOLERANCE));
+          libmesh_assert_greater_equal ((*node)(i), idtypes_as_Real - (std::max(Real(1),idtypes_as_Real)*TOLERANCE*TOLERANCE));
+
+          if (processor_id != mesh->processor_id())
+            (*node)(i) = idtypes_as_Real;
           in += idtypes_per_Real;
         }
-#else
-      in += LIBMESH_DIM * idtypes_per_Real;
-#endif // !NDEBUG
 
       if (!node->has_dofs())
         {
@@ -272,7 +277,7 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
   // libmesh_assert_greater_equal (num_bcs, 0);
 
   for(largest_id_type bc_it=0; bc_it < num_bcs; bc_it++)
-    mesh->boundary_info->add_node
+    mesh->get_boundary_info().add_node
       (node, cast_int<boundary_id_type>(*in++));
 
   *out = node;

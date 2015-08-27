@@ -27,6 +27,7 @@
 #include "libmesh/nonlinear_implicit_system.h"
 #include "libmesh/libmesh.h"
 #include "libmesh/parallel_object.h"
+#include "libmesh/auto_ptr.h"
 
 // C++ includes
 #include <cstddef>
@@ -35,13 +36,9 @@ namespace libMesh
 {
 
 // forward declarations
-template <typename T> class AutoPtr;
 template <typename T> class SparseMatrix;
 template <typename T> class NumericVector;
 template <typename T> class Preconditioner;
-
-
-
 
 /**
  * This class provides a uniform interface for nonlinear solvers.  This base
@@ -50,10 +47,9 @@ template <typename T> class Preconditioner;
  *
  * @author Benjamin Kirk, 2005
  */
-
 template <typename T>
 class NonlinearSolver : public ReferenceCountedObject<NonlinearSolver<T> >,
-  public ParallelObject
+                        public ParallelObject
 {
 public:
   /**
@@ -76,8 +72,8 @@ public:
    * Builds a \p NonlinearSolver using the nonlinear solver package specified by
    * \p solver_package
    */
-  static AutoPtr<NonlinearSolver<T> > build(sys_type& s,
-                                            const SolverPackage solver_package = libMesh::default_solver_package());
+  static UniquePtr<NonlinearSolver<T> > build(sys_type& s,
+                                              const SolverPackage solver_package = libMesh::default_solver_package());
 
   /**
    * @returns true if the data structures are
@@ -211,8 +207,31 @@ public:
    */
   NonlinearImplicitSystem::ComputeVectorSubspace *nearnullspace_object;
 
-
+  /**
+   * Customizable function pointer which users can attach to the
+   * solver.  Gets called prior to every call to solve().
+   */
   void (* user_presolve)(sys_type& S);
+
+  /**
+   * Function that performs a "check" on the Newton search direction
+   * and solution after each nonlinear step. See documentation for the
+   * NonlinearImplicitSystem::ComputePostCheck object for more
+   * information about the calling sequence.
+   */
+  void (* postcheck) (const NumericVector<Number> & old_soln,
+                      NumericVector<Number> & search_direction,
+                      NumericVector<Number> & new_soln,
+                      bool & changed_search_direction,
+                      bool & changed_new_soln,
+                      sys_type & S);
+
+  /**
+   * A callable object that is executed after each nonlinear
+   * iteration. Allows the user to modify both the search direction
+   * and the solution vector in an application-specific way.
+   */
+  NonlinearImplicitSystem::ComputePostCheck *postcheck_object;
 
   /**
    * @returns a constant reference to the system we are solving.
@@ -327,6 +346,8 @@ NonlinearSolver<T>::NonlinearSolver (sys_type& s) :
   nearnullspace                (NULL),
   nearnullspace_object         (NULL),
   user_presolve                (NULL),
+  postcheck                    (NULL),
+  postcheck_object             (NULL),
   max_nonlinear_iterations(0),
   max_function_evaluations(0),
   absolute_residual_tolerance(0),

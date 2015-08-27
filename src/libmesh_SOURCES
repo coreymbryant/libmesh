@@ -143,6 +143,7 @@ libmesh_SOURCES =  \
         src/geom/edge_edge4.C \
         src/geom/edge_inf_edge2.C \
         src/geom/elem.C \
+        src/geom/elem_cutter.C \
         src/geom/elem_quality.C \
         src/geom/elem_refinement.C \
         src/geom/elem_type.C \
@@ -208,6 +209,7 @@ libmesh_SOURCES =  \
         src/mesh/mesh_triangle_holes.C \
         src/mesh/mesh_triangle_interface.C \
         src/mesh/mesh_triangle_wrapper.C \
+        src/mesh/namebased_io.C \
         src/mesh/nemesis_io.C \
         src/mesh/nemesis_io_helper.C \
         src/mesh/off_io.C \
@@ -282,6 +284,7 @@ libmesh_SOURCES =  \
         src/quadrature/quadrature_clough_1D.C \
         src/quadrature/quadrature_clough_2D.C \
         src/quadrature/quadrature_clough_3D.C \
+        src/quadrature/quadrature_composite.C \
         src/quadrature/quadrature_conical.C \
         src/quadrature/quadrature_conical_2D.C \
         src/quadrature/quadrature_conical_3D.C \
@@ -289,7 +292,12 @@ libmesh_SOURCES =  \
         src/quadrature/quadrature_gauss_1D.C \
         src/quadrature/quadrature_gauss_2D.C \
         src/quadrature/quadrature_gauss_3D.C \
+        src/quadrature/quadrature_gauss_lobatto.C \
+        src/quadrature/quadrature_gauss_lobatto_1D.C \
+        src/quadrature/quadrature_gauss_lobatto_2D.C \
+        src/quadrature/quadrature_gauss_lobatto_3D.C \
         src/quadrature/quadrature_gm.C \
+        src/quadrature/quadrature_gm_2D.C \
         src/quadrature/quadrature_gm_3D.C \
         src/quadrature/quadrature_grid.C \
         src/quadrature/quadrature_grid_1D.C \
@@ -310,11 +318,11 @@ libmesh_SOURCES =  \
         src/quadrature/quadrature_trap_1D.C \
         src/quadrature/quadrature_trap_2D.C \
         src/quadrature/quadrature_trap_3D.C \
-        src/reduced_basis/derived_rb_construction.C \
-        src/reduced_basis/derived_rb_evaluation.C \
         src/reduced_basis/rb_assembly_expansion.C \
         src/reduced_basis/rb_construction.C \
         src/reduced_basis/rb_construction_base.C \
+        src/reduced_basis/rb_data_deserialization.C \
+        src/reduced_basis/rb_data_serialization.C \
         src/reduced_basis/rb_eim_assembly.C \
         src/reduced_basis/rb_eim_construction.C \
         src/reduced_basis/rb_eim_evaluation.C \
@@ -326,7 +334,6 @@ libmesh_SOURCES =  \
         src/reduced_basis/rb_scm_evaluation.C \
         src/reduced_basis/rb_temporal_discretization.C \
         src/reduced_basis/rb_theta_expansion.C \
-        src/reduced_basis/steady_derived_rb_construction.C \
         src/reduced_basis/transient_rb_assembly_expansion.C \
         src/reduced_basis/transient_rb_construction.C \
         src/reduced_basis/transient_rb_evaluation.C \
@@ -350,17 +357,22 @@ libmesh_SOURCES =  \
         src/solvers/laspack_linear_solver.C \
         src/solvers/linear_solver.C \
         src/solvers/memory_solution_history.C \
+        src/solvers/newmark_solver.C \
         src/solvers/newton_solver.C \
+        src/solvers/nlopt_optimization_solver.C \
         src/solvers/no_solution_history.C \
         src/solvers/nonlinear_solver.C \
+        src/solvers/optimization_solver.C \
         src/solvers/petsc_auto_fieldsplit.C \
         src/solvers/petsc_diff_solver.C \
-        src/solvers/petsc_dm_nonlinear_solver.C \
         src/solvers/petsc_linear_solver.C \
         src/solvers/petsc_nonlinear_solver.C \
         src/solvers/petscdmlibmesh.C \
+        src/solvers/petscdmlibmeshimpl.C \
+        src/solvers/second_order_unsteady_solver.C \
         src/solvers/slepc_eigen_solver.C \
         src/solvers/steady_solver.C \
+        src/solvers/tao_optimization_solver.C \
         src/solvers/time_solver.C \
         src/solvers/trilinos_aztec_linear_solver.C \
         src/solvers/trilinos_nox_nonlinear_solver.C \
@@ -382,6 +394,7 @@ libmesh_SOURCES =  \
         src/systems/linear_implicit_system.C \
         src/systems/newmark_system.C \
         src/systems/nonlinear_implicit_system.C \
+        src/systems/optimization_system.C \
         src/systems/parameter_vector.C \
         src/systems/qoi_set.C \
         src/systems/steady_system.C \
@@ -406,6 +419,7 @@ libmesh_SOURCES =  \
         src/utils/statistics.C \
         src/utils/string_to_enum.C \
         src/utils/timestamp.C \
+        src/utils/topology_map.C \
         src/utils/tree.C \
         src/utils/tree_node.C \
         src/utils/utility.C \

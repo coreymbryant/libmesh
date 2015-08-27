@@ -164,17 +164,19 @@ public:
   /**
    * Write out all the data to text files in order to segregate the
    * Offline stage from the Online stage.
+   * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void write_offline_data_to_files(const std::string& directory_name = "offline_data",
-                                           const bool write_binary_data=true);
+  virtual void legacy_write_offline_data_to_files(const std::string& directory_name = "offline_data",
+                                                  const bool write_binary_data=true);
 
   /**
    * Read in the saved Offline reduced basis data
    * to initialize the system for Online solves.
+   * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void read_offline_data_from_files(const std::string& directory_name = "offline_data",
-                                            bool read_error_bound_data=true,
-                                            const bool read_binary_data=true);
+  virtual void legacy_read_offline_data_from_files(const std::string& directory_name = "offline_data",
+                                                   bool read_error_bound_data=true,
+                                                   const bool read_binary_data=true);
 
   /**
    * Write out all the basis functions to file.
@@ -213,12 +215,11 @@ public:
    * written. We assume that the size of vectors indicates the number of vectors
    * that need to be read in.
    */
-  void read_in_vectors(
-    System& sys,
-    std::vector<NumericVector<Number>*>& vectors,
-    const std::string& directory_name,
-    const std::string& data_name,
-    const bool read_binary_vectors);
+  void read_in_vectors(System& sys,
+                       std::vector<NumericVector<Number>*>& vectors,
+                       const std::string& directory_name,
+                       const std::string& data_name,
+                       const bool read_binary_vectors);
 
   /**
    * Performs read_in_vectors for a list of directory names and data names.
@@ -226,12 +227,11 @@ public:
    * way. This function only renumbers the dofs once at the start (and reverts
    * it at the end), which can save a lot of work compared to renumbering on every read.
    */
-  void read_in_vectors_from_multiple_files(
-    System& sys,
-    std::vector< std::vector<NumericVector<Number>*>* > multiple_vectors,
-    const std::vector<std::string>& multiple_directory_names,
-    const std::vector<std::string>& multiple_data_names,
-    const bool read_binary_vectors);
+  void read_in_vectors_from_multiple_files(System& sys,
+                                           std::vector< std::vector<NumericVector<Number>*>* > multiple_vectors,
+                                           const std::vector<std::string>& multiple_directory_names,
+                                           const std::vector<std::string>& multiple_data_names,
+                                           const bool read_binary_vectors);
 
   /**
    * Version string that we need to use for writing/reading basis functions.
@@ -332,11 +332,18 @@ public:
    */
   bool compute_RB_inner_product;
 
+protected:
+
+  /**
+   * Helper function that checks if \p file_name exists.
+   */
+  void assert_file_exists(const std::string& file_name);
+
 private:
 
   /**
    * A pointer to to the object that stores the theta expansion.
-   * This is not an AutoPtr since we may want to share it.
+   * This is not an UniquePtr since we may want to share it.
    * (Note: a shared_ptr would be a good option here.)
    */
   RBThetaExpansion* rb_theta_expansion;

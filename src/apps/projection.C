@@ -32,6 +32,7 @@
 #include "libmesh/mesh_function.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/point.h"
+#include "libmesh/serial_mesh.h"
 
 
 using namespace libMesh;
@@ -115,13 +116,16 @@ int main(int argc, char** argv)
   const unsigned char requested_dim =
     cast_int<unsigned char>(cl.follow(3, "--dim"));
 
-  // Load the old mesh from --inmesh filename
-  Mesh old_mesh(init.comm(), requested_dim);
+  // Load the old mesh from --inmesh filename.
+  // Keep it serialized; we don't want elements on the new mesh to be
+  // looking for data on old mesh elements that live off-processor.
+  SerialMesh old_mesh(init.comm(), requested_dim);
 
   const std::string meshname =
     assert_argument(cl, "--inmesh", argv[0], std::string("mesh.xda"));
 
   old_mesh.read(meshname);
+  std::cout << "Old Mesh:" << std::endl;
   old_mesh.print_info();
 
   // Load the new mesh from --outmesh filename
@@ -130,6 +134,8 @@ int main(int argc, char** argv)
   const std::string outmeshname = cl.follow(std::string("out_"+meshname), "--outmesh");
 
   new_mesh.read(outmeshname);
+  std::cout << "New Mesh:" << std::endl;
+  new_mesh.print_info();
 
   // Load the old solution from --insoln filename
   // Construct the new solution from the old solution's headers, so
@@ -180,7 +186,7 @@ int main(int argc, char** argv)
       unsigned int n_vars = old_sys.n_vars();
       libmesh_assert_equal_to (new_sys.n_vars(), n_vars);
 
-      AutoPtr<NumericVector<Number> > comparison_soln =
+      UniquePtr<NumericVector<Number> > comparison_soln =
         NumericVector<Number>::build(old_sys.comm());
       std::vector<Number> global_soln;
       old_sys.update_global_solution(global_soln);

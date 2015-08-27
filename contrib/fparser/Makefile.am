@@ -5,11 +5,6 @@ FEATURE_FLAGS =
 FEATURE_FLAGS += -DFP_ENABLE_EVAL
 #FEATURE_FLAGS += -DFP_SUPPORT_TR1_MATH_FUNCS
 
-# some systems have trouble with the fparser optimizer
-if FPARSER_NO_SUPPORT_OPTIMIZER
-  FEATURE_FLAGS += -DFP_NO_SUPPORT_OPTIMIZER
-endif
-
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
 #FEATURE_FLAGS += -DFP_NO_EVALUATION_CHECKS
@@ -103,12 +98,16 @@ FPOPTIMIZER_CC_FILES=\
 EXTRA_DIST += $(FPOPTIMIZER_CC_FILES) fpoptimizer/fpoptimizer_header.txt fpoptimizer/fpoptimizer_footer.txt
 
 
-
 pkg_sources = fparser.cc fparser_ad.cc
+if FPARSER_SUPPORT_JIT
+  pkg_sources += lib/sha1.cpp
+  pkg_cppflags += -DFPARSER_JIT_COMPILER="\"$(CXX)\""
+endif
+
 pkg_cppflags += $(FEATURE_FLAGS)
 
 
-# util/tree_grammar_parser is a utility which is required to build 
+# util/tree_grammar_parser is a utility which is required to build
 # fpoptimizer/grammar_data.cc.  But this file itself is only needed
 # when we are compiling with optimization support enabled.
 #
@@ -120,13 +119,12 @@ util_tree_grammar_parser_SOURCES   = \
                                  mpfr/GmpInt.hh \
                                  fparser_mpfr.hh \
                                  fparser.hh \
-			 	 fparser.cc \
-                                 fparser_ad.hh \
-			 	 fparser_ad.cc \
+                                 fparser.cc \
                                  fpoptimizer/logic_comparisons.hh \
                                  fpoptimizer/constantfolding.hh \
                                  fpoptimizer/logic_ifoperations.hh \
                                  fpoptimizer/instantiate.hh \
+                                 fpoptimizer/instantiate_for_ad.hh \
                                  fpoptimizer/opcodename.hh \
                                  fpoptimizer/consts.hh \
                                  fpoptimizer/optimize.hh \
@@ -139,15 +137,18 @@ util_tree_grammar_parser_SOURCES   = \
                                  fpoptimizer/rangeestimation.hh \
                                  fpoptimizer/logic_boolgroups.hh \
                                  fpoptimizer/logic_powoperations.hh \
-                                 util/cpp_compress.hh \
                                  fpconfig.hh \
                                  lib/functional.hh \
                                  lib/crc32.hh \
                                  lib/autoptr.hh \
+                                 lib/sha1.h \
+                                 lib/sha1.cpp \
                                  extrasrc/fpaux.hh \
                                  extrasrc/fptypes.hh \
                                  extrasrc/fp_opcode_add.inc \
                                  fparser_gmpint.hh extrasrc/fp_identifier_parser.inc
+
+                                 # util/cpp_compress.hh
 
   util_bytecoderules_parser_CXXFLAGS = # nothing fancy - don't use our compile flags for this utility code lest it be horribly slow
   util_bytecoderules_parser_SOURCES  = util/bytecoderules_parser.cc
@@ -155,17 +156,17 @@ util_tree_grammar_parser_SOURCES   = \
   # 'util/make_function_name_parser' is used to create extrasrc/fp_identifier_parser.inc,
   # but it seems to only define a snippet.  So for now we use the distributed version
   # of that file rather than treating it as a built source.
-  # util_make_function_name_parser_SOURCES  = util/make_function_name_parser.cc util/cpp_compress.cc 
+  # util_make_function_name_parser_SOURCES  = util/make_function_name_parser.cc util/cpp_compress.cc
 
-  util_cpp_compress_CXXFLAGS = # nothing fancy - don't use our compile flags for this utility code lest it be horribly slow
-  util_cpp_compress_SOURCES  = util/cpp_compress.hh util/cpp_compress.cc util/cpp_compress_main.cc
+#  util_cpp_compress_CXXFLAGS = # nothing fancy - don't use our compile flags for this utility code lest it be horribly slow
+#  util_cpp_compress_SOURCES  = util/cpp_compress.hh util/cpp_compress.cc util/cpp_compress_main.cc
 
 
 # when doing 'make clean' we need to remove the generated sources
 CLEANFILES += fpoptimizer/grammar_data.cc
 # in case they weren't conditionally cleaned:
 DISTCLEANFILES += util/bytecoderules_parser
-DISTCLEANFILES += util/cpp_compress
+# DISTCLEANFILES += util/cpp_compress
 DISTCLEANFILES += util/tree_grammar_parser
 
 
@@ -173,14 +174,12 @@ DISTCLEANFILES += util/tree_grammar_parser
 extrasrc/fp_opcode_add.inc: \
 		util/bytecoderules_parser \
 		util/bytecoderules.dat \
-		util/bytecoderules_header.txt \
-		util/cpp_compress
+		util/bytecoderules_header.txt
 	@echo "Creating system-specific Bytecode in "$@" ..."
 	@$(MKDIR_P) extrasrc
 	@cat $(srcdir)/util/bytecoderules_header.txt > $@
 	@util/bytecoderules_parser \
 		< $(srcdir)/util/bytecoderules.dat \
-		| util/cpp_compress \
 		>> $@
 
 BUILT_SOURCES += extrasrc/fp_opcode_add.inc
@@ -195,22 +194,18 @@ if FPARSER_DEVEL
   # for installation
   noinst_PROGRAMS           += util/tree_grammar_parser
   noinst_PROGRAMS           += util/bytecoderules_parser
-  noinst_PROGRAMS           += util/cpp_compress
+  # noinst_PROGRAMS           += util/cpp_compress
   # noinst_PROGRAMS           += util/make_function_name_parser
 
-if FPARSER_SUPPORT_OPTIMIZER 
-    pkg_sources += $(FPOPTIMIZER_CC_FILES)
-endif
+  pkg_sources += $(FPOPTIMIZER_CC_FILES)
 
-   # when doing 'make clean' we need to remove the generated sources
+  # when doing 'make clean' we need to remove the generated sources
   CLEANFILES += $(BUILT_SOURCES)
 
 else !FPARSER_DEVEL
   SUBDIRS = extrasrc
 
-if FPARSER_SUPPORT_OPTIMIZER
   pkg_sources += fpoptimizer.cc
-endif
 endif
 
 include $(top_srcdir)/contrib/Make.common

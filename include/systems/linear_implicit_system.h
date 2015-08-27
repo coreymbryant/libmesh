@@ -132,7 +132,8 @@ public:
    * Assembles a residual in \p rhs and/or a jacobian in \p matrix,
    * as requested.
    */
-  virtual void assembly(bool get_residual, bool get_jacobian);
+  virtual void assembly(bool get_residual, bool get_jacobian,
+                        bool apply_heterogeneous_constraints = false);
 
   /**
    * @returns \p "LinearImplicit".  Helps in identifying
@@ -146,7 +147,7 @@ public:
    * details of interfacing with various linear algebra packages
    * like PETSc or LASPACK.
    */
-  AutoPtr<LinearSolver<Number> > linear_solver;
+  UniquePtr<LinearSolver<Number> > linear_solver;
 
   /**
    * Returns  the number of iterations

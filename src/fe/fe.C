@@ -236,8 +236,7 @@ void FE<Dim,T>::reinit(const Elem* elem,
               this->qrule->get_weights().clear();
             }
 
-           this->init_shape_functions
-             (this->qrule->get_points(), elem);
+          this->init_shape_functions (this->qrule->get_points(), elem);
         }
       else
         this->init_shape_functions (*pts, elem);
@@ -248,17 +247,17 @@ void FE<Dim,T>::reinit(const Elem* elem,
     {
       if (weights != NULL)
         {
-          this->_fe_map->compute_map (this->dim,*weights, elem);
+          this->_fe_map->compute_map (this->dim, *weights, elem, this->calculate_d2phi);
         }
       else
         {
           std::vector<Real> dummy_weights (pts->size(), 1.);
-          this->_fe_map->compute_map (this->dim,dummy_weights, elem);
+          this->_fe_map->compute_map (this->dim, dummy_weights, elem, this->calculate_d2phi);
         }
     }
   else
     {
-      this->_fe_map->compute_map (this->dim,this->qrule->get_weights(), elem);
+      this->_fe_map->compute_map (this->dim, this->qrule->get_weights(), elem, this->calculate_d2phi);
     }
 
   // Compute the shape functions and the derivatives at all of the

@@ -118,14 +118,14 @@ public:
   /**
    * Creates a vector which has the same type, size and partitioning
    * as this vector, but whose data is all zero.  Returns it in an \p
-   * AutoPtr.
+   * UniquePtr.
    */
-  virtual AutoPtr<NumericVector<T> > zero_clone () const;
+  virtual UniquePtr<NumericVector<T> > zero_clone () const;
 
   /**
-   * Creates a copy of this vector and returns it in an \p AutoPtr.
+   * Creates a copy of this vector and returns it in an \p UniquePtr.
    */
-  AutoPtr<NumericVector<T> > clone () const;
+  UniquePtr<NumericVector<T> > clone () const;
 
   /**
    * Change the dimension of the vector to \p N. The reserved memory for
@@ -320,21 +320,10 @@ public:
   void add (const T a, const NumericVector<T>& v);
 
   /**
-   * \f$ U+=v \f$ where v is a \p std::vector<T>
-   * and you
-   * want to specify WHERE to add it
+   * We override one NumericVector<T>::add_vector() method but don't
+   * want to hide the other defaults.
    */
-  void add_vector (const std::vector<T>& v,
-                   const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$ U+=V \f$ where U and V are type
-   * NumericVector<T> and you
-   * want to specify WHERE to add
-   * the NumericVector<T> V
-   */
-  void add_vector (const NumericVector<T>& V,
-                   const std::vector<numeric_index_type>& dof_indices);
+  using NumericVector<T>::add_vector;
 
   /**
    * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
@@ -344,52 +333,11 @@ public:
                    const SparseMatrix<T> &);
 
   /**
-   * \f$U+=V \f$ where U and V are type
-   * DenseVector<T> and you
-   * want to specify WHERE to add
-   * the DenseVector<T> V
-   */
-  void add_vector (const DenseVector<T>& V,
-                   const std::vector<numeric_index_type>& dof_indices);
-
-  /**
    * \f$U+=A^T*V\f$, add the product of the transpose of a \p SparseMatrix \p A_trans
    * and a \p NumericVector \p V to \p this, where \p this=U.
    */
   void add_vector_transpose (const NumericVector<T> &,
                              const SparseMatrix<T> &);
-
-  /**
-   * \f$ U=v \f$ where v is a \p std::vector<T>
-   * and you want to specify WHERE to insert it
-   */
-  virtual void insert (const std::vector<T>& v,
-                       const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$U=V\f$, where U and V are type
-   * NumericVector<T> and you
-   * want to specify WHERE to insert
-   * the NumericVector<T> V
-   */
-  virtual void insert (const NumericVector<T>& V,
-                       const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$ U=V \f$ where V is type
-   * DenseVector<T> and you
-   * want to specify WHERE to insert it
-   */
-  virtual void insert (const DenseVector<T>& V,
-                       const std::vector<numeric_index_type>& dof_indices);
-
-  /**
-   * \f$ U=V \f$ where V is type
-   * DenseSubVector<T> and you
-   * want to specify WHERE to insert it
-   */
-  virtual void insert (const DenseSubVector<T>& V,
-                       const std::vector<numeric_index_type>& dof_indices);
 
   /**
    * Scale each element of the
@@ -652,30 +600,28 @@ void LaspackVector<T>::zero ()
 
 template <typename T>
 inline
-AutoPtr<NumericVector<T> > LaspackVector<T>::zero_clone () const
+UniquePtr<NumericVector<T> > LaspackVector<T>::zero_clone () const
 {
-  AutoPtr<NumericVector<T> > cloned_vector
-    (new LaspackVector<T>(this->comm()));
+  NumericVector<T> * cloned_vector = new LaspackVector<T>(this->comm());
 
   cloned_vector->init(*this);
 
-  return cloned_vector;
+  return UniquePtr<NumericVector<T> >(cloned_vector);
 }
 
 
 
 template <typename T>
 inline
-AutoPtr<NumericVector<T> > LaspackVector<T>::clone () const
+UniquePtr<NumericVector<T> > LaspackVector<T>::clone () const
 {
-  AutoPtr<NumericVector<T> > cloned_vector
-    (new LaspackVector<T>(this->comm()));
+  NumericVector<T> * cloned_vector = new LaspackVector<T>(this->comm());
 
   cloned_vector->init(*this, true);
 
   *cloned_vector = *this;
 
-  return cloned_vector;
+  return UniquePtr<NumericVector<T> >(cloned_vector);
 }
 
 

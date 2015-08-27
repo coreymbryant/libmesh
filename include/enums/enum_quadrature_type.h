@@ -38,8 +38,11 @@ enum QuadratureType {QGAUSS            = 0,
                      QGRUNDMANN_MOLLER = 6,
                      QMONOMIAL         = 7,
                      QCONICAL          = 8,
+                     QGAUSS_LOBATTO    = 9,
 
                      QCLOUGH           = 21,
+
+                     QCOMPOSITE        = 31,
 
                      INVALID_Q_RULE    = 127};
 }

@@ -59,7 +59,7 @@ bool DifferentiablePhysics::nonlocal_mass_residual(bool request_jacobian,
         continue;
 
       const std::vector<dof_id_type>& dof_indices =
-              context.get_dof_indices(var);
+        context.get_dof_indices(var);
 
       const unsigned int n_dofs = cast_int<unsigned int>
         (dof_indices.size());
@@ -72,14 +72,10 @@ bool DifferentiablePhysics::nonlocal_mass_residual(bool request_jacobian,
 
       for (unsigned int i=0; i != n_dofs; ++i)
         {
-          Fs(i) += Us(i);
+          Fs(i) -= Us(i);
 
-          if (request_jacobian && context.elem_solution_derivative)
-            {
-              libmesh_assert_equal_to (context.elem_solution_derivative, 1.0);
-
-              Kss(i,i) += 1;
-            }
+          if (request_jacobian)
+            Kss(i,i) -= context.elem_solution_rate_derivative;
         }
     }
 

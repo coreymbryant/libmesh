@@ -6,10 +6,6 @@
 # not just name the bib files 2009.bib etc?  For some reason
 # multibib can't handle filenames with numbers in them.
 
-# Note: to view the resulting publications.php file which is
-# created by this script, rename it to publications.html and
-# just open it in Firefox.
-
 # This script requires bibtex2html (see associated Makefile and
 # libmesh_html rule)
 if [ "x`which bibtex2html`" == "x" ]; then
@@ -54,26 +50,16 @@ do
   cat ${year_names[$i]}.html >> master.html
 done
 
-# Create php file by adding header/footer
-if [ -f publications.php ]; then
-  rm publications.php
+# The name of the final file that we will produce
+final_file=../html/src/publications.html
+
+# Create publications.html
+if [ -f $final_file ]; then
+  rm $final_file
 fi
 
-echo "<?php \$root=\"\"; ?>" >> publications.php
-echo "<?php require(\$root.\"navigation.php\"); ?>" >> publications.php
-echo "<html>" >> publications.php
-echo "<head>" >> publications.php
-echo "  <title>libMesh Publications</title>" >> publications.php
-echo "<?php load_style(\$root); ?>" >> publications.php
-echo "</head>" >> publications.php
-echo "<body>"  >> publications.php
-echo "<?php make_navigation(\"publications\",\$root)?>" >> publications.php
-echo "<div class=\"content\">" >> publications.php
-cat master.html >> publications.php
-echo "<br>"  >> publications.php
-echo "<br>"  >> publications.php
-echo "<?php make_footer() ?>" >> publications.php
-echo "</body>" >> publications.php
-echo "</html>" >> publications.php
+# Inject all the references
+cat master.html >> $final_file
 
-
+# bibtex2html unhelpfully inserts trailing whitespace, so kill that off
+perl -pli -e 's/\s+$//' $final_file

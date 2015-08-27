@@ -1,48 +1,68 @@
-// Copyright (C) 2001, 2002 Free Software Foundation, Inc.
-//
-// This file is part of the GNU ISO C++ Library.  This library is free
-// software; you can redistribute it and/or modify it under the
-// terms of the GNU General Public License as published by the
-// Free Software Foundation; either version 2, or (at your option)
-// any later version.
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
 // This library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-// You should have received a copy of the GNU General Public License along
-// with this library; see the file COPYING.  If not, write to the Free
-// Software Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307,
-// USA.
-
-// As a special exception, you may use this file as part of a free software
-// library without restriction.  Specifically, if other files instantiate
-// templates or use macros or inline functions from this file, or you compile
-// this file and link it with other files to produce an executable, this
-// file does not by itself cause the resulting executable to be covered by
-// the GNU General Public License.  This exception does not however
-// invalidate any other reasons why the executable file might be covered by
-// the GNU General Public License.
-
-/*
- * Copyright (c) 1997-1999
- * Silicon Graphics Computer Systems, Inc.
- *
- * Permission to use, copy, modify, distribute and sell this software
- * and its documentation for any purpose is hereby granted without fee,
- * provided that the above copyright notice appear in all copies and
- * that both that copyright notice and this permission notice appear
- * in supporting documentation.  Silicon Graphics makes no
- * representations about the suitability of this software for any
- * purpose.  It is provided "as is" without express or implied warranty.
- *
- */
-
-
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #ifndef LIBMESH_AUTO_PTR_H
 #define LIBMESH_AUTO_PTR_H
+
+#include "libmesh/libmesh_config.h"
+#include "libmesh_common.h" // for libmesh_deprecated()
+
+// LibMesh's AutoPtr is now libmesh_deprecated(), just like the
+// std::auto_ptr it is based on.
+//
+// New library code should use the UniquePtr typedef (which will
+// eventually be a C++11 alias declaration).  LibMesh's UniquePtr is
+// one of:
+// 1.) std::unique_ptr
+// 2.) Howard Hinnant's C++03 compatible boost::unique_ptr
+// 3.) The deprecated libMesh AutoPtr
+// in that order, depending on what your compiler supports.  If you
+// are using a compiler that cannot compile Howard Hinnant's
+// unique_ptr implementation, you should probably think about
+// upgrading.
+#ifdef LIBMESH_ENABLE_UNIQUE_PTR
+#ifdef LIBMESH_HAVE_CXX11_UNIQUE_PTR
+// If C++11 std::unique_ptr is available, alias declarations are also
+// guaranteed to be available.
+#  include <memory>
+namespace libMesh
+{
+template<typename T>
+using UniquePtr = std::unique_ptr<T>;
+}
+#elif LIBMESH_HAVE_HINNANT_UNIQUE_PTR
+// As per Roy's suggestion, use a combination of a macro and a 'using'
+// statement to make libMesh's UniquePtr type equivalent to the
+// boost::unique_ptr implementation of Howard Hinnant.
+#  include "libmesh/unique_ptr.hpp"
+#  define UniquePtr unique_ptr
+namespace libMesh
+{
+// Declare that we are using boost's unique_ptr type
+using boost::unique_ptr;
+}
+#else
+#  define UniquePtr AutoPtr
+#endif
+#else
+// libMesh was configured with --disable-unique-ptr, so we'll use
+// libMesh's AutoPtr class instead.
+#define UniquePtr AutoPtr
+#endif
 
 namespace libMesh
 {
@@ -97,6 +117,46 @@ struct AutoPtrRef
  * compilers implement various revisions of the standard.  Using
  * \p AutoPtr<> instead of \p std::auto_ptr<> allows for easy
  * portability.
+ *
+ * The following are the original copyright declarations distributed with this class:
+ *
+ * Copyright (C) 2001, 2002 Free Software Foundation, Inc.
+ *
+ * This file is part of the GNU ISO C++ Library.  This library is free
+ * software; you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this library; see the file COPYING.  If not, write to the Free
+ * Software Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307,
+ * USA.
+ *
+ * As a special exception, you may use this file as part of a free software
+ * library without restriction.  Specifically, if other files instantiate
+ * templates or use macros or inline functions from this file, or you compile
+ * this file and link it with other files to produce an executable, this
+ * file does not by itself cause the resulting executable to be covered by
+ * the GNU General Public License.  This exception does not however
+ * invalidate any other reasons why the executable file might be covered by
+ * the GNU General Public License.
+ *
+ * Copyright (c) 1997-1999
+ * Silicon Graphics Computer Systems, Inc.
+ *
+ * Permission to use, copy, modify, distribute and sell this software
+ * and its documentation for any purpose is hereby granted without fee,
+ * provided that the above copyright notice appear in all copies and
+ * that both that copyright notice and this permission notice appear
+ * in supporting documentation.  Silicon Graphics makes no
+ * representations about the suitability of this software for any
+ * purpose.  It is provided "as is" without express or implied warranty.
  */
 template<typename Tp>
 class AutoPtr
@@ -122,7 +182,12 @@ public:
    */
   explicit
   AutoPtr(element_type* p = 0)
-    : _ptr(p) {}
+    : _ptr(p)
+  {
+    // Note: we can't call libmesh_deprecated() here, since global
+    // AutoPtr variables are sometimes created before the libMesh::out
+    // stream is ready.
+  }
 
   /**
    *  @brief  An %AutoPtr can be constructed from another %AutoPtr.
@@ -132,7 +197,9 @@ public:
    *  given up ownsership.
    */
   AutoPtr(AutoPtr& a)
-    : _ptr(a.release()) {}
+    : _ptr(a.release())
+  {
+  }
 
   /**
    *  @brief  An %AutoPtr can be constructed from another %AutoPtr.
@@ -145,7 +212,9 @@ public:
    */
   template<typename Tp1>
   AutoPtr(AutoPtr<Tp1>& a)
-    : _ptr(a.release()) {}
+    : _ptr(a.release())
+  {
+  }
 
   /**
    *  @brief  %AutoPtr assignment operator.
@@ -192,7 +261,16 @@ public:
    *  prohibited.  [17.4.3.6]/2
    *  @endif maint
    */
-  ~AutoPtr() { delete _ptr; }
+  ~AutoPtr()
+  {
+    if (!libMesh::warned_about_auto_ptr)
+      {
+        libMesh::warned_about_auto_ptr = true;
+        libMesh::out << "*** Warning, AutoPtr is deprecated and will be removed in a future library version! "
+                     << __FILE__ << ", line " << __LINE__ << ", compiled " << __DATE__ << " at " << __TIME__ << " ***" << std::endl;
+      }
+    delete _ptr;
+  }
 
   /**
    *  @brief  Smart pointer dereferencing.

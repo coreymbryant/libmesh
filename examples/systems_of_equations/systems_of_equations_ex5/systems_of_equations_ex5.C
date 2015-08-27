@@ -178,11 +178,11 @@ void assemble_elasticity(EquationSystems& es,
 
   const DofMap& dof_map = system.get_dof_map();
   FEType fe_type = dof_map.variable_type(0);
-  AutoPtr<FEBase> fe (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
   QGauss qrule (dim, fe_type.default_quadrature_order());
   fe->attach_quadrature_rule (&qrule);
 
-  AutoPtr<FEBase> fe_face (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe_face (FEBase::build(dim, fe_type));
   QGauss qface(dim-1, fe_type.default_quadrature_order());
   fe_face->attach_quadrature_rule (&qface);
 
@@ -333,7 +333,7 @@ void assemble_elasticity(EquationSystems& es,
           if (elem->neighbor(side) == NULL)
             {
               const std::vector<boundary_id_type> bc_ids =
-                mesh.boundary_info->boundary_ids (elem,side);
+                mesh.get_boundary_info().boundary_ids (elem,side);
 
               const std::vector<std::vector<Real> >&  phi_face = fe_face->get_phi();
               const std::vector<Real>& JxW_face = fe_face->get_JxW();

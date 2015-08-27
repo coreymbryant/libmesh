@@ -32,25 +32,22 @@ namespace libMesh
 template <typename T> class LinearSolver;
 class NewtonSolver;
 
-
-
-
-
 /**
  * This class inherits from the FEMSystem.  It can be
  * used to do arclength continuation.  Most of the ideas and
  * the notation here come from HB Keller's 1977 paper:
- \verbatim
- @InProceedings{Kell-1977,
- author = {H.~B.~Keller},
- title = {{Numerical solution of bifurcation and nonlinear eigenvalue problems}},
- booktitle = {Applications of Bifurcation Theory, P.~H.~Rabinowitz (ed.)},
- year = 1977,
- publisher = {Academic Press},
- pages = {359--389},
- notes = {QA 3 U45 No.\ 38 (PMA)}
- }
- \endverbatim
+ *
+ * \verbatim
+ * @InProceedings{Kell-1977,
+ *   author    = {H.~B.~Keller},
+ *   title     = {{Numerical solution of bifurcation and nonlinear eigenvalue problems}},
+ *   booktitle = {Applications of Bifurcation Theory, P.~H.~Rabinowitz (ed.)},
+ *   year      = 1977,
+ *   publisher = {Academic Press},
+ *   pages     = {359--389},
+ *   notes     = {QA 3 U45 No.\ 38 (PMA)}
+ * }
+ * \endverbatim
  *
  * @author John W. Peterson 2007
  */
@@ -376,7 +373,7 @@ private:
    * custom systems of equations and/or things which do not require
    * a full-blown NewtonSolver.
    */
-  AutoPtr<LinearSolver<Number> > linear_solver;
+  UniquePtr<LinearSolver<Number> > linear_solver;
 
   /**
    * False until initialize_tangent() is called

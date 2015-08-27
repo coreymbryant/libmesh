@@ -100,6 +100,14 @@ public:
   bool is_open() const;
 
   /**
+   * Returns true if the Xdr file being read is at End-Of-File.
+   * Note that this is *not* a const method - the only portable way to
+   * test for an impending EOF is to peek at the next byte of the file
+   * first, which may set the eof flag on the istream. 
+   */
+  bool is_eof();
+
+  /**
    * Returns true if the file is opened in a reading
    * state, false otherwise.
    */
@@ -220,12 +228,12 @@ private:
   /**
    * The input file stream.
    */
-  AutoPtr<std::istream> in;
+  UniquePtr<std::istream> in;
 
   /**
    * The output file stream.
    */
-  AutoPtr<std::ostream> out;
+  UniquePtr<std::ostream> out;
 
   /**
    * A buffer to put comment strings into.

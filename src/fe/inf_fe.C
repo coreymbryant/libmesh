@@ -66,10 +66,10 @@ InfFE<Dim,T_radial,T_map>::InfFE (const FEType& fet) :
   libmesh_assert_equal_to (T_radial, fe_type.radial_family);
   libmesh_assert_equal_to (T_map, fe_type.inf_map);
 
-  // build the base_fe object, handle the AutoPtr
+  // build the base_fe object, handle the UniquePtr
   if (Dim != 1)
     {
-      AutoPtr<FEBase> ap_fb(FEBase::build(Dim-1, fet));
+      UniquePtr<FEBase> ap_fb(FEBase::build(Dim-1, fet));
       base_fe = ap_fb.release();
     }
 }
@@ -112,7 +112,7 @@ void InfFE<Dim,T_radial,T_map>:: attach_quadrature_rule (QBase* q)
   if (Dim != 1)
     {
       // build a Dim-1 quadrature rule of the type that we received
-      AutoPtr<QBase> apq( QBase::build(q->type(), qrule_dim-1, base_int_order) );
+      UniquePtr<QBase> apq( QBase::build(q->type(), qrule_dim-1, base_int_order) );
       base_qrule = apq.release();
       base_fe->attach_quadrature_rule(base_qrule);
     }
@@ -220,7 +220,7 @@ void InfFE<Dim,T_radial,T_map>::reinit(const Elem* inf_elem,
       // each and every new element), throw radial and base part together
       this->combine_base_radial (inf_elem);
 
-      this->_fe_map->compute_map (this->dim,_total_qrule_weights, inf_elem);
+      this->_fe_map->compute_map (this->dim, _total_qrule_weights, inf_elem, this->calculate_d2phi);
 
       // Compute the shape functions and the derivatives
       // at all quadrature points.
@@ -240,7 +240,7 @@ void InfFE<Dim,T_radial,T_map>::reinit(const Elem* inf_elem,
 
       // the finite element on the ifem base
       {
-        AutoPtr<FEBase> ap_fb(FEBase::build(Dim-1, this->fe_type));
+        UniquePtr<FEBase> ap_fb(FEBase::build(Dim-1, this->fe_type));
         if (base_fe != NULL)
           delete base_fe;
         base_fe = ap_fb.release();
@@ -258,12 +258,12 @@ void InfFE<Dim,T_radial,T_map>::reinit(const Elem* inf_elem,
       // weights
       if (weights != NULL)
         {
-          this->_fe_map->compute_map (this->dim, *weights, inf_elem);
+          this->_fe_map->compute_map (this->dim, *weights, inf_elem, this->calculate_d2phi);
         }
       else
         {
           std::vector<Real> dummy_weights (pts->size(), 1.);
-          this->_fe_map->compute_map (this->dim, dummy_weights, inf_elem);
+          this->_fe_map->compute_map (this->dim, dummy_weights, inf_elem, this->calculate_d2phi);
         }
 
       // finally compute the ifem shapes

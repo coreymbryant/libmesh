@@ -83,14 +83,19 @@ public:
   }
 
   /**
+   * @returns true iff size() is 0
+   */
+  virtual bool empty() const { return _val.empty(); }
+
+  /**
    * Set every element in the vector to 0.
    */
   virtual void zero();
 
   /**
-   * @returns the \p (i) element of the vector.
+   * @returns the \p (i) element of the vector as a const reference.
    */
-  T operator() (const unsigned int i) const;
+  const T & operator() (const unsigned int i) const;
 
   /**
    * @returns the \p (i,j) element of the vector as a writeable reference.
@@ -122,6 +127,13 @@ public:
    * Resize the vector. Sets all elements to 0.
    */
   void resize (const unsigned int n);
+
+  /**
+   * Append additional entries to (resizing, but unchanging) the
+   * vector.
+   */
+  template <typename T2>
+  void append (const DenseVector<T2>& other_vector);
 
   /**
    * Multiplies every element in the vector by \p factor.
@@ -328,6 +340,19 @@ void DenseVector<T>::resize(const unsigned int n)
 
 
 template<typename T>
+template<typename T2>
+inline
+void DenseVector<T>::append (const DenseVector<T2>& other_vector)
+{
+  const std::vector<T2> &other_vals = other_vector.get_values();
+
+  _val.reserve(this->size() + other_vals.size());
+  _val.insert(_val.end(), other_vals.begin(), other_vals.end());
+}
+
+
+
+template<typename T>
 inline
 void DenseVector<T>::zero()
 {
@@ -340,7 +365,7 @@ void DenseVector<T>::zero()
 
 template<typename T>
 inline
-T DenseVector<T>::operator () (const unsigned int i) const
+const T & DenseVector<T>::operator () (const unsigned int i) const
 {
   libmesh_assert_less (i, _val.size());
 

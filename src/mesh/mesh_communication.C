@@ -26,7 +26,6 @@
 #include "libmesh/libmesh_config.h"
 #include "libmesh/libmesh_common.h"
 #include "libmesh/libmesh_logging.h"
-#include "libmesh/location_maps.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/mesh_communication.h"
 #include "libmesh/mesh_inserter_iterator.h"
@@ -68,6 +67,82 @@ struct CompareElemIdsByLevel
     return (al == bl) ? aid < bid : al < bl;
   }
 };
+
+struct SyncNeighbors
+{
+  typedef std::vector<dof_id_type> datum;
+
+  SyncNeighbors(MeshBase &_mesh) :
+    mesh(_mesh) {}
+
+  MeshBase &mesh;
+
+  // Find the neighbor ids for each requested element
+  void gather_data (const std::vector<dof_id_type>& ids,
+                    std::vector<datum>& neighbors)
+  {
+    neighbors.resize(ids.size());
+
+    for (std::size_t i=0; i != ids.size(); ++i)
+      {
+        // Look for this element in the mesh
+        // We'd better find every element we're asked for
+        const Elem *elem = mesh.elem(ids[i]);
+
+        // Return the element's neighbors
+        const unsigned int n_neigh = elem->n_neighbors();
+        neighbors[i].resize(n_neigh);
+        for (unsigned int n = 0; n != n_neigh; ++n)
+          {
+            const Elem *neigh = elem->neighbor(n);
+            if (neigh)
+              {
+                libmesh_assert_not_equal_to(neigh, remote_elem);
+                neighbors[i][n] = neigh->id();
+              }
+            else
+              neighbors[i][n] = DofObject::invalid_id;
+          }
+      }
+  }
+
+  void act_on_data (const std::vector<dof_id_type>& ids,
+                    std::vector<datum>& neighbors)
+  {
+    for (std::size_t i=0; i != ids.size(); ++i)
+      {
+        Elem *elem = mesh.elem(ids[i]);
+
+        datum &new_neigh = neighbors[i];
+
+        const unsigned int n_neigh = elem->n_neighbors();
+        libmesh_assert_equal_to (n_neigh, new_neigh.size());
+
+        for (unsigned int n = 0; n != n_neigh; ++n)
+          {
+            const dof_id_type new_neigh_id = new_neigh[n];
+            const Elem *old_neigh = elem->neighbor(n);
+            if (old_neigh && old_neigh != remote_elem)
+              {
+                libmesh_assert_equal_to(old_neigh->id(), new_neigh_id);
+              }
+            else if (new_neigh_id == DofObject::invalid_id)
+              {
+                libmesh_assert (!old_neigh);
+              }
+            else
+              {
+                Elem *neigh = mesh.query_elem(new_neigh_id);
+                if (neigh)
+                  elem->set_neighbor(n, neigh);
+                else
+                  elem->set_neighbor(n, const_cast<RemoteElem*>(remote_elem));
+              }
+          }
+      }
+  }
+};
+
 }
 
 
@@ -168,7 +243,17 @@ void MeshCommunication::redistribute (ParallelMesh &mesh) const
 
               for (unsigned int n=0; n<elem->n_nodes(); n++)
                 if (connected_nodes.count(elem->get_node(n)))
-                  elements_to_send.insert (elem);
+                  {
+                    elements_to_send.insert (elem);
+
+                    // The remote processor needs all its semilocal
+                    // elements' ancestors, and it's possible that
+                    // they might not all be connected to the remote
+                    // processor's nodes.
+                    for (const Elem* parent = elem->parent(); parent;
+                         parent = parent->parent())
+                      elements_to_send.insert(parent);
+                  }
             }
         }
 
@@ -351,8 +436,8 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
   // Let's begin with finding consistent neighbor data information
   // for all the elements we currently have.  We'll use a clean
   // slate here - clear any existing information, including RemoteElem's.
-  //  mesh.find_neighbors (/* reset_remote_elements = */ true,
-  //       /* reset_current_list    = */ true);
+  mesh.find_neighbors (/* reset_remote_elements = */ true,
+                       /* reset_current_list    = */ true);
 
   // Get a unique message tag to use in communications; we'll default
   // to some numbers around pi*10000
@@ -402,7 +487,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
             for (unsigned int s=0; s<elem->n_sides(); s++)
               if (elem->neighbor(s) == NULL)
                 {
-                  AutoPtr<Elem> side(elem->build_side(s));
+                  UniquePtr<Elem> side(elem->build_side(s));
 
                   for (unsigned int n=0; n<side->n_vertices(); n++)
                     my_interface_node_set.insert (side->node(n));
@@ -656,6 +741,19 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
   // allow any pending requests to complete
   Parallel::wait (send_requests);
 
+  // We can now find neighbor information for the interfaces between
+  // local elements and ghost elements.
+  mesh.find_neighbors (/* reset_remote_elements = */ true,
+                       /* reset_current_list    = */ false);
+
+  // Ghost elements may not have correct remote_elem neighbor links,
+  // and we may not be able to locally infer correct neighbor links to
+  // remote elements.  So we synchronize ghost element neighbor links.
+  SyncNeighbors nsync(mesh);
+
+  Parallel::sync_dofobject_data_by_id
+    (mesh.comm(), mesh.elements_begin(), mesh.elements_end(), nsync);
+
   STOP_LOG("gather_neighboring_elements()","MeshCommunication");
 }
 #endif // LIBMESH_HAVE_MPI
@@ -705,15 +803,13 @@ void MeshCommunication::broadcast (MeshBase& mesh) const
                                        &mesh,
                                        mesh_inserter_iterator<Elem>(mesh));
 
-  // Make sure mesh dimension is consistent
-  unsigned char mesh_dimension = mesh.mesh_dimension();
-  mesh.comm().broadcast(mesh_dimension);
-  mesh.set_mesh_dimension(mesh_dimension);
+  // Make sure mesh_dimension and elem_dimensions are consistent.
+  mesh.cache_elem_dims();
 
   // Broadcast all of the named entity information
   mesh.comm().broadcast(mesh.set_subdomain_name_map());
-  mesh.comm().broadcast(mesh.boundary_info->set_sideset_name_map());
-  mesh.comm().broadcast(mesh.boundary_info->set_nodeset_name_map());
+  mesh.comm().broadcast(mesh.get_boundary_info().set_sideset_name_map());
+  mesh.comm().broadcast(mesh.get_boundary_info().set_nodeset_name_map());
 
   libmesh_assert (mesh.comm().verify(mesh.n_elem()));
   libmesh_assert (mesh.comm().verify(mesh.n_nodes()));
@@ -826,7 +922,7 @@ struct SyncIds
   // renumber_obj &renumber;
 
   // Find the id of each requested DofObject -
-  // sync_dofobject_data_by_xyz already did the work for us
+  // Parallel::sync_* already did the work for us
   void gather_data (const std::vector<dof_id_type>& ids,
                     std::vector<datum>& ids_out)
   {
@@ -847,8 +943,7 @@ struct SyncIds
 
 // ------------------------------------------------------------
 void MeshCommunication::make_node_ids_parallel_consistent
-(MeshBase &mesh,
- LocationMap<Node> &loc_map)
+(MeshBase &mesh)
 {
   // This function must be run on all processors at once
   libmesh_parallel_only(mesh.comm());
@@ -856,10 +951,8 @@ void MeshCommunication::make_node_ids_parallel_consistent
   START_LOG ("make_node_ids_parallel_consistent()", "MeshCommunication");
 
   SyncIds syncids(mesh, &MeshBase::renumber_node);
-  Parallel::sync_dofobject_data_by_xyz
-    (mesh.comm(),
-     mesh.nodes_begin(), mesh.nodes_end(),
-     loc_map, syncids);
+  Parallel::sync_node_data_by_element_id
+    (mesh, mesh.elements_begin(), mesh.elements_end(), syncids);
 
   STOP_LOG ("make_node_ids_parallel_consistent()", "MeshCommunication");
 }
@@ -931,8 +1024,7 @@ struct SyncProcIds
 
 // ------------------------------------------------------------
 void MeshCommunication::make_node_proc_ids_parallel_consistent
-(MeshBase& mesh,
- LocationMap<Node>& loc_map)
+(MeshBase& mesh)
 {
   START_LOG ("make_node_proc_ids_parallel_consistent()", "MeshCommunication");
 
@@ -954,8 +1046,8 @@ void MeshCommunication::make_node_proc_ids_parallel_consistent
   // them.
 
   SyncProcIds sync(mesh);
-  Parallel::sync_dofobject_data_by_xyz
-    (mesh.comm(), mesh.nodes_begin(), mesh.nodes_end(), loc_map, sync);
+  Parallel::sync_node_data_by_element_id
+    (mesh, mesh.elements_begin(), mesh.elements_end(), sync);
 
   STOP_LOG ("make_node_proc_ids_parallel_consistent()", "MeshCommunication");
 }
@@ -964,19 +1056,10 @@ void MeshCommunication::make_node_proc_ids_parallel_consistent
 
 // ------------------------------------------------------------
 void MeshCommunication::make_nodes_parallel_consistent
-(MeshBase &mesh,
- LocationMap<Node> &loc_map)
+(MeshBase &mesh)
 {
   // This function must be run on all processors at once
   libmesh_parallel_only(mesh.comm());
-
-  // Create the loc_map if it hasn't been done already
-  bool need_map_update = (mesh.nodes_begin() != mesh.nodes_end() &&
-                          loc_map.empty());
-  mesh.comm().max(need_map_update);
-
-  if (need_map_update)
-    loc_map.init(mesh);
 
   // When this function is called, each section of a parallelized mesh
   // should be in the following state:
@@ -999,13 +1082,13 @@ void MeshCommunication::make_nodes_parallel_consistent
   // may be "wrong" from coarsening, but they're right in the sense
   // that they'll tell us who has the authoritative dofobject ids for
   // each node.
-  this->make_node_proc_ids_parallel_consistent(mesh, loc_map);
+  this->make_node_proc_ids_parallel_consistent(mesh);
 
   // Second, sync up dofobject ids.
-  this->make_node_ids_parallel_consistent(mesh, loc_map);
+  this->make_node_ids_parallel_consistent(mesh);
 
   // Finally, correct the processor ids to make DofMap happy
-  MeshTools::correct_node_proc_ids(mesh, loc_map);
+  MeshTools::correct_node_proc_ids(mesh);
 }
 
 
@@ -1036,6 +1119,18 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
 
   // We don't want to delete any element that shares a node
   // with or is an ancestor of a local element.
+
+  // Using the local_nodes vector rather than e.g. point_neighbors()
+  // gives us correct results even in corner cases, such as where two
+  // elements meet only at a corner.  ;-)  Links between boundary and
+  // interior elements on mixed dimensional meshes also give us
+  // correct ghosting in this way.
+
+  // We also preserve neighbors of local elements - in most cases this
+  // is redundant with the node check, but for non-conforming Tet4
+  // meshes and non-level-one-conforming 2D+3D meshes it is possible
+  // for an element and its coarse neighbor to not share any vertices.
+
   MeshBase::const_element_iterator l_elem_it = mesh.local_elements_begin(),
     l_end     = mesh.local_elements_end();
   for (; l_elem_it != l_end; ++l_elem_it)
@@ -1047,6 +1142,14 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
           libmesh_assert_less (nodeid, local_nodes.size());
           local_nodes[nodeid] = true;
         }
+
+      for (unsigned int s=0; s != elem->n_sides(); ++s)
+        {
+          const Elem *neighbor = elem->neighbor(s);
+          if (neighbor)
+            semilocal_elems[neighbor->id()] = true;
+        }
+
       while (elem)
         {
           dof_id_type elemid = elem->id();

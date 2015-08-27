@@ -41,6 +41,9 @@ class TransientRBThetaExpansion;
  * to perform "online" RB evaluations for
  * Linear Time Invariant (LTI) transient problems.
  *
+ * We can handle time controls on the RHS as h(t)*f(x,\mu).
+ * See Martin Grepl's thesis for more details.
+ *
  * @author David J. Knezevic, 2011
  */
 
@@ -92,6 +95,13 @@ public:
   virtual Real rb_solve(unsigned int N);
 
   /**
+   * If a solve has already been performed, then we cached some data
+   * and we can perform a new solve much more rapidly
+   * (with the same parameters but a possibly different initial condition/rhs control).
+   */
+  virtual Real rb_solve_again();
+
+  /**
    * Override to return the L2 norm of RB_solution.
    */
   virtual Real get_rb_solution_norm();
@@ -136,17 +146,19 @@ public:
   /**
    * Write out all the data to text files in order to segregate the
    * Offline stage from the Online stage.
+   * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void write_offline_data_to_files(const std::string& directory_name = "offline_data",
-                                           const bool write_binary_data=true);
+  virtual void legacy_write_offline_data_to_files(const std::string& directory_name = "offline_data",
+                                                  const bool write_binary_data=true);
 
   /**
    * Read in the saved Offline reduced basis data
    * to initialize the system for Online solves.
+   * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void read_offline_data_from_files(const std::string& directory_name = "offline_data",
-                                            bool read_error_bound_data=true,
-                                            const bool read_binary_data=true);
+  virtual void legacy_read_offline_data_from_files(const std::string& directory_name = "offline_data",
+                                                   bool read_error_bound_data=true,
+                                                   const bool read_binary_data=true);
 
   //----------- PUBLIC DATA MEMBERS -----------//
 
@@ -154,6 +166,13 @@ public:
    * Dense RB L2 matrix.
    */
   DenseMatrix<Number> RB_L2_matrix;
+
+  /**
+   * Cached data for subsequent solves.
+   */
+  DenseMatrix<Number> RB_LHS_matrix;
+  DenseMatrix<Number> RB_RHS_matrix;
+  DenseVector<Number> RB_RHS_save;
 
   /**
    * Dense matrices for the RB mass matrices.
@@ -225,6 +244,11 @@ public:
    * These are basis dependent and hence stored here.
    */
   std::vector< std::vector< NumericVector<Number>* > > M_q_representor;
+
+  /**
+   * Check that the data has been cached in case of using rb_solve_again
+   */
+  bool _rb_solve_data_cached;
 
 };
 

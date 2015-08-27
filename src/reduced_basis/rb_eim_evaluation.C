@@ -101,6 +101,11 @@ unsigned int RBEIMEvaluation::get_n_parametrized_functions() const
     (_parametrized_functions.size());
 }
 
+SerialMesh& RBEIMEvaluation::get_interpolation_points_mesh()
+{
+  return _interpolation_points_mesh;
+}
+
 Number RBEIMEvaluation::evaluate_parametrized_function(unsigned int var_index,
                                                        const Point& p,
                                                        const Elem& elem)
@@ -228,17 +233,17 @@ std::vector<RBTheta*> RBEIMEvaluation::get_eim_theta_objects()
   return _rb_eim_theta_objects;
 }
 
-AutoPtr<RBTheta> RBEIMEvaluation::build_eim_theta(unsigned int index)
+UniquePtr<RBTheta> RBEIMEvaluation::build_eim_theta(unsigned int index)
 {
-  return AutoPtr<RBTheta>( new RBEIMTheta(*this, index) );
+  return UniquePtr<RBTheta>( new RBEIMTheta(*this, index) );
 }
 
-void RBEIMEvaluation::write_offline_data_to_files(const std::string& directory_name,
-                                                  const bool read_binary_data)
+void RBEIMEvaluation::legacy_write_offline_data_to_files(const std::string& directory_name,
+                                                         const bool read_binary_data)
 {
-  START_LOG("write_offline_data_to_files()", "RBEIMEvaluation");
+  START_LOG("legacy_write_offline_data_to_files()", "RBEIMEvaluation");
 
-  Parent::write_offline_data_to_files(directory_name);
+  Parent::legacy_write_offline_data_to_files(directory_name);
 
   // Get the number of basis functions
   unsigned int n_bfs = get_n_basis_functions();
@@ -331,12 +336,12 @@ void RBEIMEvaluation::write_offline_data_to_files(const std::string& directory_n
 
   // Write out the elements associated with the interpolation points.
   // This uses mesh I/O, hence we have to do it on all processors.
-  write_out_interpolation_points_elem(directory_name);
+  legacy_write_out_interpolation_points_elem(directory_name);
 
-  STOP_LOG("write_offline_data_to_files()", "RBEIMEvaluation");
+  STOP_LOG("legacy_write_offline_data_to_files()", "RBEIMEvaluation");
 }
 
-void RBEIMEvaluation::write_out_interpolation_points_elem
+void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
 (const std::string& directory_name)
 {
   _interpolation_points_mesh.clear();
@@ -452,13 +457,13 @@ void RBEIMEvaluation::write_out_interpolation_points_elem
     }
 }
 
-void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_name,
-                                                   bool read_error_bound_data,
-                                                   const bool read_binary_data)
+void RBEIMEvaluation::legacy_read_offline_data_from_files(const std::string& directory_name,
+                                                          bool read_error_bound_data,
+                                                          const bool read_binary_data)
 {
-  START_LOG("read_offline_data_from_files()", "RBEIMEvaluation");
+  START_LOG("legacy_read_offline_data_from_files()", "RBEIMEvaluation");
 
-  Parent::read_offline_data_from_files(directory_name, read_error_bound_data);
+  Parent::legacy_read_offline_data_from_files(directory_name, read_error_bound_data);
 
   // First, find out how many basis functions we had when Greedy terminated
   // This was set in RBSystem::read_offline_data_from_files
@@ -476,6 +481,8 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   // Read in the interpolation matrix
   file_name.str("");
   file_name << directory_name << "/interpolation_matrix" << suffix;
+  assert_file_exists(file_name.str());
+
   Xdr interpolation_matrix_in(file_name.str(), mode);
 
   for(unsigned int i=0; i<n_bfs; i++)
@@ -492,6 +499,8 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   // Also, read in the "extra" row
   file_name.str("");
   file_name << directory_name << "/extra_interpolation_matrix_row" << suffix;
+  assert_file_exists(file_name.str());
+
   Xdr extra_interpolation_matrix_row_in(file_name.str(), mode);
 
   for(unsigned int j=0; j<n_bfs; j++)
@@ -505,6 +514,8 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   // Next read in interpolation_points
   file_name.str("");
   file_name << directory_name << "/interpolation_points" << suffix;
+  assert_file_exists(file_name.str());
+
   Xdr interpolation_points_in(file_name.str(), mode);
 
   for(unsigned int i=0; i<n_bfs; i++)
@@ -526,6 +537,8 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   // Also, read in the extra interpolation point
   file_name.str("");
   file_name << directory_name << "/extra_interpolation_point" << suffix;
+  assert_file_exists(file_name.str());
+
   Xdr extra_interpolation_point_in(file_name.str(), mode);
 
   {
@@ -547,6 +560,8 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   // Next read in interpolation_points_var
   file_name.str("");
   file_name << directory_name << "/interpolation_points_var" << suffix;
+  assert_file_exists(file_name.str());
+
   Xdr interpolation_points_var_in(file_name.str(), mode);
 
   for(unsigned int i=0; i<n_bfs; i++)
@@ -560,6 +575,8 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   // Also, read in extra_interpolation_point_var
   file_name.str("");
   file_name << directory_name << "/extra_interpolation_point_var" << suffix;
+  assert_file_exists(file_name.str());
+
   Xdr extra_interpolation_point_var_in(file_name.str(), mode);
 
   {
@@ -570,12 +587,12 @@ void RBEIMEvaluation::read_offline_data_from_files(const std::string& directory_
   extra_interpolation_point_var_in.close();
 
   // Read in the elements corresponding to the interpolation points
-  read_in_interpolation_points_elem(directory_name);
+  legacy_read_in_interpolation_points_elem(directory_name);
 
-  STOP_LOG("read_offline_data_from_files()", "RBEIMEvaluation");
+  STOP_LOG("legacy_read_offline_data_from_files()", "RBEIMEvaluation");
 }
 
-void RBEIMEvaluation::read_in_interpolation_points_elem
+void RBEIMEvaluation::legacy_read_in_interpolation_points_elem
 (const std::string& directory_name)
 {
   _interpolation_points_mesh.read(directory_name + "/interpolation_points_mesh.xda");
@@ -589,6 +606,9 @@ void RBEIMEvaluation::read_in_interpolation_points_elem
     // These are just integers, so no need for a binary format here
     std::ifstream interpolation_elem_ids_in
       ((directory_name + "/interpolation_elem_ids.dat").c_str(), std::ifstream::in);
+
+    if (!interpolation_elem_ids_in)
+      libmesh_error_msg("RB data missing: " + directory_name + "/interpolation_elem_ids.dat");
 
     for(unsigned int i=0; i<n_bfs; i++)
       {

@@ -89,7 +89,26 @@ extern "C" {
 
 #endif
 
+// Clang provides the __has_builtin macro, we define it for compilers
+// that don't...
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
 
+// Fine-grained ifdefs for all three inverse hyperbolic trig
+// functions.  This works for the two clang compilers I tried it
+// on... a hand-built one and one from Apple.
+#if __cplusplus > 199711L && (!defined(__clang__) || __has_builtin(asinh))
+#define HAVE_INVERSE_HYPERBOLIC_SINE
+#endif
+
+#if __cplusplus > 199711L && (!defined(__clang__) || __has_builtin(acosh))
+#define HAVE_INVERSE_HYPERBOLIC_COSINE
+#endif
+
+#if __cplusplus > 199711L && (!defined(__clang__) || __has_builtin(atanh))
+#define HAVE_INVERSE_HYPERBOLIC_TANGENT
+#endif
 
 typedef  std::vector<std::string>  STRING_VECTOR;
 
@@ -181,6 +200,28 @@ public:
    */
   inline bool have_variable(const char* VarName) const;
   inline bool have_variable(const std::string& VarName) const;
+
+  /**
+   * Check for a section name. When querying, the section_name
+   * can be of the form
+   * Section1 or Section1/
+   *
+   * Section1/Section2 or Section1/Section2/
+   *
+   * etc.
+   */
+  bool have_section(const char* section_name) const;
+
+  /**
+   * Check for a section name. When querying, the section_name
+   * can be of the form
+   * Section1 or Section1/
+   *
+   * Section1/Section2 or Section1/Section2/
+   *
+   * etc.
+   */
+  bool have_section(const std::string& section_name) const;
 
   /**
    * scalar values
@@ -839,9 +880,9 @@ GetPot::GetPot(const GetPot& Other) :
   _comment_start(Other._comment_start),
   _comment_end(Other._comment_end),
   _field_separator(Other._field_separator),
-#if !defined(GETPOT_DISABLE_MUTEX)
-  _getpot_mtx(Other._getpot_mtx),
-#endif
+  // #if !defined(GETPOT_DISABLE_MUTEX)
+  //   _getpot_mtx(Other._getpot_mtx),
+  // #endif
   _internal_string_container(),
   _requested_arguments(Other._requested_arguments),
   _requested_variables(Other._requested_variables),
@@ -897,9 +938,9 @@ GetPot::operator=(const GetPot& Other)
   _comment_start       = Other._comment_start;
   _comment_end         = Other._comment_end;
   _field_separator     = Other._field_separator;
-#if !defined(GETPOT_DISABLE_MUTEX)
-  _getpot_mtx          = Other._getpot_mtx;
-#endif
+  // #if !defined(GETPOT_DISABLE_MUTEX)
+  //   _getpot_mtx          = Other._getpot_mtx;
+  // #endif
   _requested_arguments = Other._requested_arguments;
   _requested_variables = Other._requested_variables;
   _requested_sections  = Other._requested_sections;
@@ -1407,7 +1448,7 @@ GetPot::_process_section_label(const std::string& Section,
           if (sname[i] == '/')
             {
               section_stack.push_back(sname.substr(0,i));
-              if (i+1 < sname.length()-1)
+              if (i+1 < sname.length())
                 sname = sname.substr(i+1);
               i = 0;
             }
@@ -2118,7 +2159,33 @@ GetPot::have_variable(const std::string& VarName) const
   return have_variable(VarName.c_str());
 }
 
+inline bool
+GetPot::have_section(const char* section_name) const
+{
+  std::string s = std::string(section_name);
+  return this->have_section(s);
+}
 
+inline bool
+GetPot::have_section(const std::string& section_name) const
+{
+  const char slash('/');
+
+  std::string::const_reverse_iterator it = section_name.rbegin();
+
+  bool found_section = false;
+
+  // Check if section_name ends with a "/". If not, append it for the search since
+  // the section names are stored with a "/" at the end.
+  if( (*it) != slash )
+    // We need to use a linear search because we can't sort section_list
+    // without violating some assumptions. See libMesh #481 for more discussion.
+    found_section = ( std::find(section_list.begin(), section_list.end(), section_name+slash) != section_list.end() );
+  else
+    found_section = ( std::find(section_list.begin(), section_list.end(), section_name) != section_list.end() );
+
+  return found_section;
+}
 
 template <typename T>
 inline T
@@ -2770,6 +2837,13 @@ GetPot::_DBE_expand(const std::string& expr)
               double arg = _convert_to_type(A[0], 0.0);
               return _convert_from_type(std::log10(arg));
             }
+          else if (funcname == "exp")
+            {
+              STRING_VECTOR A =
+                _DBE_get_expr_list(expr.substr(funcnameend), 1);
+              double arg = _convert_to_type(A[0], 0.0);
+              return _convert_from_type(std::exp(arg));
+            }
           else if (funcname == "sin")
             {
               STRING_VECTOR A =
@@ -2841,6 +2915,33 @@ GetPot::_DBE_expand(const std::string& expr)
               double arg = _convert_to_type(A[0], 0.0);
               return _convert_from_type(std::tanh(arg));
             }
+#ifdef HAVE_INVERSE_HYPERBOLIC_SINE
+          else if (funcname == "asinh")
+            {
+              STRING_VECTOR A =
+                _DBE_get_expr_list(expr.substr(funcnameend), 1);
+              double arg = _convert_to_type(A[0], 0.0);
+              return _convert_from_type(std::asinh(arg));
+            }
+#endif
+#ifdef HAVE_INVERSE_HYPERBOLIC_COSINE
+          else if (funcname == "acosh")
+            {
+              STRING_VECTOR A =
+                _DBE_get_expr_list(expr.substr(funcnameend), 1);
+              double arg = _convert_to_type(A[0], 0.0);
+              return _convert_from_type(std::acosh(arg));
+            }
+#endif
+#ifdef HAVE_INVERSE_HYPERBOLIC_TANGENT
+          else if (funcname == "atanh")
+            {
+              STRING_VECTOR A =
+                _DBE_get_expr_list(expr.substr(funcnameend), 1);
+              double arg = _convert_to_type(A[0], 0.0);
+              return _convert_from_type(std::atanh(arg));
+            }
+#endif
           else if (funcname == "sqrt")
             {
               STRING_VECTOR A =
@@ -2926,9 +3027,14 @@ GetPot::_DBE_expand(const std::string& expr)
                 } while (returnval >= y);
               return _convert_from_type(returnval / x);
             }
-
           else if (funcname == "time")
             return _convert_from_type(std::time(NULL));
+          else
+            {
+              getpot_cerr << "ERROR: unrecognized function "
+                          << funcname << std::endl;
+              getpot_error();
+            }
         }
     }
 

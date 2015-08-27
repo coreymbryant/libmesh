@@ -38,18 +38,26 @@ EXTERN_C_FOR_PETSC_END
 
 namespace libMesh
 {
-  // Allow users access to these functions in case they want to reuse them.  Note that users shouldn't
-  // need access to these most of the time as they are used internally by this object.
-  extern "C"
-  {
-    PetscErrorCode __libmesh_petsc_snes_monitor (SNES, PetscInt its, PetscReal fnorm, void *);
-    PetscErrorCode __libmesh_petsc_snes_residual (SNES, Vec x, Vec r, void *ctx);
+// Allow users access to these functions in case they want to reuse them.  Note that users shouldn't
+// need access to these most of the time as they are used internally by this object.
+extern "C"
+{
+  PetscErrorCode __libmesh_petsc_snes_monitor (SNES, PetscInt its, PetscReal fnorm, void *);
+  PetscErrorCode __libmesh_petsc_snes_residual (SNES, Vec x, Vec r, void *ctx);
 #if PETSC_RELEASE_LESS_THAN(3,5,0)
-    PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx);
+  PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx);
 #else
-    PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat jac, Mat pc, void *ctx);
+  PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat jac, Mat pc, void *ctx);
 #endif
-  }
+
+  PetscErrorCode __libmesh_petsc_snes_postcheck(
+#if PETSC_VERSION_LESS_THAN(3,3,0)
+                                                SNES, Vec x, Vec y, Vec w, void *context, PetscBool *changed_y, PetscBool *changed_w
+#else
+                                                SNESLineSearch, Vec x, Vec y, Vec w, PetscBool *changed_y, PetscBool *changed_w, void *context
+#endif
+                                                );
+}
 
 /**
  * This class provides an interface to PETSc
@@ -185,13 +193,12 @@ protected:
    */
   bool _default_monitor;
 
-private:
 #if !PETSC_VERSION_LESS_THAN(3,3,0)
   void build_mat_null_space(NonlinearImplicitSystem::ComputeVectorSubspace* computeSubspaceObject,
                             void (*)(std::vector<NumericVector<Number>*>&, sys_type&),
                             MatNullSpace*);
 #endif
-
+private:
   friend PetscErrorCode __libmesh_petsc_snes_residual (SNES snes, Vec x, Vec r, void *ctx);
 #if PETSC_RELEASE_LESS_THAN(3,5,0)
   friend PetscErrorCode __libmesh_petsc_snes_jacobian (SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx);

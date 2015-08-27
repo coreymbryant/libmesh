@@ -19,6 +19,8 @@ SUBDIRS = \
 	eigenproblems/eigenproblems_ex3 \
 	fem_system/fem_system_ex1 \
 	fem_system/fem_system_ex2 \
+	fem_system/fem_system_ex3 \
+	fem_system/fem_system_ex4 \
 	solution_transfer/solution_transfer_ex1 \
 	miscellaneous/miscellaneous_ex1 \
 	miscellaneous/miscellaneous_ex2 \
@@ -31,14 +33,19 @@ SUBDIRS = \
 	miscellaneous/miscellaneous_ex9 \
 	miscellaneous/miscellaneous_ex10 \
 	miscellaneous/miscellaneous_ex11 \
+	optimization/optimization_ex1 \
+	optimization/optimization_ex2 \
 	subdomains/subdomains_ex1 \
 	subdomains/subdomains_ex2 \
+	subdomains/subdomains_ex3 \
 	systems_of_equations/systems_of_equations_ex1 \
 	systems_of_equations/systems_of_equations_ex2 \
 	systems_of_equations/systems_of_equations_ex3 \
 	systems_of_equations/systems_of_equations_ex4 \
 	systems_of_equations/systems_of_equations_ex5 \
 	systems_of_equations/systems_of_equations_ex6 \
+	systems_of_equations/systems_of_equations_ex7 \
+	systems_of_equations/systems_of_equations_ex8 \
 	reduced_basis/reduced_basis_ex1 \
 	reduced_basis/reduced_basis_ex2 \
 	reduced_basis/reduced_basis_ex3 \
@@ -101,7 +108,7 @@ doc:
 	for dir in $(SUBDIRS) ; do \
 	  cd $$dir ; \
 	  $(MAKE) doc ; \
-	  cp *.php $(abs_top_srcdir)/doc/html ; \
+	  cp *.html $(abs_top_srcdir)/doc/html/examples/ ; \
 	  cd - ; \
 	done
 

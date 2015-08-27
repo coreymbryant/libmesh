@@ -159,7 +159,7 @@ class NodeConstraints : public std::map<const Node *,
  * This class handles the numbering of degrees of freedom on a mesh.
  * For systems of equations the class supports a fixed number of variables.
  * The degrees of freedom are numbered such that sequential, contiguous blocks
- * correspond to distinct subdomains.  This is so that the resulting data
+ * belong to distinct processors.  This is so that the resulting data
  * structures will work well with parallel linear algebra packages.
  *
  * @author Benjamin S. Kirk, 2002-2007
@@ -482,7 +482,8 @@ public:
   { return this->last_dof(this->processor_id()); }
 
   /**
-   * Returns the first dof index that is after all indices local to subdomain \p proc.
+   * Returns the first dof index that is after all indices local to
+   * processor \p proc.
    * Analogous to the end() member function of STL containers.
    */
   dof_id_type end_dof(const processor_id_type proc) const
@@ -493,7 +494,8 @@ public:
 
 #ifdef LIBMESH_ENABLE_AMR
   /**
-   * Returns the first old dof index that is after all indices local to subdomain \p proc.
+   * Returns the first old dof index that is after all indices local
+   * to processor \p proc.
    * Analogous to the end() member function of STL containers.
    */
   dof_id_type end_old_dof(const processor_id_type proc) const
@@ -674,6 +676,18 @@ public:
   DofConstraints::const_iterator constraint_rows_end() const
   { return _dof_constraints.end(); }
 
+  void stash_dof_constraints()
+  {
+    libmesh_assert(_stashed_dof_constraints.empty());
+    _dof_constraints.swap(_stashed_dof_constraints);
+  }
+
+  void unstash_dof_constraints()
+  {
+    libmesh_assert(_dof_constraints.empty());
+    _dof_constraints.swap(_stashed_dof_constraints);
+  }
+
 #ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
   /**
    * Returns an iterator pointing to the first Node constraint row
@@ -695,11 +709,24 @@ public:
   bool is_constrained_dof (const dof_id_type dof) const;
 
   /**
-   * @returns true if the degree of freedom \p dof has a heterogenous
-   * constraint for adjoint solution \p qoi_num, false otherwise.
+   * @returns true if the system has any heterogenous constraints for
+   * adjoint solution \p qoi_num, false otherwise.
    */
-  bool has_heterogenous_adjoint_constraint (const unsigned int qoi_num,
-                                            const dof_id_type dof) const;
+  bool has_heterogenous_adjoint_constraints (const unsigned int qoi_num) const;
+
+  /**
+   * @returns the heterogeneous constraint value if the degree of
+   * freedom \p dof has a heterogenous constraint for adjoint solution
+   * \p qoi_num, zero otherwise.
+   */
+  Number has_heterogenous_adjoint_constraint (const unsigned int qoi_num,
+                                              const dof_id_type dof) const;
+
+  /**
+   * @returns a reference to the set of right-hand-side values in
+   * primal constraint equations
+   */
+  DofConstraintValueMap & get_primal_constraint_values();
 
   /**
    * @returns true if the Node is constrained,
@@ -1075,7 +1102,8 @@ private:
    */
   void _dof_indices (const Elem* const elem, std::vector<dof_id_type>& di,
                      const unsigned int v,
-                     const std::vector<Node*>& elem_nodes
+                     const Node * const * nodes,
+                     unsigned int       n_nodes
 #ifdef DEBUG
                      ,
                      std::size_t & tot_size
@@ -1085,7 +1113,7 @@ private:
   /**
    * Builds a sparsity pattern
    */
-  AutoPtr<SparsityPattern::Build> build_sparsity(const MeshBase& mesh) const;
+  UniquePtr<SparsityPattern::Build> build_sparsity(const MeshBase& mesh) const;
 
   /**
    * Invalidates all active DofObject dofs for this system
@@ -1240,8 +1268,14 @@ private:
   std::vector<dof_id_type> _end_df;
 
   /**
-   * A list containing all the global DOF indicies that affect the
-   * solution on my subdomain.
+   * First DOF index for SCALAR variable v, or garbage for non-SCALAR
+   * variable v
+   */
+  std::vector<dof_id_type> _first_scalar_df;
+
+  /**
+   * A list containing all the global DOF indices that affect the
+   * solution on my processor.
    */
   std::vector<dof_id_type> _send_list;
 
@@ -1287,7 +1321,7 @@ private:
    * The sparsity pattern of the global matrix, kept around if it
    * might be needed by future additions of the same type of matrix.
    */
-  AutoPtr<SparsityPattern::Build> _sp;
+  UniquePtr<SparsityPattern::Build> _sp;
 
   /**
    * The number of on-processor nonzeros in my portion of the
@@ -1331,6 +1365,12 @@ private:
    */
   std::vector<dof_id_type> _end_old_df;
 
+  /**
+   * First old DOF index for SCALAR variable v, or garbage for
+   * non-SCALAR variable v
+   */
+  std::vector<dof_id_type> _first_old_scalar_df;
+
 #endif
 
 #ifdef LIBMESH_ENABLE_CONSTRAINTS
@@ -1338,7 +1378,7 @@ private:
    * Data structure containing DOF constraints.  The ith
    * entry is the constraint matrix row for DOF i.
    */
-  DofConstraints             _dof_constraints;
+  DofConstraints _dof_constraints, _stashed_dof_constraints;
 
   DofConstraintValueMap      _primal_constraint_values;
 
@@ -1482,18 +1522,48 @@ bool DofMap::is_constrained_dof (const dof_id_type dof) const
   return false;
 }
 
+
 inline
-bool DofMap::has_heterogenous_adjoint_constraint (const unsigned int qoi_num,
-                                                  const dof_id_type dof) const
+bool DofMap::has_heterogenous_adjoint_constraints (const unsigned int qoi_num) const
 {
   AdjointDofConstraintValues::const_iterator it =
     _adjoint_constraint_values.find(qoi_num);
-  if (it != _adjoint_constraint_values.end() &&
-      it->second.count(dof))
-    return true;
+  if (it == _adjoint_constraint_values.end())
+    return false;
+  if (it->second.empty())
+    return false;
 
-  return false;
+  return true;
 }
+
+
+inline
+Number DofMap::has_heterogenous_adjoint_constraint (const unsigned int qoi_num,
+                                                    const dof_id_type dof) const
+{
+  AdjointDofConstraintValues::const_iterator it =
+    _adjoint_constraint_values.find(qoi_num);
+  if (it != _adjoint_constraint_values.end())
+    {
+      DofConstraintValueMap::const_iterator rhsit =
+        it->second.find(dof);
+      if (rhsit == it->second.end())
+        return 0;
+      else
+        return rhsit->second;
+    }
+
+  return 0;
+}
+
+
+
+inline
+DofConstraintValueMap & DofMap::get_primal_constraint_values()
+{
+  return _primal_constraint_values;
+}
+
 
 
 #else
@@ -1530,7 +1600,7 @@ inline void DofMap::enforce_constraints_exactly (const System &,
                                                  NumericVector<Number> *,
                                                  bool = false) const {}
 
-inline void DofMap::enforce_adjoint_constraints_exactly (NumericVector<Number> *,
+inline void DofMap::enforce_adjoint_constraints_exactly (NumericVector<Number> &,
                                                          unsigned int) const {}
 
 #endif // LIBMESH_ENABLE_CONSTRAINTS

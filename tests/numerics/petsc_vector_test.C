@@ -1,6 +1,6 @@
 #include <libmesh/petsc_vector.h>
 
-#ifdef HAVE_PETSC
+#ifdef LIBMESH_HAVE_PETSC
 
 #include "numeric_vector_test.h"
 
@@ -9,7 +9,7 @@
 
 using namespace libMesh;
 
-class PetscVectorTest : public NumericVectorTest<PetscVector<Real> > {
+class PetscVectorTest : public NumericVectorTest<PetscVector<Number> > {
 public:
   CPPUNIT_TEST_SUITE( PetscVectorTest );
 
@@ -20,5 +20,5 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( PetscVectorTest );
 
-#endif // #ifdef HAVE_PETSC
+#endif // #ifdef LIBMESH_HAVE_PETSC
 

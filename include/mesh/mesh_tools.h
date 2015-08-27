@@ -43,7 +43,6 @@ class SerialMesh;
 class ParallelMesh;
 class Sphere;
 class Elem;
-template <typename T> class LocationMap;
 
 /**
  * Utility functions for operations on a \p Mesh object.  Here is where
@@ -314,7 +313,7 @@ unsigned int max_level (const MeshBase &mesh);
  * every node directly attached to the given one.
  */
 void find_nodal_neighbors(const MeshBase &mesh, const Node &n,
-                          std::vector<std::vector<const Elem*> > &nodes_to_elem_map,
+                          const std::vector<std::vector<const Elem*> > &nodes_to_elem_map,
                           std::vector<const Node*> &neighbors);
 
 /**
@@ -335,7 +334,7 @@ void find_hanging_nodes_and_parents(const MeshBase &mesh, std::map<dof_id_type, 
  * On a distributed mesh, this function must be called in parallel
  * to sync everyone's corrected processor ids on ghost nodes.
  */
-void correct_node_proc_ids(MeshBase &, LocationMap<Node> &);
+void correct_node_proc_ids(MeshBase &);
 
 
 #ifdef DEBUG
@@ -384,6 +383,13 @@ void libmesh_assert_valid_elem_ids (const MeshBase &mesh);
 void libmesh_assert_valid_amr_elem_ids (const MeshBase &mesh);
 
 /**
+ * A function for verifying that any interior_parent pointers on
+ * elements are consistent with AMR (parents' interior_parents are
+ * interior_parents' parents)
+ */
+void libmesh_assert_valid_amr_interior_parents (const MeshBase &mesh);
+
+/**
  * A function for verifying that all nodes are connected to at least
  * one element.
  *
@@ -427,6 +433,8 @@ void libmesh_assert_valid_refinement_tree (const MeshBase &mesh);
 /**
  * A function for verifying that neighbor connectivity is correct (each
  * element is a neighbor of or descendant of a neighbor of its neighbors)
+ * and consistent (each neighbor link goes to either the same neighbor
+ * or to a RemoteElem on each processor)
  */
 void libmesh_assert_valid_neighbors (const MeshBase &mesh);
 #endif

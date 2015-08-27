@@ -68,7 +68,24 @@ public:
   InfQuad (const unsigned int nn,
            Elem* p,
            Node** nodelinkdata) :
-    Elem(nn, InfQuad::n_sides(), p, _elemlinks_data, nodelinkdata) {}
+    Elem(nn, InfQuad::n_sides(), p, _elemlinks_data, nodelinkdata)
+  {
+    // Make sure the interior parent isn't undefined
+    if (LIBMESH_DIM > 2)
+      this->set_interior_parent(NULL);
+  }
+
+  /**
+   * @returns the \p Point associated with local \p Node \p i,
+   * in master element rather than physical coordinates.
+   */
+  Point master_point (const unsigned int i) const
+  {
+    libmesh_assert_less(i, this->n_nodes());
+    return Point(_master_points[i][0],
+                 _master_points[i][1],
+                 _master_points[i][2]);
+  }
 
   /**
    * @returns 2, the dimensionality of the object.
@@ -127,12 +144,12 @@ public:
    * @returns a primitive (2-noded) edge or infedge for
    * edge \p i.
    */
-  AutoPtr<Elem> side (const unsigned int i) const;
+  UniquePtr<Elem> side (const unsigned int i) const;
 
   /**
    * build_edge and build_side are identical in 2D
    */
-  AutoPtr<Elem> build_edge (const unsigned int i) const
+  UniquePtr<Elem> build_edge (const unsigned int i) const
   { return build_side(i); }
 
   /*
@@ -173,6 +190,11 @@ protected:
    * Data for links to parent/neighbor/interior_parent elements.
    */
   Elem* _elemlinks_data[4+(LIBMESH_DIM>2)];
+
+  /**
+   * Master element node locations
+   */
+  static const Real _master_points[6][3];
 };
 
 

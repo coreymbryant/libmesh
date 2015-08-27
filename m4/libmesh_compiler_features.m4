@@ -98,6 +98,26 @@ fi
 
 
 # --------------------------------------------------------------
+# __TIME__ __DATE__ stamps - enabled by default
+# disabling preprocessor timestamps helps compiler caches such
+# as ccache to work more effectively.
+# --------------------------------------------------------------
+AC_ARG_ENABLE(timestamps,
+              AS_HELP_STRING([--disable-timestamps],
+                             [do not add preprocessor timestamps to the library (helps ccache)]),
+              enabletimestamps=$enableval,
+              enabletimestamps=yes)
+
+if test "$enabletimestamps" != no ; then
+  AC_DEFINE(ENABLE_TIMESTAMPS, 1,
+           [Flag indicating if the library should be built with compile time and date timestamps])
+  AC_MSG_RESULT(<<< Configuring library with compile timestamps >>>)
+fi
+# --------------------------------------------------------------
+
+
+
+# --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------
 AC_CHECK_SIZEOF(short int)
@@ -156,7 +176,16 @@ AC_ARG_ENABLE(unordered-containers,
     ACX_STD_SET
   fi
 
-AC_CHECK_HEADERS(dlfcn.h)
+# Determine which of std::hash, std::tr1::hash, or __gnu_cxx::hash is available
+ACX_BEST_HASH
+
+AX_CXX_DLOPEN
+
+dnl Set preprocessor macro if the test code succeeded
+if (test "$ac_cv_cxx_dlopen" = yes); then
+  AC_DEFINE(HAVE_DLOPEN, 1, [define if the compiler supports dlopen/dlsym/dlclose])
+fi
+
 AX_CXX_GCC_ABI_DEMANGLE
 AX_CXX_GLIBC_BACKTRACE
 

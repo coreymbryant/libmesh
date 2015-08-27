@@ -27,6 +27,7 @@
 // C++ includes
 #include <cstddef>
 #include <vector>
+#include <set>
 
 namespace libMesh
 {
@@ -75,14 +76,18 @@ public:
   bool active() const { return children.empty(); }
 
   /**
-   * Inserts \p Node \p nd into the TreeNode.
+   * Tries to insert \p Node \p nd into the TreeNode.
+   * Returns \p true iff \p nd is inserted into the TreeNode or one of
+   * its children.
    */
-  void insert (const Node* nd);
+  bool insert (const Node* nd);
 
   /**
    * Inserts \p Elem \p el into the TreeNode.
+   * Returns \p true iff \p el is inserted into the TreeNode or one of
+   * its children.
    */
-  void insert (const Elem* nd);
+  bool insert (const Elem* nd);
 
   /**
    * Refine the tree node into N children if it contains
@@ -96,16 +101,18 @@ public:
   void set_bounding_box (const std::pair<Point, Point>& bbox);
 
   /**
-   * @returns true if this TreeNode (or its children) contain node n,
-   * false otherwise.
+   * @returns true if this TreeNode (or its children) contain node n
+   * (within relative tolerance), false otherwise.
    */
-  bool bounds_node (const Node* nd) const;
+  bool bounds_node (const Node* nd,
+                    Real relative_tol = 0) const;
 
   /**
-   * @returns true if this TreeNode (or its children) contain point p,
-   * false otherwise.
+   * @returns true if this TreeNode (or its children) contain point p
+   * (within relative tolerance), false otherwise.
    */
-  bool bounds_point (const Point &p) const;
+  bool bounds_point (const Point &p,
+                     Real relative_tol = 0) const;
 
   /**
    * @returns the level of the node.
@@ -136,16 +143,22 @@ public:
   unsigned int n_active_bins() const;
 
   /**
-   * @returns an element containing point p.
+   * @returns an element containing point p,
+   * optionally restricted to a set of allowed subdomains.
    */
-  const Elem* find_element (const Point& p) const;
+  const Elem* find_element (const Point& p,
+                            const std::set<subdomain_id_type>* allowed_subdomains = NULL,
+                            Real relative_tol = TOLERANCE) const;
 
 
 private:
   /**
-   * Look for point \p p in our children.
+   * Look for point \p p in our children,
+   * optionally restricted to a set of allowed subdomains.
    */
-  const Elem* find_element_in_children (const Point& p) const;
+  const Elem* find_element_in_children (const Point& p,
+                                        const std::set<subdomain_id_type>* allowed_subdomains,
+                                        Real relative_tol) const;
 
   /**
    * Constructs the bounding box for child \p c.

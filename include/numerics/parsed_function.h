@@ -56,9 +56,9 @@ public:
                       std::vector<std::string>()),
     _initial_vals (initial_vals ? *initial_vals :
                    std::vector<Output>())
-      // Size the spacetime vector to account for space, time, and any additional
-      // variables passed
-      //_spacetime(LIBMESH_DIM+1 + (additional_vars ? additional_vars->size() : 0)),
+    // Size the spacetime vector to account for space, time, and any additional
+    // variables passed
+    //_spacetime(LIBMESH_DIM+1 + (additional_vars ? additional_vars->size() : 0)),
   {
     std::string variables = "x";
 #if LIBMESH_DIM > 1
@@ -110,7 +110,8 @@ public:
                             std::string::npos : end - nextstart);
 
         // fparser can crash on empty expressions
-        libmesh_assert(!subexpression.empty());
+        if (subexpression.empty())
+          libmesh_error_msg("ERROR: FunctionParser is unable to parse empty expression.\n");
 
         // Parse (and optimize if possible) the subexpression.
         // Add some basic constants, to Real precision.
@@ -247,15 +248,15 @@ public:
   }
 
 
-  virtual AutoPtr<FunctionBase<Output> > clone() const {
-    return AutoPtr<FunctionBase<Output> >
+  virtual UniquePtr<FunctionBase<Output> > clone() const {
+    return UniquePtr<FunctionBase<Output> >
       (new ParsedFunction(_expression, &_additional_vars, &_initial_vals));
   }
 
 private:
   // Set the _spacetime argument vector
   void set_spacetime(const Point& p,
-                    const Real time = 0)
+                     const Real time = 0)
   {
     _spacetime[0] = p(0);
 #if LIBMESH_DIM > 1
@@ -279,41 +280,42 @@ private:
     Output result = parser.Eval(&_spacetime[0]);
     int error_code = parser.EvalError();
     if (error_code)
-    {
-      libMesh::err <<
-        "ERROR: FunctionParser is unable to evaluate component " <<
-        component_idx << " of expression '" << function_name <<
-        "' with arguments:\n";
-      for (unsigned int j=0; j<_spacetime.size(); ++j)
-        libMesh::err << '\t' << _spacetime[j] << '\n';
-      libMesh::err << '\n';
-
-      // Currently no API to report error messages, we'll do it manually
-      std::string error_message = "Reason: ";
-
-      switch (error_code)
       {
-      case 1:
-        error_message += "Division by zero";
-        break;
-      case 2:
-        error_message += "Square Root error (negative value)";
-        break;
-      case 3:
-        error_message += "Log error (negative value)";
-        break;
-      case 4:
-        error_message += "Trigonometric error (asin or acos of illegal value)";
-        break;
-      case 5:
-        error_message += "Maximum recursion level reached";
-        break;
-      default:
-        error_message += "Unknown";
-        break;
+        libMesh::err << "ERROR: FunctionParser is unable to evaluate component "
+                     << component_idx
+                     << " of expression '"
+                     << function_name
+                     << "' with arguments:\n";
+        for (unsigned int j=0; j<_spacetime.size(); ++j)
+          libMesh::err << '\t' << _spacetime[j] << '\n';
+        libMesh::err << '\n';
+
+        // Currently no API to report error messages, we'll do it manually
+        std::string error_message = "Reason: ";
+
+        switch (error_code)
+          {
+          case 1:
+            error_message += "Division by zero";
+            break;
+          case 2:
+            error_message += "Square Root error (negative value)";
+            break;
+          case 3:
+            error_message += "Log error (negative value)";
+            break;
+          case 4:
+            error_message += "Trigonometric error (asin or acos of illegal value)";
+            break;
+          case 5:
+            error_message += "Maximum recursion level reached";
+            break;
+          default:
+            error_message += "Unknown";
+            break;
+          }
+        libmesh_error_msg(error_message);
       }
-      libmesh_error_msg(error_message);
-    }
 
     return result;
 #else
@@ -351,7 +353,7 @@ private:
 namespace libMesh {
 
 
-template <typename Output>
+template <typename Output=Number>
 class ParsedFunction : public FunctionBase<Output>
 {
 public:
@@ -371,8 +373,8 @@ public:
   virtual void init() {}
   virtual void clear() {}
   virtual Output & getVarAddress(const std::string & /*variable_name*/) { return _dummy; }
-  virtual AutoPtr<FunctionBase<Output> > clone() const {
-    return AutoPtr<FunctionBase<Output> >
+  virtual UniquePtr<FunctionBase<Output> > clone() const {
+    return UniquePtr<FunctionBase<Output> >
       (new ParsedFunction<Output>(""));
   }
 private:

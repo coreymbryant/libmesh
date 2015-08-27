@@ -39,6 +39,9 @@ namespace libMesh
  * TransientRBConstruction extends RBConstruction to add
  * functionality relevant in the time-dependent case.
  *
+ * We can handle time controls on the RHS as h(t)*f(x,\mu).
+ * See Martin Grepl's thesis for more details.
+ *
  * @author David J. Knezevic 2009
  */
 
@@ -101,8 +104,7 @@ public:
    * projection error. Other calls to truth_solve generally do not
    * need to perform these projection calculations.
    */
-  virtual Real train_reduced_basis(const std::string& directory_name = "offline_data",
-                                   const bool resize_rb_eval_data=true);
+  virtual Real train_reduced_basis(const bool resize_rb_eval_data=true);
 
   /**
    * Read in the parameters from file and set up the system
@@ -255,13 +257,13 @@ public:
   /**
    * The L2 matrix.
    */
-  AutoPtr< SparseMatrix<Number> > L2_matrix;
+  UniquePtr< SparseMatrix<Number> > L2_matrix;
 
   /**
    * The L2 matrix without Dirichlet conditions enforced.
    * (This is only computed if store_non_dirichlet_operators == true.)
    */
-  AutoPtr< SparseMatrix<Number> > non_dirichlet_L2_matrix;
+  UniquePtr< SparseMatrix<Number> > non_dirichlet_L2_matrix;
 
   /**
    * Vector storing the Q_m matrices from the mass operator
@@ -323,10 +325,10 @@ protected:
   virtual void initialize_truth();
 
   /**
-   * Override to use the L2 product matrix for output
+   * Override to return the L2 product matrix for output
    * dual norm solves for transient state problems.
    */
-  virtual void assemble_matrix_for_output_dual_solves();
+  virtual SparseMatrix<Number>& get_matrix_for_output_dual_solves();
 
   /**
    * Initialize RB space by adding the truth initial condition

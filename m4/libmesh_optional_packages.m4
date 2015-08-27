@@ -37,11 +37,11 @@ libmesh_installed_LIBS=""
 AC_ARG_ENABLE(optional,
               AS_HELP_STRING([--disable-optional],
                              [build without most optional external libraries]),
-	      [case "${enableval}" in
-	      	  yes) enableoptional=yes ;;
-		   no) enableoptional=no ;;
- 		    *) AC_MSG_ERROR(bad value ${enableval} for --enable-optional) ;;
-	       esac],
+              [case "${enableval}" in
+                yes) enableoptional=yes ;;
+                no) enableoptional=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --enable-optional) ;;
+              esac],
               [enableoptional=yes])
 
 # Note that even when optional packages are disabled we need to
@@ -78,11 +78,11 @@ AC_ARG_ENABLE(strict-lgpl,
 AC_ARG_ENABLE(nested,
               AS_HELP_STRING([--disable-nested],
                              [Do not use nested autoconf subpackages]),
-	      [case "${enableval}" in
-	      	  yes) enablenested=yes ;;
-		   no) enablenested=no ;;
- 		    *) AC_MSG_ERROR(bad value ${enableval} for --enable-nested) ;;
-	       esac],
+              [case "${enableval}" in
+                yes) enablenested=yes ;;
+                no) enablenested=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --enable-nested) ;;
+              esac],
               [enablenested=$enableoptional])
 
 # -------------------------------------------------------------
@@ -92,6 +92,13 @@ CONFIGURE_BOOST
 AC_CONFIG_FILES([contrib/boost/include/Makefile])
 # --------------------------------------------------------------
 
+
+# --------------------------------------------------------------
+# Howard Hinnant's unique_ptr implementation.  Must be tested after
+# Boost and requires a working Boost installation.
+CONFIGURE_HINNANT_UNIQUE_PTR
+AC_CONFIG_FILES([contrib/unique_ptr/Makefile])
+# --------------------------------------------------------------
 
 
 # -------------------------------------------------------------
@@ -153,12 +160,12 @@ fi
 AC_ARG_ENABLE(pthreads,
               AS_HELP_STRING([--disable-pthreads],
                              [build without POSIX threading (pthreads) support]),
-		[case "${enableval}" in
-		  yes)  enablepthreads=yes ;;
-		   no)  enablepthreads=no ;;
- 		    *)  AC_MSG_ERROR(bad value ${enableval} for --enable-pthreads) ;;
-		 esac],
-		 [enablepthreads=$enableoptional])
+              [case "${enableval}" in
+                yes)  enablepthreads=yes ;;
+                no)  enablepthreads=no ;;
+                *)  AC_MSG_ERROR(bad value ${enableval} for --enable-pthreads) ;;
+              esac],
+              [enablepthreads=$enableoptional])
 
 if (test "$enablepthreads" != no) ; then
   AX_PTHREAD
@@ -368,12 +375,18 @@ fi
 
 
 # -------------------------------------------------------------
-# TetGen -- enabled by default
+# TetGen -- enabled unless --enable-strict-lgpl is specified
 # -------------------------------------------------------------
-CONFIGURE_TETGEN
-if (test $enabletetgen = yes); then
-  libmesh_contrib_INCLUDES="$TETGEN_INCLUDE $libmesh_contrib_INCLUDES"
+if (test $enablestrictlgpl = yes) ; then
+  AC_MSG_RESULT([<<< Tetgen support is disabled, configure with --disable-strict-lgpl to enable it >>>])
+  enabletetgen=no;
+else
+  CONFIGURE_TETGEN
+  if (test $enabletetgen = yes); then
+    libmesh_contrib_INCLUDES="$TETGEN_INCLUDE $libmesh_contrib_INCLUDES"
+  fi
 fi
+
 AM_CONDITIONAL(LIBMESH_ENABLE_TETGEN, test x$enabletetgen = xyes)
 AC_CONFIG_FILES([contrib/tetgen/Makefile])
 # -------------------------------------------------------------
@@ -478,6 +491,30 @@ AM_CONDITIONAL(LIBMESH_ENABLE_GLPK, test x$enableglpk = xyes)
 # -------------------------------------------------------------
 
 
+# -------------------------------------------------------------
+# NLOPT -- A library of nonlinear optimization routines.
+# -------------------------------------------------------------
+CONFIGURE_NLOPT
+if (test x$enablenlopt = xyes); then
+  libmesh_optional_INCLUDES="$NLOPT_INCLUDE $libmesh_optional_INCLUDES"
+  libmesh_optional_LIBS="$NLOPT_LIBRARY $libmesh_optional_LIBS"
+fi
+AM_CONDITIONAL(LIBMESH_ENABLE_NLOPT, test x$enablenlopt = xyes)
+# -------------------------------------------------------------
+
+
+# -------------------------------------------------------------
+# CAPNPROTO -- Serialization library.
+# -------------------------------------------------------------
+CONFIGURE_CAPNPROTO
+if (test x$enablecapnproto = xyes); then
+  libmesh_optional_INCLUDES="$CAPNPROTO_INCLUDE $libmesh_optional_INCLUDES"
+  libmesh_optional_LIBS="$CAPNPROTO_LIBRARY $libmesh_optional_LIBS"
+fi
+AM_CONDITIONAL(LIBMESH_ENABLE_CAPNPROTO, test x$enablecapnproto = xyes)
+AC_CONFIG_FILES([contrib/capnproto/Makefile])
+# -------------------------------------------------------------
+
 
 # --------------------------------------------------------------
 # HDF5 -- enabled by default
@@ -563,14 +600,14 @@ AC_CONFIG_FILES([contrib/fparser/extrasrc/Makefile])
 # cppunit C++ unit testing -- enabled by default
 # -------------------------------------------------------------
 AC_ARG_ENABLE(cppunit,
-             AS_HELP_STRING([--disable-cppunit],
-                            [Build without cppunit C++ unit testing support]),
-		[case "${enableval}" in
-		  yes)  enablecppunit=yes ;;
-		   no)  enablecppunit=no ;;
- 		    *)  AC_MSG_ERROR(bad value ${enableval} for --enable-cppunit) ;;
-		 esac],
-		 [enablecppunit=$enableoptional])
+              AS_HELP_STRING([--disable-cppunit],
+                             [Build without cppunit C++ unit testing support]),
+              [case "${enableval}" in
+                yes)  enablecppunit=yes ;;
+                no)  enablecppunit=no ;;
+                *)  AC_MSG_ERROR(bad value ${enableval} for --enable-cppunit) ;;
+              esac],
+              [enablecppunit=$enableoptional])
 if (test "$enablecppunit" = yes) ; then
   AM_PATH_CPPUNIT([1.10.0],[enablecppunit=yes],[enablecppunit=no])
 fi

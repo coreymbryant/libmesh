@@ -44,17 +44,18 @@ class Point;
  * See the JumpErrorEstimator class for most user APIs
  *
  * Full BibteX reference:
- \verbatim
- @Article{Kelly83error,
- author = {D.~W.~Kelly and J.~P.~Gago and O.~C.~Zienkiewicz and I.~Babuska},
- title  = {{A posteriori error analysis and adaptive
- processes in the finite element method: Part I Error analysis}},
- journal = {Int. J. Num. Meth. Engng.},
- volume  = {19},
- pages   = {1593--1619},
- year    = {1983}
- }
- \endverbatim
+ *
+ * \verbatim
+ * @Article{Kelly83error,
+ * author = {D.~W.~Kelly and J.~P.~Gago and O.~C.~Zienkiewicz and I.~Babuska},
+ * title  = {{A posteriori error analysis and adaptive
+ *            processes in the finite element method: Part I Error analysis}},
+ * journal = {Int. J. Num. Meth. Engng.},
+ * volume  = {19},
+ * pages   = {1593--1619},
+ * year    = {1983}
+ * }
+ * \endverbatim
  *
  * @author Benjamin S. Kirk, 2003.
  */
@@ -69,7 +70,6 @@ public:
    */
   KellyErrorEstimator() :
     JumpErrorEstimator(),
-    my_system(NULL),
     _bc_function(NULL)
   { error_norm = H1_SEMINORM; }
 
@@ -86,15 +86,16 @@ public:
                                                           const Point& p,
                                                           const std::string& var_name));
 
+  virtual ErrorEstimatorType type() const
+  { return KELLY;}
+
 protected:
 
   /**
    * An initialization function, for requesting specific data from the FE
    * objects
    */
-  virtual void initialize(const System& system,
-                          ErrorVector& error_per_cell,
-                          bool estimate_parent_error);
+  virtual void init_context(FEMContext &c);
 
   /**
    * The function which calculates a normal derivative jump based error
@@ -108,11 +109,6 @@ protected:
    * Returns true if the flux bc function is in fact defined on the current side.
    */
   virtual bool boundary_side_integration();
-
-  /**
-   * A pointer to the current System
-   */
-  const System *my_system;
 
   /**
    * Pointer to function that returns BC information.

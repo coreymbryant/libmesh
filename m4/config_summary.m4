@@ -110,6 +110,7 @@ if (test "x$enableoptional" = "xyes"); then
   echo
   echo Optional Packages:
   echo '  'boost............................ : $enableboost
+  echo '  'capnproto........................ : $enablecapnproto
   echo '  'cppunit.......................... : $enablecppunit
 #  if (test "x$enablecppunit" = "xyes"); then
 #  echo '     'CPPUNIT_CFLAGS................ : $CPPUNIT_CFLAGS
@@ -147,20 +148,20 @@ if (test "x$enableoptional" = "xyes"); then
   if (test "x$netcdfversion" != "xno"); then
   echo '     'version....................... : $netcdfversion
   fi
+  echo '  'nlopt............................ : $enablenlopt
   echo '  'openmp........................... : $enableopenmp
   echo '  'parmetis......................... : $enableparmetis
   echo '  'petsc............................ : $enablepetsc
   if (test "x$enablepetsc" = "xyes"); then
   echo '     'version....................... : $petscversion
   fi
-  echo '  'slepc............................ : $enableslepc
-  if (test "x$enableslepc" = "xyes"); then
-  echo '     'version....................... : $slepcversion
-  fi
   echo '  'pthreads......................... : $enablepthreads
   echo '  'qhull............................ : $enableqhull
   echo '  'sfcurves......................... : $enablesfc
   echo '  'slepc............................ : $enableslepc
+  if (test "x$enableslepc" = "xyes"); then
+  echo '     'version....................... : $slepcversion
+  fi
   echo '  'tbb.............................. : $enabletbb
   echo '  'c++ threads...................... : $enablecppthreads
   if (test "x$enablecppthreads" = "xyes"); then

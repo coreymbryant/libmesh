@@ -1364,8 +1364,8 @@ void Nemesis_IO_Helper::compute_num_global_sidesets(const MeshBase& pmesh)
 {
   // 1.) Get reference to the set of side boundary IDs
   std::set<boundary_id_type> global_side_boundary_ids
-    (pmesh.boundary_info->get_side_boundary_ids().begin(),
-     pmesh.boundary_info->get_side_boundary_ids().end());
+    (pmesh.get_boundary_info().get_side_boundary_ids().begin(),
+     pmesh.get_boundary_info().get_side_boundary_ids().end());
 
   // 2.) Gather boundary side IDs from other processors
   this->comm().set_union(global_side_boundary_ids);
@@ -1393,7 +1393,7 @@ void Nemesis_IO_Helper::compute_num_global_sidesets(const MeshBase& pmesh)
   std::vector<dof_id_type> bndry_elem_list;
   std::vector<unsigned short int> bndry_side_list;
   std::vector<boundary_id_type> bndry_id_list;
-  pmesh.boundary_info->build_side_list(bndry_elem_list, bndry_side_list, bndry_id_list);
+  pmesh.get_boundary_info().build_side_list(bndry_elem_list, bndry_side_list, bndry_id_list);
 
   // Similarly to the nodes, we can't count any sides for elements which aren't local
   std::vector<dof_id_type>::iterator it_elem=bndry_elem_list.begin();
@@ -1475,8 +1475,8 @@ void Nemesis_IO_Helper::compute_num_global_nodesets(const MeshBase& pmesh)
 
   // 1.) Get reference to the set of node boundary IDs *for this processor*
   std::set<boundary_id_type> global_node_boundary_ids
-    (pmesh.boundary_info->get_node_boundary_ids().begin(),
-     pmesh.boundary_info->get_node_boundary_ids().end());
+    (pmesh.get_boundary_info().get_node_boundary_ids().begin(),
+     pmesh.get_boundary_info().get_node_boundary_ids().end());
 
   // Save a copy of the local_node_boundary_ids...
   local_node_boundary_ids = global_node_boundary_ids;
@@ -1513,7 +1513,8 @@ void Nemesis_IO_Helper::compute_num_global_nodesets(const MeshBase& pmesh)
   // There is probably a better way to do this...
   std::vector<dof_id_type> boundary_node_list;
   std::vector<boundary_id_type> boundary_node_boundary_id_list;
-  pmesh.boundary_info->build_node_list(boundary_node_list, boundary_node_boundary_id_list);
+  pmesh.get_boundary_info().build_node_list
+    (boundary_node_list, boundary_node_boundary_id_list);
 
   if (verbose)
     {
@@ -1770,7 +1771,7 @@ void Nemesis_IO_Helper::build_element_and_node_maps(const MeshBase& pmesh)
       */
 
       this->subdomain_map[cur_subdomain].push_back
-        (cast_int<subdomain_id_type>(elem->id()));
+        (cast_int<unsigned>(elem->id()));
     }
 
   // Set num_nodes which is used by exodusII_io_helper
@@ -2031,7 +2032,8 @@ void Nemesis_IO_Helper::write_nodesets(const MeshBase & mesh)
   // build it here again, hopefully it's small relative to the size of the entire mesh.
   std::vector<dof_id_type> boundary_node_list;
   std::vector<boundary_id_type> boundary_node_boundary_id_list;
-  mesh.boundary_info->build_node_list(boundary_node_list, boundary_node_boundary_id_list);
+  mesh.get_boundary_info().build_node_list
+    (boundary_node_list, boundary_node_boundary_id_list);
 
   if (verbose)
     {
@@ -2108,8 +2110,7 @@ void Nemesis_IO_Helper::write_nodesets(const MeshBase & mesh)
 
       // Try to find this boundary ID in the local list we created
       local_node_boundary_id_lists_iterator it =
-        local_node_boundary_id_lists.find
-          (cast_int<boundary_id_type>(this->global_nodeset_ids[i]));
+        local_node_boundary_id_lists.find (cast_int<boundary_id_type>(this->global_nodeset_ids[i]));
 
       // No nodes found for this boundary ID on this processor
       if (it == local_node_boundary_id_lists.end())
@@ -2175,7 +2176,8 @@ void Nemesis_IO_Helper::write_sidesets(const MeshBase & mesh)
   std::vector< unsigned short int > bndry_side_list;
   std::vector< boundary_id_type > bndry_id_list;
 
-  mesh.boundary_info->build_side_list(bndry_elem_list, bndry_side_list, bndry_id_list);
+  mesh.get_boundary_info().build_side_list
+    (bndry_elem_list, bndry_side_list, bndry_id_list);
 
   // Integer looping, skipping non-local elements
   for (unsigned i=0; i<bndry_elem_list.size(); ++i)
@@ -2183,33 +2185,36 @@ void Nemesis_IO_Helper::write_sidesets(const MeshBase & mesh)
       // Get pointer to current Elem
       const Elem* elem = mesh.elem(bndry_elem_list[i]);
 
-      // If element is local, process it
-      if (elem->processor_id() == this->processor_id())
-        {
-          std::vector<const Elem*> family;
+      std::vector<const Elem*> family;
 #ifdef LIBMESH_ENABLE_AMR
-          // We need to build up active elements if AMR is enabled and add
-          // them to the exodus sidesets instead of the potentially inactive "parent" elements
-          // Technically we don't need to "reset" the tree since the vector was just created.
-          elem->active_family_tree_by_side(family, bndry_side_list[i], /*reset tree=*/false);
+      // We need to build up active elements if AMR is enabled and add
+      // them to the exodus sidesets instead of the potentially inactive "parent" elements
+      // Technically we don't need to "reset" the tree since the vector was just created.
+      elem->active_family_tree_by_side(family, bndry_side_list[i], /*reset tree=*/false);
 #else
-          // If AMR is not even enabled, just push back the element itself
-          family.push_back( elem );
+      // If AMR is not even enabled, just push back the element itself
+      family.push_back( elem );
 #endif
 
-          // Loop over all the elements in the family tree, store their converted IDs
-          // and side IDs to the map's vectors.  TODO: Somehow reserve enough space for these
-          // push_back's...
-          for (unsigned int j=0; j<family.size(); ++j)
+      // Loop over all the elements in the family tree, store their converted IDs
+      // and side IDs to the map's vectors.  TODO: Somehow reserve enough space for these
+      // push_back's...
+      for (unsigned int j=0; j<family.size(); ++j)
+        {
+          const dof_id_type f_id = family[j]->id();
+          const Elem *f = mesh.elem(f_id);
+
+          // If element is local, process it
+          if (f->processor_id() == this->processor_id())
             {
-              const ExodusII_IO_Helper::Conversion conv = em.assign_conversion(mesh.elem(family[j]->id())->type());
+              const ExodusII_IO_Helper::Conversion conv = em.assign_conversion(f->type());
 
               // Use the libmesh to exodus datastructure map to get the proper sideset IDs
               // The datastructure contains the "collapsed" contiguous ids.
               //
               // We know the parent element is local, but let's be absolutely sure that all the children have been
               // actually mapped to Exodus IDs before we blindly try to add them...
-              std::map<int,int>::iterator it = this->libmesh_elem_num_to_exodus.find( family[j]->id() );
+              std::map<int,int>::iterator it = this->libmesh_elem_num_to_exodus.find( f_id );
               if (it != this->libmesh_elem_num_to_exodus.end())
                 {
                   local_elem_boundary_id_lists[ bndry_id_list[i] ].push_back( (*it).second );
@@ -2217,7 +2222,7 @@ void Nemesis_IO_Helper::write_sidesets(const MeshBase & mesh)
                 }
               else
                 libmesh_error_msg("Error, no Exodus mapping for Elem " \
-                                  << family[j]->id()                  \
+                                  << f_id                              \
                                   << " on processor "                 \
                                   << this->processor_id());
             }
@@ -2247,8 +2252,7 @@ void Nemesis_IO_Helper::write_sidesets(const MeshBase & mesh)
 
       // Try to find this boundary ID in the local list we created
       local_elem_boundary_id_lists_iterator it =
-        local_elem_boundary_id_lists.find
-          (cast_int<boundary_id_type>(this->global_sideset_ids[i]));
+        local_elem_boundary_id_lists.find (cast_int<boundary_id_type>(this->global_sideset_ids[i]));
 
       // No sides found for this boundary ID on this processor
       if (it == local_elem_boundary_id_lists.end())
@@ -2270,8 +2274,7 @@ void Nemesis_IO_Helper::write_sidesets(const MeshBase & mesh)
         {
           // Get iterator to sides vector as well
           local_elem_boundary_id_lists_iterator it_sides =
-            local_elem_boundary_id_side_lists.find
-              (cast_int<boundary_id_type>(this->global_sideset_ids[i]));
+            local_elem_boundary_id_side_lists.find (cast_int<boundary_id_type>(this->global_sideset_ids[i]));
 
           libmesh_assert (it_sides != local_elem_boundary_id_side_lists.end());
 

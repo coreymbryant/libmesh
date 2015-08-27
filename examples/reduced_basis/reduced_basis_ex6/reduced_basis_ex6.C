@@ -76,6 +76,8 @@
 #include "libmesh/dof_map.h"
 #include "libmesh/getpot.h"
 #include "libmesh/elem.h"
+#include "libmesh/rb_data_serialization.h"
+#include "libmesh/rb_data_deserialization.h"
 
 // local includes
 #include "rb_classes.h"
@@ -100,6 +102,9 @@ int main (int argc, char** argv)
 #elif defined(LIBMESH_DEFAULT_SINGLE_PRECISION)
   // XDR binary support requires double precision
   libmesh_example_requires(false, "--disable-singleprecision");
+#elif defined(LIBMESH_DEFAULT_TRIPLE_PRECISION)
+  // I have no idea why long double isn't working here... [RHS]
+  libmesh_example_requires(false, "double precision");
 #endif
 
   // This is a 3D example
@@ -171,7 +176,13 @@ int main (int argc, char** argv)
       eim_construction.initialize_rb_construction();
 
       eim_construction.train_reduced_basis();
-      eim_construction.get_rb_evaluation().write_offline_data_to_files("eim_data");
+
+#if defined(LIBMESH_HAVE_CAPNPROTO)
+      RBDataSerialization::RBEIMEvaluationSerialization rb_eim_eval_writer(eim_rb_eval);
+      rb_eim_eval_writer.write_to_file("rb_eim_eval.bin");
+#else
+      eim_construction.get_rb_evaluation().legacy_write_offline_data_to_files("eim_data");
+#endif
 
       // Read data from input file and print state
       rb_construction.process_parameters_file(rb_parameters);
@@ -191,7 +202,13 @@ int main (int argc, char** argv)
       // the system knows how many affine terms there are
       rb_construction.initialize_rb_construction();
       rb_construction.train_reduced_basis();
-      rb_construction.get_rb_evaluation().write_offline_data_to_files("rb_data");
+
+#if defined(LIBMESH_HAVE_CAPNPROTO)
+      RBDataSerialization::RBEvaluationSerialization rb_eval_writer(rb_construction.get_rb_evaluation());
+      rb_eval_writer.write_to_file("rb_eval.bin");
+#else
+      rb_construction.get_rb_evaluation().legacy_write_offline_data_to_files("rb_data");
+#endif
 
       // Write out the basis functions, if requested
       if(store_basis_functions)
@@ -203,14 +220,24 @@ int main (int argc, char** argv)
     }
   else // Perform the Online stage of the RB method
     {
-      eim_rb_eval.read_offline_data_from_files("eim_data");
+#if defined(LIBMESH_HAVE_CAPNPROTO)
+      RBDataDeserialization::RBEIMEvaluationDeserialization rb_eim_eval_reader(eim_rb_eval);
+      rb_eim_eval_reader.read_from_file("rb_eim_eval.bin");
+#else
+      eim_rb_eval.legacy_read_offline_data_from_files("eim_data");
+#endif
 
       // attach the EIM theta objects to rb_eval objects
       eim_rb_eval.initialize_eim_theta_objects();
       rb_eval.get_rb_theta_expansion().attach_multiple_A_theta(eim_rb_eval.get_eim_theta_objects());
 
       // Read in the offline data for rb_eval
-      rb_eval.read_offline_data_from_files("rb_data");
+#if defined(LIBMESH_HAVE_CAPNPROTO)
+      RBDataDeserialization::RBEvaluationDeserialization rb_eval_reader(rb_eval);
+      rb_eval_reader.read_from_file("rb_eval.bin", /*read_error_bound_data*/ true);
+#else
+      rb_eval.legacy_read_offline_data_from_files("rb_data");
+#endif
 
       // Get the parameters at which we will do a reduced basis solve
       Real online_curvature = infile("online_curvature", 0.);

@@ -167,11 +167,11 @@ void assemble_elasticity(EquationSystems& es,
 
   const DofMap& dof_map = system.get_dof_map();
   FEType fe_type = dof_map.variable_type(0);
-  AutoPtr<FEBase> fe (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
   QGauss qrule (dim, fe_type.default_quadrature_order());
   fe->attach_quadrature_rule (&qrule);
 
-  AutoPtr<FEBase> fe_face (FEBase::build(dim, fe_type));
+  UniquePtr<FEBase> fe_face (FEBase::build(dim, fe_type));
   QGauss qface(dim-1, fe_type.default_quadrature_order());
   fe_face->attach_quadrature_rule (&qface);
 
@@ -318,7 +318,7 @@ void assemble_elasticity(EquationSystems& es,
 
               fe_face->reinit(elem, side);
 
-              if( mesh.boundary_info->has_boundary_id (elem, side, 1) ) // Apply a traction on the right side
+              if( mesh.get_boundary_info().has_boundary_id (elem, side, 1) ) // Apply a traction on the right side
                 {
                   for (unsigned int qp=0; qp<qface.n_points(); qp++)
                     {

@@ -4,7 +4,7 @@
 
 
 
-AC_INIT([libmesh], [1.0.0-pre], [libmesh-users@lists.sourceforge.net], [libmesh], [http://libmesh.sourceforge.net])
+AC_INIT([libmesh], [1.0.0-pre], [libmesh-users@lists.sourceforge.net], [libmesh], [http://libmesh.github.io])
 AC_PREREQ([2.61]) # require autoconf 2.61 - I havent tried anything older
 
 # by default CFLAGS and CXXFLAGS are set to '-g -O2' on systems that support them.
@@ -40,13 +40,16 @@ AC_CONFIG_FILES([Makefile
                  contrib/utils/Makefile
                  contrib/utils/Make.common
                  tests/Makefile
-                 doc/Doxyfile
+                 tests/base/getpot_test.C
                  contrib/utils/libmesh.pc:contrib/utils/libmesh-opt.pc.in
                  contrib/utils/libmesh-opt.pc
                  contrib/utils/libmesh-dbg.pc
                  contrib/utils/libmesh-devel.pc
                  contrib/utils/libmesh-prof.pc
                  contrib/utils/libmesh-oprof.pc
+                 doc/Doxyfile
+                 doc/Makefile
+                 doc/html/Makefile
                  ])
 
 AC_CONFIG_FILES(contrib/bin/libmesh-config,          [chmod +x contrib/bin/libmesh-config])
@@ -55,6 +58,7 @@ AC_CONFIG_FILES(contrib/bin/libmesh-config,          [chmod +x contrib/bin/libme
 AC_CONFIG_FILES(contrib/bin/xda2mgf,                 [chmod +x contrib/bin/xda2mgf])
 AC_CONFIG_FILES(contrib/bin/create_libmesh_release,  [chmod +x contrib/bin/create_libmesh_release])
 AC_CONFIG_FILES(doc/dot,                             [chmod +x doc/dot])
+AC_CONFIG_FILES(tests/run_unit_tests.sh,             [chmod +x tests/run_unit_tests.sh])
 
 # Create a temporary file with e.g. HAVE_MPI
 AC_CONFIG_HEADER(include/libmesh_config.h.tmp:include/libmesh_config.h.in)
@@ -93,6 +97,14 @@ AM_CONDITIONAL(LIBMESH_VPATH_BUILD, test x$libmesh_vpath_build = xyes)
 # --------------------------------------------------------------
 AC_LANG([C++])
 
+# -------------------------------------------------------------
+# Perl - look for perl.  Perl is used to generate dependencies.  We
+# also use it to (optionally) parse compiler version strings, so $PERL
+# needs to be set before LIBMESH_SET_COMPILERS is called.
+# -------------------------------------------------------------
+AC_PATH_PROG(PERL, perl)
+AC_SUBST(PERL)
+
 # --------------------------------------------------------------
 # Set our preferred compilers
 # --------------------------------------------------------------
@@ -123,7 +135,7 @@ if (test "x$enablecxx11" = "xyes"); then
 fi
 
 # --------------------------------------------------------------
-# See aclocal.m4 for the definition of this as well.  It uses the
+# See compiler.m4 for the definition of this function.  It uses the
 # output of DETERMINE_CXX_BRAND to set special flags for idiosyncratic
 # compilers.  For example, newer versions of GCC have additional C++ debugging
 # flags like _GLIBCXX_DEBUG_PEDANTIC which were not present in older versions.
@@ -209,15 +221,6 @@ AC_PROG_MKDIR_P
 AC_PROG_SED
 AC_SUBST(SED)
 # --------------------------------------------------------------
-
-
-# -------------------------------------------------------------
-# Perl - look for perl.  Perl is used to generate dependencies
-# -------------------------------------------------------------
-AC_PATH_PROG(PERL, perl)
-AC_SUBST(PERL)
-# -------------------------------------------------------------
-
 
 
 # -------------------------------------------------------------
@@ -336,6 +339,8 @@ if (test "x$enableexamples" = "xyes"); then
                 examples/eigenproblems/eigenproblems_ex3/Makefile
                 examples/fem_system/fem_system_ex1/Makefile
                 examples/fem_system/fem_system_ex2/Makefile
+                examples/fem_system/fem_system_ex3/Makefile
+                examples/fem_system/fem_system_ex4/Makefile
                 examples/solution_transfer/solution_transfer_ex1/Makefile
                 examples/miscellaneous/miscellaneous_ex1/Makefile
                 examples/miscellaneous/miscellaneous_ex2/Makefile
@@ -348,14 +353,19 @@ if (test "x$enableexamples" = "xyes"); then
                 examples/miscellaneous/miscellaneous_ex9/Makefile
                 examples/miscellaneous/miscellaneous_ex10/Makefile
                 examples/miscellaneous/miscellaneous_ex11/Makefile
+                examples/optimization/optimization_ex1/Makefile
+                examples/optimization/optimization_ex2/Makefile
                 examples/subdomains/subdomains_ex1/Makefile
                 examples/subdomains/subdomains_ex2/Makefile
+                examples/subdomains/subdomains_ex3/Makefile
                 examples/systems_of_equations/systems_of_equations_ex1/Makefile
                 examples/systems_of_equations/systems_of_equations_ex2/Makefile
                 examples/systems_of_equations/systems_of_equations_ex3/Makefile
                 examples/systems_of_equations/systems_of_equations_ex4/Makefile
                 examples/systems_of_equations/systems_of_equations_ex5/Makefile
                 examples/systems_of_equations/systems_of_equations_ex6/Makefile
+                examples/systems_of_equations/systems_of_equations_ex7/Makefile
+                examples/systems_of_equations/systems_of_equations_ex8/Makefile
                 examples/reduced_basis/reduced_basis_ex1/Makefile
                 examples/reduced_basis/reduced_basis_ex2/Makefile
                 examples/reduced_basis/reduced_basis_ex3/Makefile

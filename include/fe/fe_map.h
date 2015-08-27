@@ -41,24 +41,25 @@ public:
   FEMap();
   virtual ~FEMap(){}
 
-  static AutoPtr<FEMap> build(FEType fe_type);
+  static UniquePtr<FEMap> build(FEType fe_type);
 
   template<unsigned int Dim>
   void init_reference_to_physical_map(const std::vector<Point>& qp,
                                       const Elem* elem);
 
   /**
-   * Compute the jacobian and some other additional
-   * data fields at the single point with index p.
-   * Takes the integration weights as input, along
-   * with a pointer to the element and a list of
-   * points that contribute to the element.
+   * Compute the jacobian and some other additional data fields at the
+   * single point with index p.  Takes the integration weights as
+   * input, along with a pointer to the element and a list of points
+   * that contribute to the element.  Also takes a boolean flag
+   * telling whether second derivatives should actually be computed.
    */
   void compute_single_point_map(const unsigned int dim,
                                 const std::vector<Real>& qw,
                                 const Elem* elem,
                                 unsigned int p,
-                                const std::vector<Node*>& elem_nodes);
+                                const std::vector<Node*>& elem_nodes,
+                                bool compute_second_derivatives);
 
   /**
    * Compute the jacobian and some other additional
@@ -83,10 +84,14 @@ public:
    * Compute the jacobian and some other additional
    * data fields. Takes the integration weights
    * as input, along with a pointer to the element.
+   * Also takes a boolean parameter indicating whether second
+   * derivatives need to be calculated, allowing us to potentially
+   * skip unnecessary, expensive computations.
    */
   virtual void compute_map(const unsigned int dim,
                            const std::vector<Real>& qw,
-                           const Elem* elem);
+                           const Elem* elem,
+                           bool calculate_d2phi);
 
   /**
    * Same as compute_map, but for a side.  Useful for boundary integration.
@@ -265,6 +270,26 @@ public:
    */
   const std::vector<Real>& get_dzetadz() const
   { return dzetadz_map; }
+
+#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
+  /**
+   * Second derivatives of "xi" reference coordinate wrt physical coordinates.
+   */
+  const std::vector<std::vector<Real> >& get_d2xidxyz2() const
+  { return d2xidxyz2_map; }
+
+  /**
+   * Second derivatives of "eta" reference coordinate wrt physical coordinates.
+   */
+  const std::vector<std::vector<Real> >& get_d2etadxyz2() const
+  { return d2etadxyz2_map; }
+
+  /**
+   * Second derivatives of "zeta" reference coordinate wrt physical coordinates.
+   */
+  const std::vector<std::vector<Real> >& get_d2zetadxyz2() const
+  { return d2zetadxyz2_map; }
+#endif
 
   /**
    * @returns the reference to physical map for the side/edge
@@ -625,6 +650,26 @@ protected:
    */
   std::vector<Real> dzetadz_map;
 
+#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
+  /**
+   * Second derivatives of "xi" reference coordinate wrt physical coordinates.
+   * At each qp: (xi_{xx}, xi_{xy}, xi_{xz}, xi_{yy}, xi_{yz}, xi_{zz})
+   */
+  std::vector<std::vector<Real> > d2xidxyz2_map;
+
+  /**
+   * Second derivatives of "eta" reference coordinate wrt physical coordinates.
+   * At each qp: (eta_{xx}, eta_{xy}, eta_{xz}, eta_{yy}, eta_{yz}, eta_{zz})
+   */
+  std::vector<std::vector<Real> > d2etadxyz2_map;
+
+  /**
+   * Second derivatives of "zeta" reference coordinate wrt physical coordinates.
+   * At each qp: (zeta_{xx}, zeta_{xy}, zeta_{xz}, zeta_{yy}, zeta_{yz}, zeta_{zz})
+   */
+  std::vector<std::vector<Real> > d2zetadxyz2_map;
+#endif
+
   /**
    * Map for the shape function phi.
    */
@@ -743,6 +788,13 @@ protected:
    * Jacobian*Weight values at quadrature points
    */
   std::vector<Real> JxW;
+
+private:
+  /**
+   * A helper function used by FEMap::compute_single_point_map() to
+   * compute second derivatives of the inverse map.
+   */
+  void compute_inverse_map_second_derivs(unsigned p);
 };
 
 }

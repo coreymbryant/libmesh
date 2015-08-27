@@ -28,6 +28,7 @@
 #include "libmesh/elem.h"
 #include "libmesh/fe_type.h"
 #include "libmesh/fe_interface.h"
+#include "libmesh/node_elem.h"
 #include "libmesh/edge_edge2.h"
 #include "libmesh/edge_edge3.h"
 #include "libmesh/edge_edge4.h"
@@ -62,6 +63,7 @@
 #include "libmesh/remote_elem.h"
 #include "libmesh/reference_elem.h"
 #include "libmesh/string_to_enum.h"
+#include "libmesh/threads.h"
 
 #ifdef LIBMESH_ENABLE_PERIODIC
 #include "libmesh/mesh.h"
@@ -71,6 +73,11 @@
 
 namespace libMesh
 {
+
+Threads::spin_mutex parent_indices_mutex;
+Threads::spin_mutex parent_bracketing_nodes_mutex;
+
+const subdomain_id_type Elem::invalid_subdomain_id = std::numeric_limits<subdomain_id_type>::max();
 
 // Initialize static member variables
 const unsigned int Elem::type_to_n_nodes_map [] =
@@ -206,13 +213,20 @@ const unsigned int Elem::type_to_n_edges_map [] =
 
 // ------------------------------------------------------------
 // Elem class member funcions
-AutoPtr<Elem> Elem::build(const ElemType type,
-                          Elem* p)
+UniquePtr<Elem> Elem::build(const ElemType type,
+                            Elem* p)
 {
   Elem* elem = NULL;
 
   switch (type)
     {
+      // 0D elements
+    case NODEELEM:
+      {
+        elem = new NodeElem(p);
+        break;
+      }
+
       // 1D elements
     case EDGE2:
       {
@@ -380,8 +394,7 @@ AutoPtr<Elem> Elem::build(const ElemType type,
       libmesh_error_msg("ERROR: Undefined element type!");
     }
 
-  AutoPtr<Elem> ap(elem);
-  return ap;
+  return UniquePtr<Elem>(elem);
 }
 
 
@@ -606,6 +619,7 @@ void Elem::find_point_neighbors(const Point &p,
                                 std::set<const Elem *> &neighbor_set) const
 {
   libmesh_assert(this->contains_point(p));
+  libmesh_assert(this->active());
 
   neighbor_set.clear();
   neighbor_set.insert(this);
@@ -681,11 +695,24 @@ void Elem::find_point_neighbors(const Point &p,
 
 void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set) const
 {
+  this->find_point_neighbors(neighbor_set, this);
+}
+
+
+
+void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set,
+                                const Elem * start_elem) const
+{
+  libmesh_assert(start_elem);
+  libmesh_assert(start_elem->active());
+  libmesh_assert(start_elem->contains_vertex_of(this) ||
+                 this->contains_vertex_of(start_elem));
+
   neighbor_set.clear();
-  neighbor_set.insert(this);
+  neighbor_set.insert(start_elem);
 
   std::set<const Elem *> untested_set, next_untested_set;
-  untested_set.insert(this);
+  untested_set.insert(start_elem);
 
   while (!untested_set.empty())
     {
@@ -856,6 +883,157 @@ void Elem::find_edge_neighbors(std::set<const Elem *> &neighbor_set) const
     }
 }
 
+
+void Elem::find_interior_neighbors(std::set<const Elem *> &neighbor_set) const
+{
+  neighbor_set.clear();
+
+  if ((this->dim() >= LIBMESH_DIM) ||
+      !this->interior_parent())
+    return;
+
+  const Elem *ip = this->interior_parent();
+  libmesh_assert (ip->contains_vertex_of(this) ||
+                  this->contains_vertex_of(ip));
+
+  libmesh_assert (!ip->subactive());
+
+#ifdef LIBMESH_ENABLE_AMR
+  while (!ip->active()) // only possible with AMR, be careful because
+    {                   // ip->child(c) is only good with AMR.
+      for (unsigned int c = 0; c != ip->n_children(); ++c)
+        {
+          const Elem *child = ip->child(c);
+          if (child->contains_vertex_of(this) ||
+              this->contains_vertex_of(child))
+            {
+              ip = child;
+              break;
+            }
+        }
+    }
+#endif
+
+  this->find_point_neighbors(neighbor_set, ip);
+
+  // Now we have all point neighbors from the interior manifold, but
+  // we need to weed out any neighbors that *only* intersect us at one
+  // point (or at one edge, if we're a 1-D element in 3D).
+  //
+  // The refinement hierarchy helps us here: if the interior element
+  // has a lower or equal refinement level then we can discard it iff
+  // it doesn't contain all our vertices.  If it has a higher
+  // refinement level then we can discard it iff we don't contain at
+  // least dim()+1 of its vertices
+  std::set<const Elem*>::iterator        it = neighbor_set.begin();
+  const std::set<const Elem*>::iterator end = neighbor_set.end();
+
+  while(it != end)
+    {
+      std::set<const Elem*>::iterator current = it++;
+      const Elem* elem = *current;
+
+      // This won't invalidate iterator it, because it is already
+      // pointing to the next element
+      if (elem->level() > this->level())
+        {
+          unsigned int vertices_contained = 0;
+          for (unsigned int p=1; p < elem->n_nodes(); ++p)
+            if (this->contains_point(elem->point(p)))
+              vertices_contained++;
+
+          if (vertices_contained <= this->dim())
+            {
+              neighbor_set.erase(current);
+              continue;
+            }
+        }
+      else
+        {
+          for (unsigned int p=1; p < this->n_nodes(); ++p)
+            if (!elem->contains_point(this->point(p)))
+              {
+                neighbor_set.erase(current);
+                break;
+              }
+        }
+    }
+}
+
+
+
+const Elem* Elem::interior_parent () const
+{
+  // interior parents make no sense for full-dimensional elements.
+  libmesh_assert_less (this->dim(), LIBMESH_DIM);
+
+  // they USED TO BE only good for level-0 elements, but we now
+  // support keeping interior_parent() valid on refined boundary
+  // elements.
+  // if (this->level() != 0)
+  // return this->parent()->interior_parent();
+
+  // We store the interior_parent pointer after both the parent
+  // neighbor and neighbor pointers
+  Elem *interior_p = _elemlinks[1+this->n_sides()];
+
+  // If we have an interior_parent, we USED TO assume it was a
+  // one-higher-dimensional interior element, but we now allow e.g.
+  // edge elements to have a 3D interior_parent with no
+  // intermediate 2D element.
+  // libmesh_assert (!interior_p ||
+  //                interior_p->dim() == (this->dim()+1));
+  libmesh_assert (!interior_p ||
+                  (interior_p == remote_elem) ||
+                  (interior_p->dim() > this->dim()));
+
+  // We require consistency between AMR of interior and of boundary
+  // elements
+  if (interior_p && (interior_p != remote_elem))
+    libmesh_assert_less_equal (interior_p->level(), this->level());
+
+  return interior_p;
+}
+
+
+
+Elem* Elem::interior_parent ()
+{
+  // See the const version for comments
+  libmesh_assert_less (this->dim(), LIBMESH_DIM);
+  Elem *interior_p = _elemlinks[1+this->n_sides()];
+
+  libmesh_assert (!interior_p ||
+                  (interior_p == remote_elem) ||
+                  (interior_p->dim() > this->dim()));
+  if (interior_p && (interior_p != remote_elem))
+    libmesh_assert_less_equal (interior_p->level(), this->level());
+
+  return interior_p;
+}
+
+
+
+void Elem::set_interior_parent (Elem *p)
+{
+  // interior parents make no sense for full-dimensional elements.
+  libmesh_assert_less (this->dim(), LIBMESH_DIM);
+
+  // If we have an interior_parent, we USED TO assume it was a
+  // one-higher-dimensional interior element, but we now allow e.g.
+  // edge elements to have a 3D interior_parent with no
+  // intermediate 2D element.
+  // libmesh_assert (!p ||
+  //                 p->dim() == (this->dim()+1));
+  libmesh_assert (!p ||
+                  (p == remote_elem) ||
+                  (p->dim() > this->dim()));
+
+  _elemlinks[1+this->n_sides()] = p;
+}
+
+
+
 #ifdef LIBMESH_ENABLE_PERIODIC
 
 Elem* Elem::topological_neighbor (const unsigned int i,
@@ -876,7 +1054,7 @@ Elem* Elem::topological_neighbor (const unsigned int i,
       // topological neighbor
 
       std::vector<boundary_id_type> boundary_ids =
-        mesh.boundary_info->boundary_ids(this, cast_int<unsigned short>(i));
+        mesh.get_boundary_info().boundary_ids(this, cast_int<unsigned short>(i));
       for (std::vector<boundary_id_type>::iterator j = boundary_ids.begin(); j != boundary_ids.end(); ++j)
         if (pb->boundary(*j))
           {
@@ -915,7 +1093,7 @@ const Elem* Elem::topological_neighbor (const unsigned int i,
       // topological neighbor
 
       std::vector<boundary_id_type> boundary_ids =
-        mesh.boundary_info->boundary_ids(this, cast_int<unsigned short>(i));
+        mesh.get_boundary_info().boundary_ids(this, cast_int<unsigned short>(i));
       for (std::vector<boundary_id_type>::iterator j = boundary_ids.begin(); j != boundary_ids.end(); ++j)
         if (pb->boundary(*j))
           {
@@ -1075,11 +1253,11 @@ void Elem::make_links_to_me_local(unsigned int n)
 
   // What side of neigh are we on?  We can't use the usual Elem
   // method because we're in the middle of restoring topology
-  const AutoPtr<Elem> my_side = this->side(n);
+  const UniquePtr<Elem> my_side = this->side(n);
   unsigned int nn = 0;
   for (; nn != neigh->n_sides(); ++nn)
     {
-      const AutoPtr<Elem> neigh_side = neigh->side(nn);
+      const UniquePtr<Elem> neigh_side = neigh->side(nn);
       if (*my_side == *neigh_side)
         break;
     }
@@ -1092,7 +1270,7 @@ void Elem::make_links_to_me_local(unsigned int n)
 #ifdef LIBMESH_ENABLE_AMR
   if (this->active())
     neigh->family_tree_by_side(neigh_family, nn);
-  else
+  else if (neigh->subactive())
 #endif
     neigh_family.push_back(neigh);
 
@@ -1109,11 +1287,13 @@ void Elem::make_links_to_me_local(unsigned int n)
       // neighbor links, we might have an out of date neighbor
       // link to elem's parent instead.
 #ifdef LIBMESH_ENABLE_AMR
-      libmesh_assert((neigh_family_member->neighbor(nn) == this) ||
-                     (neigh_family_member->neighbor(nn) == remote_elem)
-                     || ((this->refinement_flag() == JUST_REFINED) &&
-                         (this->parent() != NULL) &&
-                         (neigh_family_member->neighbor(nn) == this->parent())));
+      libmesh_assert((neigh_family_member->neighbor(nn) &&
+                      (neigh_family_member->neighbor(nn)->active() ||
+                       neigh_family_member->neighbor(nn)->is_ancestor_of(this))) ||
+                     (neigh_family_member->neighbor(nn) == remote_elem) ||
+                     ((this->refinement_flag() == JUST_REFINED) &&
+                      (this->parent() != NULL) &&
+                      (neigh_family_member->neighbor(nn) == this->parent())));
 #else
       libmesh_assert((neigh_family_member->neighbor(nn) == this) ||
                      (neigh_family_member->neighbor(nn) == remote_elem));
@@ -1317,15 +1497,28 @@ bool Elem::ancestor() const
 {
 #ifdef LIBMESH_ENABLE_AMR
 
-  if (this->active())
-    return false;
+// Use a fast, ParallelMesh-safe definition
+  const bool is_ancestor =
+    !this->active() && !this->subactive();
 
-  if (!this->has_children())
-    return false;
-  if (this->child(0)->active())
-    return true;
+// But check for inconsistencies if we have time
+#ifdef DEBUG
+  if (!is_ancestor && this->has_children())
+    {
+      for (unsigned int c=0; c != this->n_children(); ++c)
+        {
+          const Elem* kid = this->child(c);
+          if (kid != remote_elem)
+            {
+              libmesh_assert(!kid->active());
+              libmesh_assert(!kid->ancestor());
+            }
+        }
+    }
+#endif // DEBUG
 
-  return this->child(0)->ancestor();
+  return is_ancestor;
+
 #else
   return false;
 #endif
@@ -1395,8 +1588,8 @@ bool Elem::is_child_on_edge(const unsigned int libmesh_dbg_var(c),
   libmesh_assert_less (c, this->n_children());
   libmesh_assert_less (e, this->n_edges());
 
-  AutoPtr<Elem> my_edge = this->build_edge(e);
-  AutoPtr<Elem> child_edge = this->build_edge(e);
+  UniquePtr<Elem> my_edge = this->build_edge(e);
+  UniquePtr<Elem> child_edge = this->build_edge(e);
 
   // We're assuming that an overlapping child edge has the same
   // number and orientation as its parent
@@ -1705,6 +1898,367 @@ unsigned int Elem::min_new_p_level_by_neighbor(const Elem* neighbor_in,
   return min_p_level;
 }
 
+
+
+unsigned int Elem::as_parent_node (unsigned int child,
+                                   unsigned int child_node) const
+{
+  libmesh_assert_less(child, this->n_children());
+
+  // Cached return values, indexed first by embedding_matrix version,
+  // then by child number, then by child node number.
+  std::vector<std::vector<std::vector<signed char> > > &
+    cached_parent_indices = this->_get_parent_indices_cache();
+
+  unsigned int em_vers = this->embedding_matrix_version();
+
+  // We may be updating the cache on one thread, and while that
+  // happens we can't safely access the cache from other threads.
+  Threads::spin_mutex::scoped_lock lock(parent_indices_mutex);
+
+  if (em_vers >= cached_parent_indices.size())
+    cached_parent_indices.resize(em_vers+1);
+
+  if (child >= cached_parent_indices[em_vers].size())
+    {
+      const unsigned int nn = this->n_nodes();
+
+      cached_parent_indices[em_vers].resize(this->n_children());
+
+      for (unsigned int c = 0; c != this->n_children(); ++c)
+        {
+          const unsigned int ncn = this->n_nodes_in_child(c);
+          cached_parent_indices[em_vers][c].resize(ncn);
+          for (unsigned int cn = 0; cn != ncn; ++cn)
+            {
+              for (unsigned int n = 0; n != nn; ++n)
+                {
+                  const float em_val = this->embedding_matrix
+                    (c, cn, n);
+                  if (em_val == 1)
+                    {
+                      cached_parent_indices[em_vers][c][cn] = n;
+                      break;
+                    }
+
+                  if (em_val != 0)
+                    {
+                      cached_parent_indices[em_vers][c][cn] =
+                        -1;
+                      break;
+                    }
+
+                  // We should never see an all-zero embedding matrix
+                  // row
+                  libmesh_assert_not_equal_to (n+1, nn);
+                }
+            }
+        }
+    }
+
+  const signed char cache_val =
+    cached_parent_indices[em_vers][child][child_node];
+  if (cache_val == -1)
+    return libMesh::invalid_uint;
+
+  return cached_parent_indices[em_vers][child][child_node];
+}
+
+
+
+const std::vector<std::pair<unsigned char, unsigned char> >&
+Elem::parent_bracketing_nodes(unsigned int child,
+                              unsigned int child_node) const
+{
+  // Indexed first by embedding matrix type, then by child id, then by
+  // child node, then by bracketing pair
+  std::vector<std::vector<std::vector<std::vector<
+                                        std::pair<unsigned char, unsigned char> > > > > &
+    cached_bracketing_nodes = this->_get_bracketing_node_cache();
+
+  const unsigned int em_vers = this->embedding_matrix_version();
+
+  // We may be updating the cache on one thread, and while that
+  // happens we can't safely access the cache from other threads.
+  Threads::spin_mutex::scoped_lock lock(parent_bracketing_nodes_mutex);
+
+  if (cached_bracketing_nodes.size() <= em_vers)
+    cached_bracketing_nodes.resize(em_vers+1);
+
+  const unsigned int nc = this->n_children();
+
+  // If we haven't cached the bracketing nodes corresponding to this
+  // embedding matrix yet, let's do so now.
+  if (cached_bracketing_nodes[em_vers].size() < nc)
+    {
+      // If we're a second-order element but we're not a full-order
+      // element, then some of our bracketing nodes may not exist
+      // except on the equivalent full-order element.  Let's build an
+      // equivalent full-order element and make a copy of its cache to
+      // use.
+      if (this->default_order() != FIRST &&
+          second_order_equivalent_type(this->type(), /*full_ordered=*/ true) != this->type())
+        {
+          // Check that we really are the non-full-order type
+          libmesh_assert_equal_to
+            (second_order_equivalent_type (this->type(), false),
+             this->type());
+
+          // Build the full-order type
+          ElemType full_type =
+            second_order_equivalent_type(this->type(), /*full_ordered=*/ true);
+          UniquePtr<Elem> full_elem = Elem::build(full_type);
+
+          // This won't work for elements with multiple
+          // embedding_matrix versions, but every such element is full
+          // order anyways.
+          libmesh_assert_equal_to(em_vers, 0);
+
+          // Make sure its cache has been built.  We temporarily
+          // release our mutex lock so that the inner call can
+          // re-acquire it.
+          lock.release();
+          full_elem->parent_bracketing_nodes(0,0);
+
+          // And then we need to lock again, so that if someone *else*
+          // grabbed our lock before we did we don't risk accessing
+          // cached_bracketing_nodes while they're working on it.
+          // Threading is hard.
+          lock.acquire(parent_bracketing_nodes_mutex);
+
+          // Copy its cache
+          cached_bracketing_nodes =
+            full_elem->_get_bracketing_node_cache();
+
+          // Now we don't need to build the cache ourselves.
+          return cached_bracketing_nodes[em_vers][child][child_node];
+        }
+
+      cached_bracketing_nodes[em_vers].resize(nc);
+
+      const unsigned int nn = this->n_nodes();
+
+      // We have to examine each child
+      for (unsigned int c = 0; c != nc; ++c)
+        {
+          const unsigned int ncn = this->n_nodes_in_child(c);
+
+          cached_bracketing_nodes[em_vers][c].resize(ncn);
+
+          // We have to examine each node in that child
+          for (unsigned int n = 0; n != ncn; ++n)
+            {
+              // If this child node isn't a vertex, we need to
+              // find bracketing nodes on the child.
+              if (!this->is_vertex_on_child(c, n))
+                {
+                  // Use the embedding matrix to find the child node
+                  // location in parent master element space
+                  Point bracketed_pt;
+
+                  for (unsigned int pn = 0; pn != nn; ++pn)
+                    {
+                      const float em_val =
+                        this->embedding_matrix(c,n,pn);
+
+                      libmesh_assert_not_equal_to (em_val, 1);
+                      if (em_val != 0.)
+                        bracketed_pt.add_scaled(this->master_point(pn), em_val);
+                    }
+
+                  // Check each pair of nodes on the child which are
+                  // also both parent nodes
+                  for (unsigned int n1 = 0; n1 != ncn; ++n1)
+                    {
+                      if (n1 == n)
+                        continue;
+
+                      unsigned int parent_n1 =
+                        this->as_parent_node(c,n1);
+
+                      if (parent_n1 == libMesh::invalid_uint)
+                        continue;
+
+                      Point p1 = this->master_point(parent_n1);
+
+                      for (unsigned int n2 = n1+1; n2 < nn; ++n2)
+                        {
+                          if (n2 == n)
+                            continue;
+
+                          unsigned int parent_n2 =
+                            this->as_parent_node(c,n2);
+
+                          if (parent_n2 == libMesh::invalid_uint)
+                            continue;
+
+                          Point p2 = this->master_point(parent_n2);
+
+                          Point pmid = (p1 + p2)/2;
+
+                          if (pmid == bracketed_pt)
+                            {
+                              cached_bracketing_nodes[em_vers][c][n].push_back
+                                (std::make_pair(parent_n1,parent_n2));
+                              break;
+                            }
+                          else
+                            libmesh_assert(!pmid.absolute_fuzzy_equals(bracketed_pt));
+                        }
+                    }
+                }
+              // If this child node is a parent node, we need to
+              // find bracketing nodes on the parent.
+              else
+                {
+                  unsigned int parent_node = this->as_parent_node(c,n);
+
+                  Point bracketed_pt;
+
+                  // If we're not a parent node, use the embedding
+                  // matrix to find the child node location in parent
+                  // master element space
+                  if (parent_node == libMesh::invalid_uint)
+                    {
+                      for (unsigned int pn = 0; pn != nn; ++pn)
+                        {
+                          const float em_val =
+                            this->embedding_matrix(c,n,pn);
+
+                          libmesh_assert_not_equal_to (em_val, 1);
+                          if (em_val != 0.)
+                            bracketed_pt.add_scaled(this->master_point(pn), em_val);
+                        }
+                    }
+                  // If we're a parent node then we need no arithmetic
+                  else
+                    bracketed_pt = this->master_point(parent_node);
+
+                  for (unsigned int n1 = 0; n1 != nn; ++n1)
+                    {
+                      if (n1 == parent_node)
+                        continue;
+
+                      Point p1 = this->master_point(n1);
+
+                      for (unsigned int n2 = n1+1; n2 < nn; ++n2)
+                        {
+                          if (n2 == parent_node)
+                            continue;
+
+                          Point pmid = (p1 + this->master_point(n2))/2;
+
+                          if (pmid == bracketed_pt)
+                            {
+                              cached_bracketing_nodes[em_vers][c][n].push_back
+                                (std::make_pair(n1,n2));
+                              break;
+                            }
+                          else
+                            libmesh_assert(!pmid.absolute_fuzzy_equals(bracketed_pt));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+  return cached_bracketing_nodes[em_vers][child][child_node];
+}
+
+
+const std::vector<std::pair<dof_id_type, dof_id_type> >
+Elem::bracketing_nodes(unsigned int child,
+                       unsigned int child_node) const
+{
+  std::vector<std::pair<dof_id_type, dof_id_type> > returnval;
+
+  const std::vector<std::pair<unsigned char, unsigned char> > & pbc =
+    this->parent_bracketing_nodes(child,child_node);
+
+  for (unsigned int i = 0; i != pbc.size(); ++i)
+    {
+      if (pbc[i].first < this->n_nodes() &&
+          pbc[i].second < this->n_nodes())
+        returnval.push_back(std::make_pair(this->node(pbc[i].first), this->node(pbc[i].second)));
+      else
+        {
+          // We must be on a non-full-order higher order element...
+          libmesh_assert_not_equal_to(this->default_order(), FIRST);
+          libmesh_assert_not_equal_to
+            (second_order_equivalent_type (this->type(), true),
+             this->type());
+          libmesh_assert_equal_to
+            (second_order_equivalent_type (this->type(), false),
+             this->type());
+
+          // And that's a shame, because this is a nasty search:
+
+          // Build the full-order type
+          ElemType full_type =
+            second_order_equivalent_type(this->type(), /*full_ordered=*/ true);
+          UniquePtr<Elem> full_elem = Elem::build(full_type);
+
+          dof_id_type pt1 = DofObject::invalid_id;
+          dof_id_type pt2 = DofObject::invalid_id;
+
+          // Find the bracketing nodes by figuring out what
+          // already-created children will have them.
+
+          // This only doesn't break horribly because we add children
+          // and nodes in straightforward + hierarchical orders...
+          for (unsigned int c=0; c <= child; ++c)
+            for (unsigned int n=0; n != this->n_nodes_in_child(c); ++n)
+              {
+                if (c == child && n == child_node)
+                  break;
+
+                if (pbc[i].first == full_elem->as_parent_node(c,n))
+                  {
+                    // We should be consistent
+                    if (pt1 != DofObject::invalid_id)
+                      libmesh_assert_equal_to
+                        (pt1, this->child(c)->node(n));
+
+                    pt1 = this->child(c)->node(n);
+                  }
+
+                if (pbc[i].second == full_elem->as_parent_node(c,n))
+                  {
+                    // We should be consistent
+                    if (pt2 != DofObject::invalid_id)
+                      libmesh_assert_equal_to
+                        (pt2, this->child(c)->node(n));
+
+                    pt2 = this->child(c)->node(n);
+                  }
+              }
+
+          // We should *usually* find all bracketing nodes by the time
+          // we query them (again, because of the child & node add
+          // order)
+          //
+          // The exception is if we're a HEX20, in which case we will
+          // find pairs of vertex nodes and edge nodes bracketing the
+          // new central node but we *won't* find the pairs of face
+          // nodes which we would have had on a HEX27.  In that case
+          // we'll still have enough bracketing nodes for a
+          // topological lookup, but we won't be able to make the
+          // following assertions.
+          if (this->type() != HEX20)
+            {
+              libmesh_assert_not_equal_to (pt1, DofObject::invalid_id);
+              libmesh_assert_not_equal_to (pt2, DofObject::invalid_id);
+            }
+
+          if (pt1 != DofObject::invalid_id &&
+              pt2 != DofObject::invalid_id)
+            returnval.push_back(std::make_pair(pt1, pt2));
+        }
+    }
+
+  return returnval;
+}
 #endif // #ifdef LIBMESH_ENABLE_AMR
 
 
@@ -2044,18 +2598,27 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
   switch (et)
     {
     case EDGE2:
+    case EDGE3:
       {
         // full_ordered not relevant
         return EDGE3;
       }
 
+    case EDGE4:
+      {
+        // full_ordered not relevant
+        return EDGE4;
+      }
+
     case TRI3:
+    case TRI6:
       {
         // full_ordered not relevant
         return TRI6;
       }
 
     case QUAD4:
+    case QUAD8:
       {
         if (full_ordered)
           return QUAD9;
@@ -2063,13 +2626,21 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
           return QUAD8;
       }
 
+    case QUAD9:
+      {
+        // full_ordered not relevant
+        return QUAD9;
+      }
+
     case TET4:
+    case TET10:
       {
         // full_ordered not relevant
         return TET10;
       }
 
     case HEX8:
+    case HEX20:
       {
         // see below how this correlates with INFHEX8
         if (full_ordered)
@@ -2078,7 +2649,14 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
           return HEX20;
       }
 
+    case HEX27:
+      {
+        // full_ordered not relevant
+        return HEX27;
+      }
+
     case PRISM6:
+    case PRISM15:
       {
         if (full_ordered)
           return PRISM18;
@@ -2086,14 +2664,25 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
           return PRISM15;
       }
 
+    case PRISM18:
+      {
+        // full_ordered not relevant
+        return PRISM18;
+      }
+
     case PYRAMID5:
+    case PYRAMID13:
       {
         if (full_ordered)
           return PYRAMID14;
         else
           return PYRAMID13;
+      }
 
-        return INVALID_ELEM;
+    case PYRAMID14:
+      {
+        // full_ordered not relevant
+        return PYRAMID14;
       }
 
 
@@ -2107,12 +2696,14 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
       }
 
     case INFQUAD4:
+    case INFQUAD6:
       {
         // full_ordered not relevant
         return INFQUAD6;
       }
 
     case INFHEX8:
+    case INFHEX16:
       {
         /*
          * Note that this matches with \p Hex8:
@@ -2126,7 +2717,14 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
           return INFHEX16;
       }
 
+    case INFHEX18:
+      {
+        // full_ordered not relevant
+        return INFHEX18;
+      }
+
     case INFPRISM6:
+    case INFPRISM12:
       {
         // full_ordered not relevant
         return INFPRISM12;
@@ -2137,8 +2735,8 @@ ElemType Elem::second_order_equivalent_type (const ElemType et,
 
     default:
       {
-        // second-order element
-        return INVALID_ELEM;
+        // what did we miss?
+        libmesh_error();
       }
     }
 }
@@ -2171,8 +2769,8 @@ Real Elem::volume () const
   // the volume more efficiently.
   FEType fe_type (this->default_order() , LAGRANGE);
 
-  AutoPtr<FEBase> fe (FEBase::build(this->dim(),
-                                    fe_type));
+  UniquePtr<FEBase> fe (FEBase::build(this->dim(),
+                                      fe_type));
 
   const std::vector<Real>& JxW = fe->get_JxW();
 

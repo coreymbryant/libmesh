@@ -67,6 +67,10 @@ target_triplet = @target@
 @LIBMESH_ENABLE_NETCDF_V3_TRUE@am__append_10 = netcdf.h
 @LIBMESH_ENABLE_NETCDF_V4_TRUE@am__append_11 = netcdf.h
 @LIBMESH_ENABLE_NETCDF_V4_TRUE@am__append_12 = netcdf.h
+@LIBMESH_INSTALL_HINNANT_UNIQUE_PTR_TRUE@am__append_13 = unique_ptr.hpp
+@LIBMESH_INSTALL_HINNANT_UNIQUE_PTR_TRUE@am__append_14 = unique_ptr.hpp
+@LIBMESH_ENABLE_CAPNPROTO_TRUE@am__append_15 = rb_data.capnp.h
+@LIBMESH_ENABLE_CAPNPROTO_TRUE@am__append_16 = rb_data.capnp.h
 subdir = include/libmesh
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -77,15 +81,18 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ac_cxx_rtti.m4 \
 	$(top_srcdir)/m4/ax_openmp.m4 $(top_srcdir)/m4/ax_pthread.m4 \
 	$(top_srcdir)/m4/ax_split_version.m4 \
 	$(top_srcdir)/m4/ax_tls.m4 $(top_srcdir)/m4/backtrace.m4 \
-	$(top_srcdir)/m4/boost.m4 $(top_srcdir)/m4/compiler.m4 \
+	$(top_srcdir)/m4/boost.m4 $(top_srcdir)/m4/capnproto.m4 \
+	$(top_srcdir)/m4/compiler.m4 \
 	$(top_srcdir)/m4/config_environment.m4 \
 	$(top_srcdir)/m4/config_summary.m4 \
 	$(top_srcdir)/m4/coverage.m4 $(top_srcdir)/m4/cppunit.m4 \
 	$(top_srcdir)/m4/cxx11.m4 $(top_srcdir)/m4/demangle.m4 \
-	$(top_srcdir)/m4/eigen.m4 $(top_srcdir)/m4/exodus.m4 \
-	$(top_srcdir)/m4/feexcept.m4 $(top_srcdir)/m4/fparser.m4 \
-	$(top_srcdir)/m4/glpk.m4 $(top_srcdir)/m4/gmv.m4 \
-	$(top_srcdir)/m4/gz.m4 $(top_srcdir)/m4/hdf5.m4 \
+	$(top_srcdir)/m4/dlopen.m4 $(top_srcdir)/m4/eigen.m4 \
+	$(top_srcdir)/m4/exodus.m4 $(top_srcdir)/m4/feexcept.m4 \
+	$(top_srcdir)/m4/fparser.m4 $(top_srcdir)/m4/glpk.m4 \
+	$(top_srcdir)/m4/gmv.m4 $(top_srcdir)/m4/gz.m4 \
+	$(top_srcdir)/m4/hdf5.m4 \
+	$(top_srcdir)/m4/hinnant_unique_ptr.m4 \
 	$(top_srcdir)/m4/laspack.m4 $(top_srcdir)/m4/libhilbert.m4 \
 	$(top_srcdir)/m4/libmesh_compiler_features.m4 \
 	$(top_srcdir)/m4/libmesh_core_features.m4 \
@@ -97,16 +104,17 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ac_cxx_rtti.m4 \
 	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/mpi.m4 \
 	$(top_srcdir)/m4/namespaces.m4 $(top_srcdir)/m4/nanoflann.m4 \
 	$(top_srcdir)/m4/nemesis.m4 $(top_srcdir)/m4/netcdf.m4 \
-	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/petsc.m4 \
-	$(top_srcdir)/m4/precision.m4 \
+	$(top_srcdir)/m4/nlopt.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/petsc.m4 $(top_srcdir)/m4/precision.m4 \
 	$(top_srcdir)/m4/prefix_config.m4 $(top_srcdir)/m4/qhull.m4 \
-	$(top_srcdir)/m4/sfc.m4 $(top_srcdir)/m4/slepc.m4 \
-	$(top_srcdir)/m4/sstream.m4 $(top_srcdir)/m4/strstream.m4 \
-	$(top_srcdir)/m4/tbb.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/m4/tecplot.m4 $(top_srcdir)/m4/tetgen.m4 \
-	$(top_srcdir)/m4/threads.m4 $(top_srcdir)/m4/triangle.m4 \
-	$(top_srcdir)/m4/trilinos.m4 $(top_srcdir)/m4/unordered.m4 \
-	$(top_srcdir)/m4/vtk.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/sanitize.m4 $(top_srcdir)/m4/sfc.m4 \
+	$(top_srcdir)/m4/slepc.m4 $(top_srcdir)/m4/sstream.m4 \
+	$(top_srcdir)/m4/strstream.m4 $(top_srcdir)/m4/tbb.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/m4/tecplot.m4 \
+	$(top_srcdir)/m4/tetgen.m4 $(top_srcdir)/m4/threads.m4 \
+	$(top_srcdir)/m4/triangle.m4 $(top_srcdir)/m4/trilinos.m4 \
+	$(top_srcdir)/m4/unordered.m4 $(top_srcdir)/m4/vtk.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -153,6 +161,9 @@ BUILD_USER = @BUILD_USER@
 BUILD_VERSION = @BUILD_VERSION@
 BUNZIP2 = @BUNZIP2@
 BZIP2 = @BZIP2@
+CAPNPROTO_INCLUDE = @CAPNPROTO_INCLUDE@
+CAPNPROTO_LIBRARY = @CAPNPROTO_LIBRARY@
+CAPNP_BINARY = @CAPNP_BINARY@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -210,6 +221,7 @@ FLIBS = @FLIBS@
 FPARSER_INCLUDE = @FPARSER_INCLUDE@
 FPARSER_LIBRARY = @FPARSER_LIBRARY@
 GCOV_FLAGS = @GCOV_FLAGS@
+GCOV_LDFLAGS = @GCOV_LDFLAGS@
 GIT_REVISION = @GIT_REVISION@
 GLPK_INCLUDE = @GLPK_INCLUDE@
 GLPK_LIBRARY = @GLPK_LIBRARY@
@@ -268,6 +280,8 @@ MPI_LIBS_PATHS = @MPI_LIBS_PATHS@
 NANOFLANN_INCLUDE = @NANOFLANN_INCLUDE@
 NEMESIS_INCLUDE = @NEMESIS_INCLUDE@
 NETCDF_INCLUDE = @NETCDF_INCLUDE@
+NLOPT_INCLUDE = @NLOPT_INCLUDE@
+NLOPT_LIBRARY = @NLOPT_LIBRARY@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NODEPRECATEDFLAG = @NODEPRECATEDFLAG@
@@ -370,6 +384,7 @@ dvidir = @dvidir@
 enabledefaultcommworld = @enabledefaultcommworld@
 enablelegacyincludepaths = @enablelegacyincludepaths@
 enablepetsc = @enablepetsc@
+enableuniqueptr = @enableuniqueptr@
 enablewarnings = @enablewarnings@
 exec_prefix = @exec_prefix@
 gitquery = @gitquery@
@@ -437,11 +452,12 @@ BUILT_SOURCES = auto_ptr.h dirichlet_boundaries.h dof_map.h \
 	single_predicates.h sparsity_pattern.h variable.h \
 	variant_filter_iterator.h enum_convergence_flags.h \
 	enum_eigen_solver_type.h enum_elem_quality.h enum_elem_type.h \
-	enum_fe_family.h enum_inf_map_type.h enum_io_package.h \
-	enum_norm_type.h enum_order.h enum_parallel_type.h \
-	enum_point_locator_type.h enum_preconditioner_type.h \
-	enum_quadrature_type.h enum_solver_package.h \
-	enum_solver_type.h enum_subset_solve_mode.h enum_xdr_mode.h \
+	enum_error_estimator_type.h enum_fe_family.h \
+	enum_inf_map_type.h enum_io_package.h enum_norm_type.h \
+	enum_order.h enum_parallel_type.h enum_point_locator_type.h \
+	enum_preconditioner_type.h enum_quadrature_type.h \
+	enum_solver_package.h enum_solver_type.h \
+	enum_subset_solve_mode.h enum_xdr_mode.h \
 	adjoint_refinement_estimator.h \
 	adjoint_residual_error_estimator.h discontinuity_measure.h \
 	error_estimator.h exact_error_estimator.h exact_solution.h \
@@ -462,9 +478,9 @@ BUILT_SOURCES = auto_ptr.h dirichlet_boundaries.h dof_map.h \
 	cell_prism6.h cell_pyramid.h cell_pyramid13.h cell_pyramid14.h \
 	cell_pyramid5.h cell_tet.h cell_tet10.h cell_tet4.h edge.h \
 	edge_edge2.h edge_edge3.h edge_edge4.h edge_inf_edge2.h elem.h \
-	elem_quality.h elem_range.h elem_type.h face.h face_inf_quad.h \
-	face_inf_quad4.h face_inf_quad6.h face_quad.h face_quad4.h \
-	face_quad8.h face_quad9.h face_tri.h face_tri3.h \
+	elem_cutter.h elem_quality.h elem_range.h elem_type.h face.h \
+	face_inf_quad.h face_inf_quad4.h face_inf_quad6.h face_quad.h \
+	face_quad4.h face_quad8.h face_quad9.h face_tri.h face_tri3.h \
 	face_tri3_subdivision.h face_tri6.h node.h node_elem.h \
 	node_range.h plane.h point.h reference_elem.h remote_elem.h \
 	side.h sphere.h stored_range.h surface.h abaqus_io.h \
@@ -479,15 +495,16 @@ BUILT_SOURCES = auto_ptr.h dirichlet_boundaries.h dof_map.h \
 	mesh_smoother_vsmoother.h mesh_subdivision_support.h \
 	mesh_tetgen_interface.h mesh_tetgen_wrapper.h mesh_tools.h \
 	mesh_triangle_holes.h mesh_triangle_interface.h \
-	mesh_triangle_wrapper.h nemesis_io.h nemesis_io_helper.h \
-	off_io.h parallel_mesh.h patch.h postscript_io.h serial_mesh.h \
-	tecplot_io.h tetgen_io.h ucd_io.h unstructured_mesh.h unv_io.h \
-	vtk_io.h xdr_head.h xdr_io.h xdr_mesh.h xdr_mgf.h xdr_mhead.h \
-	xdr_shead.h xdr_soln.h analytic_function.h \
-	const_fem_function.h const_function.h coupling_matrix.h \
-	dense_matrix.h dense_matrix_base.h dense_submatrix.h \
-	dense_subvector.h dense_vector.h dense_vector_base.h \
-	distributed_vector.h eigen_core_support.h \
+	mesh_triangle_wrapper.h namebased_io.h nemesis_io.h \
+	nemesis_io_helper.h off_io.h parallel_mesh.h patch.h \
+	postscript_io.h serial_mesh.h tecplot_io.h tetgen_io.h \
+	ucd_io.h unstructured_mesh.h unv_io.h vtk_io.h xdr_head.h \
+	xdr_io.h xdr_mesh.h xdr_mgf.h xdr_mhead.h xdr_shead.h \
+	xdr_soln.h analytic_function.h composite_fem_function.h \
+	composite_function.h const_fem_function.h const_function.h \
+	coupling_matrix.h dense_matrix.h dense_matrix_base.h \
+	dense_submatrix.h dense_subvector.h dense_vector.h \
+	dense_vector_base.h distributed_vector.h eigen_core_support.h \
 	eigen_preconditioner.h eigen_sparse_matrix.h \
 	eigen_sparse_vector.h fem_function_base.h function_base.h \
 	laspack_matrix.h laspack_vector.h numeric_vector.h \
@@ -499,25 +516,27 @@ BUILT_SOURCES = auto_ptr.h dirichlet_boundaries.h dof_map.h \
 	tensor_value.h trilinos_epetra_matrix.h \
 	trilinos_epetra_vector.h trilinos_preconditioner.h \
 	type_n_tensor.h type_tensor.h type_vector.h vector_value.h \
-	wrapped_function.h zero_function.h parallel.h \
-	parallel_algebra.h parallel_bin_sorter.h \
+	wrapped_function.h wrapped_functor.h zero_function.h \
+	parallel.h parallel_algebra.h parallel_bin_sorter.h \
 	parallel_conversion_utils.h parallel_elem.h \
 	parallel_ghost_sync.h parallel_hilbert.h parallel_histogram.h \
 	parallel_implementation.h parallel_node.h parallel_object.h \
 	parallel_sort.h threads.h threads_allocators.h \
 	centroid_partitioner.h hilbert_sfc_partitioner.h \
 	linear_partitioner.h metis_csr_graph.h metis_partitioner.h \
-	morton_sfc_partitioner.h parmetis_partitioner.h partitioner.h \
-	sfc_partitioner.h diff_physics.h diff_qoi.h fem_physics.h \
-	quadrature.h quadrature_clough.h quadrature_conical.h \
-	quadrature_gauss.h quadrature_gm.h quadrature_grid.h \
+	morton_sfc_partitioner.h parmetis_helper.h \
+	parmetis_partitioner.h partitioner.h sfc_partitioner.h \
+	diff_physics.h diff_qoi.h fem_physics.h quadrature.h \
+	quadrature_clough.h quadrature_composite.h \
+	quadrature_conical.h quadrature_gauss.h \
+	quadrature_gauss_lobatto.h quadrature_gm.h quadrature_grid.h \
 	quadrature_jacobi.h quadrature_monomial.h quadrature_rules.h \
-	quadrature_simpson.h quadrature_trap.h \
-	derived_rb_construction.h derived_rb_evaluation.h \
-	rb_assembly_expansion.h rb_construction.h \
-	rb_construction_base.h rb_eim_assembly.h rb_eim_construction.h \
-	rb_eim_evaluation.h rb_eim_theta.h rb_evaluation.h \
-	rb_parameters.h rb_parametrized.h rb_parametrized_function.h \
+	quadrature_simpson.h quadrature_trap.h rb_assembly_expansion.h \
+	rb_construction.h rb_construction_base.h \
+	rb_data_deserialization.h rb_data_serialization.h \
+	rb_eim_assembly.h rb_eim_construction.h rb_eim_evaluation.h \
+	rb_eim_theta.h rb_evaluation.h rb_parameters.h \
+	rb_parametrized.h rb_parametrized_function.h \
 	rb_scm_construction.h rb_scm_evaluation.h \
 	rb_temporal_discretization.h rb_theta.h rb_theta_expansion.h \
 	transient_rb_assembly_expansion.h transient_rb_construction.h \
@@ -529,38 +548,43 @@ BUILT_SOURCES = auto_ptr.h dirichlet_boundaries.h dof_map.h \
 	solution_transfer.h adaptive_time_solver.h diff_solver.h \
 	eigen_solver.h eigen_sparse_linear_solver.h \
 	eigen_time_solver.h euler2_solver.h euler_solver.h \
-	laspack_linear_solver.h linear.h linear_solver.h \
-	memory_solution_history.h newton_solver.h \
-	no_solution_history.h nonlinear_solver.h \
+	first_order_unsteady_solver.h laspack_linear_solver.h linear.h \
+	linear_solver.h memory_solution_history.h newmark_solver.h \
+	newton_solver.h nlopt_optimization_solver.h \
+	no_solution_history.h nonlinear_solver.h optimization_solver.h \
 	petsc_auto_fieldsplit.h petsc_diff_solver.h \
-	petsc_dm_nonlinear_solver.h petsc_linear_solver.h \
-	petsc_nonlinear_solver.h petscdmlibmesh.h slepc_eigen_solver.h \
-	slepc_macro.h solution_history.h solver.h steady_solver.h \
-	time_solver.h trilinos_aztec_linear_solver.h \
-	trilinos_nox_nonlinear_solver.h twostep_time_solver.h \
-	unsteady_solver.h condensed_eigen_system.h \
-	continuation_system.h dg_fem_context.h diff_context.h \
-	diff_system.h eigen_system.h elem_assembly.h \
-	equation_systems.h explicit_system.h fem_context.h \
-	fem_system.h frequency_system.h implicit_system.h \
-	linear_implicit_system.h newmark_system.h \
-	nonlinear_implicit_system.h parameter_vector.h qoi_set.h \
-	sensitivity_data.h steady_system.h system.h system_norm.h \
-	system_subset.h system_subset_by_subdomain.h \
-	transient_system.h compare_types.h error_vector.h hashword.h \
-	ignore_warnings.h location_maps.h mapvector.h \
-	null_output_iterator.h number_lookups.h ostream_proxy.h \
-	parameters.h perf_log.h perfmon.h plt_loader.h \
-	point_locator_base.h point_locator_list.h point_locator_tree.h \
-	pool_allocator.h restore_warnings.h statistics.h \
-	string_to_enum.h timestamp.h tree.h tree_base.h tree_node.h \
-	utility.h vectormap.h xdr_cxx.h \
-	parallel_communicator_specializations $(am__append_1) \
-	$(am__append_3) $(am__append_5) $(am__append_7) \
-	$(am__append_9) $(am__append_11) libmesh_config.h
+	petsc_linear_solver.h petsc_nonlinear_solver.h \
+	petscdmlibmesh.h second_order_unsteady_solver.h \
+	slepc_eigen_solver.h slepc_macro.h solution_history.h solver.h \
+	steady_solver.h tao_optimization_solver.h time_solver.h \
+	trilinos_aztec_linear_solver.h trilinos_nox_nonlinear_solver.h \
+	twostep_time_solver.h unsteady_solver.h \
+	condensed_eigen_system.h continuation_system.h \
+	dg_fem_context.h diff_context.h diff_system.h eigen_system.h \
+	elem_assembly.h equation_systems.h explicit_system.h \
+	fem_context.h fem_system.h frequency_system.h \
+	implicit_system.h linear_implicit_system.h newmark_system.h \
+	nonlinear_implicit_system.h optimization_system.h \
+	parameter_accessor.h parameter_multiaccessor.h \
+	parameter_multipointer.h parameter_pointer.h \
+	parameter_vector.h qoi_set.h sensitivity_data.h \
+	steady_system.h system.h system_norm.h system_subset.h \
+	system_subset_by_subdomain.h transient_system.h \
+	compare_types.h error_vector.h hashword.h ignore_warnings.h \
+	location_maps.h mapvector.h null_output_iterator.h \
+	number_lookups.h ostream_proxy.h parameters.h perf_log.h \
+	perfmon.h plt_loader.h point_locator_base.h \
+	point_locator_list.h point_locator_tree.h pool_allocator.h \
+	restore_warnings.h statistics.h string_to_enum.h timestamp.h \
+	topology_map.h tree.h tree_base.h tree_node.h utility.h \
+	vectormap.h xdr_cxx.h parallel_communicator_specializations \
+	$(am__append_1) $(am__append_3) $(am__append_5) \
+	$(am__append_7) $(am__append_9) $(am__append_11) \
+	$(am__append_13) $(am__append_15) libmesh_config.h
 DISTCLEANFILES = $(BUILT_SOURCES) $(am__append_2) $(am__append_4) \
 	$(am__append_6) $(am__append_8) $(am__append_10) \
-	$(am__append_12) libmesh_config.h
+	$(am__append_12) $(am__append_14) $(am__append_16) \
+	libmesh_config.h
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -785,6 +809,13 @@ uninstall-am:
 @LIBMESH_ENABLE_NETCDF_V4_TRUE@netcdf.h: $(top_srcdir)/contrib/netcdf/v4/include/netcdf.h
 @LIBMESH_ENABLE_NETCDF_V4_TRUE@	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+@LIBMESH_INSTALL_HINNANT_UNIQUE_PTR_TRUE@unique_ptr.hpp: $(top_srcdir)/contrib/unique_ptr/unique_ptr.hpp
+@LIBMESH_INSTALL_HINNANT_UNIQUE_PTR_TRUE@	$(AM_V_GEN)rm -f $@ && $(LN_S) $< $@
+
+@LIBMESH_ENABLE_CAPNPROTO_TRUE@rb_data.capnp.h:
+@LIBMESH_ENABLE_CAPNPROTO_TRUE@	$(MAKE) -C $(top_builddir)/contrib/capnproto rb_data.capnp.h
+@LIBMESH_ENABLE_CAPNPROTO_TRUE@	$(AM_V_GEN)rm -f $@ && $(LN_S) $(top_builddir)/contrib/capnproto/rb_data.capnp.h $@
+
 #
 # libmesh_config.h rule
 libmesh_config.h: $(top_builddir)/include/libmesh_config.h
@@ -886,6 +917,9 @@ enum_elem_quality.h: $(top_srcdir)/include/enums/enum_elem_quality.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 enum_elem_type.h: $(top_srcdir)/include/enums/enum_elem_type.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+enum_error_estimator_type.h: $(top_srcdir)/include/enums/enum_error_estimator_type.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 enum_fe_family.h: $(top_srcdir)/include/enums/enum_fe_family.h
@@ -1113,6 +1147,9 @@ edge_inf_edge2.h: $(top_srcdir)/include/geom/edge_inf_edge2.h
 elem.h: $(top_srcdir)/include/geom/elem.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+elem_cutter.h: $(top_srcdir)/include/geom/elem_cutter.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 elem_quality.h: $(top_srcdir)/include/geom/elem_quality.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1305,6 +1342,9 @@ mesh_triangle_interface.h: $(top_srcdir)/include/mesh/mesh_triangle_interface.h
 mesh_triangle_wrapper.h: $(top_srcdir)/include/mesh/mesh_triangle_wrapper.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+namebased_io.h: $(top_srcdir)/include/mesh/namebased_io.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 nemesis_io.h: $(top_srcdir)/include/mesh/nemesis_io.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1366,6 +1406,12 @@ xdr_soln.h: $(top_srcdir)/include/mesh/xdr_soln.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 analytic_function.h: $(top_srcdir)/include/numerics/analytic_function.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+composite_fem_function.h: $(top_srcdir)/include/numerics/composite_fem_function.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+composite_function.h: $(top_srcdir)/include/numerics/composite_function.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 const_fem_function.h: $(top_srcdir)/include/numerics/const_fem_function.h
@@ -1497,6 +1543,9 @@ vector_value.h: $(top_srcdir)/include/numerics/vector_value.h
 wrapped_function.h: $(top_srcdir)/include/numerics/wrapped_function.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+wrapped_functor.h: $(top_srcdir)/include/numerics/wrapped_functor.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 zero_function.h: $(top_srcdir)/include/numerics/zero_function.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1560,6 +1609,9 @@ metis_partitioner.h: $(top_srcdir)/include/partitioning/metis_partitioner.h
 morton_sfc_partitioner.h: $(top_srcdir)/include/partitioning/morton_sfc_partitioner.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+parmetis_helper.h: $(top_srcdir)/include/partitioning/parmetis_helper.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 parmetis_partitioner.h: $(top_srcdir)/include/partitioning/parmetis_partitioner.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1584,10 +1636,16 @@ quadrature.h: $(top_srcdir)/include/quadrature/quadrature.h
 quadrature_clough.h: $(top_srcdir)/include/quadrature/quadrature_clough.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+quadrature_composite.h: $(top_srcdir)/include/quadrature/quadrature_composite.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 quadrature_conical.h: $(top_srcdir)/include/quadrature/quadrature_conical.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 quadrature_gauss.h: $(top_srcdir)/include/quadrature/quadrature_gauss.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+quadrature_gauss_lobatto.h: $(top_srcdir)/include/quadrature/quadrature_gauss_lobatto.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 quadrature_gm.h: $(top_srcdir)/include/quadrature/quadrature_gm.h
@@ -1611,12 +1669,6 @@ quadrature_simpson.h: $(top_srcdir)/include/quadrature/quadrature_simpson.h
 quadrature_trap.h: $(top_srcdir)/include/quadrature/quadrature_trap.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
-derived_rb_construction.h: $(top_srcdir)/include/reduced_basis/derived_rb_construction.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
-derived_rb_evaluation.h: $(top_srcdir)/include/reduced_basis/derived_rb_evaluation.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
 rb_assembly_expansion.h: $(top_srcdir)/include/reduced_basis/rb_assembly_expansion.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1624,6 +1676,12 @@ rb_construction.h: $(top_srcdir)/include/reduced_basis/rb_construction.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 rb_construction_base.h: $(top_srcdir)/include/reduced_basis/rb_construction_base.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+rb_data_deserialization.h: $(top_srcdir)/include/reduced_basis/rb_data_deserialization.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+rb_data_serialization.h: $(top_srcdir)/include/reduced_basis/rb_data_serialization.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 rb_eim_assembly.h: $(top_srcdir)/include/reduced_basis/rb_eim_assembly.h
@@ -1728,6 +1786,9 @@ euler2_solver.h: $(top_srcdir)/include/solvers/euler2_solver.h
 euler_solver.h: $(top_srcdir)/include/solvers/euler_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+first_order_unsteady_solver.h: $(top_srcdir)/include/solvers/first_order_unsteady_solver.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 laspack_linear_solver.h: $(top_srcdir)/include/solvers/laspack_linear_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1740,7 +1801,13 @@ linear_solver.h: $(top_srcdir)/include/solvers/linear_solver.h
 memory_solution_history.h: $(top_srcdir)/include/solvers/memory_solution_history.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+newmark_solver.h: $(top_srcdir)/include/solvers/newmark_solver.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 newton_solver.h: $(top_srcdir)/include/solvers/newton_solver.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+nlopt_optimization_solver.h: $(top_srcdir)/include/solvers/nlopt_optimization_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 no_solution_history.h: $(top_srcdir)/include/solvers/no_solution_history.h
@@ -1749,13 +1816,13 @@ no_solution_history.h: $(top_srcdir)/include/solvers/no_solution_history.h
 nonlinear_solver.h: $(top_srcdir)/include/solvers/nonlinear_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+optimization_solver.h: $(top_srcdir)/include/solvers/optimization_solver.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 petsc_auto_fieldsplit.h: $(top_srcdir)/include/solvers/petsc_auto_fieldsplit.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 petsc_diff_solver.h: $(top_srcdir)/include/solvers/petsc_diff_solver.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
-petsc_dm_nonlinear_solver.h: $(top_srcdir)/include/solvers/petsc_dm_nonlinear_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 petsc_linear_solver.h: $(top_srcdir)/include/solvers/petsc_linear_solver.h
@@ -1765,6 +1832,9 @@ petsc_nonlinear_solver.h: $(top_srcdir)/include/solvers/petsc_nonlinear_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 petscdmlibmesh.h: $(top_srcdir)/include/solvers/petscdmlibmesh.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+second_order_unsteady_solver.h: $(top_srcdir)/include/solvers/second_order_unsteady_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 slepc_eigen_solver.h: $(top_srcdir)/include/solvers/slepc_eigen_solver.h
@@ -1780,6 +1850,9 @@ solver.h: $(top_srcdir)/include/solvers/solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 steady_solver.h: $(top_srcdir)/include/solvers/steady_solver.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+tao_optimization_solver.h: $(top_srcdir)/include/solvers/tao_optimization_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 time_solver.h: $(top_srcdir)/include/solvers/time_solver.h
@@ -1843,6 +1916,21 @@ newmark_system.h: $(top_srcdir)/include/systems/newmark_system.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 nonlinear_implicit_system.h: $(top_srcdir)/include/systems/nonlinear_implicit_system.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+optimization_system.h: $(top_srcdir)/include/systems/optimization_system.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+parameter_accessor.h: $(top_srcdir)/include/systems/parameter_accessor.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+parameter_multiaccessor.h: $(top_srcdir)/include/systems/parameter_multiaccessor.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+parameter_multipointer.h: $(top_srcdir)/include/systems/parameter_multipointer.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+parameter_pointer.h: $(top_srcdir)/include/systems/parameter_pointer.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 parameter_vector.h: $(top_srcdir)/include/systems/parameter_vector.h
@@ -1933,6 +2021,9 @@ string_to_enum.h: $(top_srcdir)/include/utils/string_to_enum.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 timestamp.h: $(top_srcdir)/include/utils/timestamp.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+topology_map.h: $(top_srcdir)/include/utils/topology_map.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 tree.h: $(top_srcdir)/include/utils/tree.h

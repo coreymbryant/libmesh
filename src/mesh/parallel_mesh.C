@@ -45,7 +45,7 @@ ParallelMesh::ParallelMesh (const Parallel::Communicator &comm_in,
 #endif
 
   // FIXME: give parmetis the communicator!
-  _partitioner = AutoPtr<Partitioner>(new ParmetisPartitioner());
+  _partitioner = UniquePtr<Partitioner>(new ParmetisPartitioner());
 }
 
 
@@ -65,7 +65,7 @@ ParallelMesh::ParallelMesh (unsigned char d) :
 #endif
 
   // FIXME: give parmetis the communicator!
-  _partitioner = AutoPtr<Partitioner>(new ParmetisPartitioner());
+  _partitioner = UniquePtr<Partitioner>(new ParmetisPartitioner());
 }
 #endif
 
@@ -100,7 +100,7 @@ ParallelMesh::ParallelMesh (const ParallelMesh &other_mesh) :
     other_mesh._next_free_unpartitioned_node_id;
   _next_free_unpartitioned_elem_id =
     other_mesh._next_free_unpartitioned_elem_id;
-  *this->boundary_info = *other_mesh.boundary_info;
+  this->get_boundary_info() = other_mesh.get_boundary_info();
 
   // Need to copy extra_ghost_elems
   for(std::set<Elem *>::iterator it = other_mesh._extra_ghost_elems.begin();
@@ -120,7 +120,7 @@ ParallelMesh::ParallelMesh (const UnstructuredMesh &other_mesh) :
   _next_free_unpartitioned_elem_id(this->n_processors())
 {
   this->copy_nodes_and_elements(other_mesh);
-  *this->boundary_info = *other_mesh.boundary_info;
+  this->get_boundary_info() = other_mesh.get_boundary_info();
 
   this->update_parallel_id_counts();
 }
@@ -450,6 +450,12 @@ Elem* ParallelMesh::insert_elem (Elem* e)
   if (_elements[e->id()])
     this->delete_elem(_elements[e->id()]);
 
+  // Try to make the cached elem data more accurate
+  processor_id_type elem_procid = e->processor_id();
+  if (elem_procid == this->processor_id() ||
+      elem_procid == DofObject::invalid_processor_id)
+    _n_elem++;
+
   _elements[e->id()] = e;
 
   return e;
@@ -461,8 +467,14 @@ void ParallelMesh::delete_elem(Elem* e)
 {
   libmesh_assert (e);
 
+  // Try to make the cached elem data more accurate
+  processor_id_type elem_procid = e->processor_id();
+  if (elem_procid == this->processor_id() ||
+      elem_procid == DofObject::invalid_processor_id)
+    _n_elem--;
+
   // Delete the element from the BoundaryInfo object
-  this->boundary_info->remove(e);
+  this->get_boundary_info().remove(e);
 
   // But not yet from the container; we might invalidate
   // an iterator that way!
@@ -620,8 +632,14 @@ void ParallelMesh::delete_node(Node* n)
   libmesh_assert(n);
   libmesh_assert(_nodes[n->id()]);
 
+  // Try to make the cached elem data more accurate
+  processor_id_type node_procid = n->processor_id();
+  if (node_procid == this->processor_id() ||
+      node_procid == DofObject::invalid_processor_id)
+    _n_nodes--;
+
   // Delete the node from the BoundaryInfo object
-  this->boundary_info->remove(n);
+  this->get_boundary_info().remove(n);
 
   // But not yet from the container; we might invalidate
   // an iterator that way!
@@ -646,7 +664,27 @@ void ParallelMesh::renumber_node(const dof_id_type old_id,
   libmesh_assert_equal_to (nd->id(), old_id);
 
   nd->set_id(new_id);
+
+  // If we have nodes shipped to this processor for NodeConstraints
+  // use, then those nodes will exist in _nodes, but may not be
+  // locatable via a TopologyMap due to the insufficiency of elements
+  // connecting to them.  If local refinement then wants to create a
+  // *new* node in the same location, it will initally get a temporary
+  // id, and then make_node_ids_parallel_consistent() will try to move
+  // it to the canonical id.  We need to account for this case to
+  // avoid false positives and memory leaks.
+#ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
+  if (_nodes[new_id])
+    {
+      libmesh_assert_equal_to (*(Point*)_nodes[new_id],
+                               *(Point*)_nodes[old_id]);
+      _nodes.erase(new_id);
+    }
+#else
+  // If we aren't shipping nodes for NodeConstraints, there should be
+  // no reason for renumbering one node onto another.
   libmesh_assert (!_nodes[new_id]);
+#endif
   _nodes[new_id] = nd;
   _nodes.erase(old_id);
 }
@@ -714,6 +752,11 @@ void ParallelMesh::redistribute ()
       mc.redistribute(*this);
 
       this->update_parallel_id_counts();
+
+      // We probably had valid neighbors previously, so that a quality
+      // new partitioning could be found, but we might not have valid
+      // neighbor links on the newly-redistributed elements
+      this->find_neighbors();
 
       // Is this necessary?  If we are called from prepare_for_use(), this will be called
       // anyway... but users can always call partition directly, in which case we do need
@@ -1108,7 +1151,7 @@ void ParallelMesh::renumber_nodes_and_elements ()
           {
             // remove any boundary information associated with
             // this node
-            this->boundary_info->remove (nd);
+            this->get_boundary_info().remove (nd);
 
             // delete the node
             delete nd;

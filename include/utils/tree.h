@@ -75,15 +75,24 @@ public:
   unsigned int n_active_bins() const { return root.n_active_bins(); }
 
   /**
-   * @returns a pointer to the element containing point p.
+   * @returns a pointer to the element containing point p,
+   * optionally restricted to a set of allowed subdomains,
+   * optionally using a non-zero relative tolerance for searches.
    */
-  const Elem* find_element(const Point& p) const;
+  const Elem* find_element(const Point& p,
+                           const std::set<subdomain_id_type>
+                           *allowed_subdomains = NULL,
+                           Real relative_tol = TOLERANCE) const;
 
   /**
-   * @returns a pointer to the element containing point p.
+   * @returns a pointer to the element containing point p,
+   * optionally restricted to a set of allowed subdomains,
+   * optionally using a non-zero relative tolerance for searches.
    */
-  const Elem* operator() (const Point& p) const;
-
+  const Elem* operator() (const Point& p,
+                          const std::set<subdomain_id_type>
+                          *allowed_subdomains = NULL,
+                          Real relative_tol = TOLERANCE) const;
 
 private:
   /**

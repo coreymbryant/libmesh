@@ -70,11 +70,11 @@ void add_eletype_entry(ElemType libmesh_elem_type,
   // the vector(iter, iter) constructor is used.
   std::vector<unsigned>
     (node_map, node_map+node_map_size).swap
-      (map_entry.abaqus_zero_based_node_id_to_libmesh_node_id);
+    (map_entry.abaqus_zero_based_node_id_to_libmesh_node_id);
 
   std::vector<unsigned short>
     (side_map, side_map+side_map_size).swap
-      (map_entry.abaqus_zero_based_side_id_to_libmesh_side_id);
+    (map_entry.abaqus_zero_based_side_id_to_libmesh_side_id);
 }
 
 
@@ -380,7 +380,7 @@ void AbaqusIO::read (const std::string& fname)
   // sidesets.  So we can call the new BoundaryInfo function which
   // generates sidesets from nodesets.
   if (build_sidesets_from_nodesets)
-    the_mesh.boundary_info->build_side_list_from_node_list();
+    the_mesh.get_boundary_info().build_side_list_from_node_list();
 
   // Delete lower-dimensional elements from the Mesh.  We assume these
   // were only used for setting BCs, and aren't part of the actual
@@ -854,7 +854,7 @@ void AbaqusIO::assign_boundary_node_ids()
   for (unsigned short current_id=0; it != _nodeset_ids.end(); ++it, ++current_id)
     {
       // Associate current_id with the name we determined earlier
-      the_mesh.boundary_info->nodeset_name(current_id) = it->first;
+      the_mesh.get_boundary_info().nodeset_name(current_id) = it->first;
 
       // Get a reference to the current vector of nodeset ID values
       std::vector<dof_id_type>& nodeset_ids = it->second;
@@ -872,7 +872,7 @@ void AbaqusIO::assign_boundary_node_ids()
 
           // Add this node with the current_id (which is determined by the
           // alphabetical ordering of the map) to the BoundaryInfo object
-          the_mesh.boundary_info->add_node(node, current_id);
+          the_mesh.get_boundary_info().add_node(node, current_id);
         }
     }
 }
@@ -890,51 +890,52 @@ void AbaqusIO::assign_sideset_ids()
 
   // Iterate over the container of sidesets
   {
-  sideset_container_t::iterator it = _sideset_ids.begin();
-  for (unsigned short current_id=0; it != _sideset_ids.end(); ++it, ++current_id)
-    {
-      // Associate current_id with the name we determined earlier
-      the_mesh.boundary_info->sideset_name(current_id) = it->first;
+    sideset_container_t::iterator it = _sideset_ids.begin();
+    for (unsigned short current_id=0; it != _sideset_ids.end(); ++it, ++current_id)
+      {
+        // Associate current_id with the name we determined earlier
+        the_mesh.get_boundary_info().sideset_name(current_id) = it->first;
 
-      // Get a reference to the current vector of nodeset ID values
-      std::vector<std::pair<dof_id_type,unsigned> >& sideset_ids = it->second;
+        // Get a reference to the current vector of nodeset ID values
+        std::vector<std::pair<dof_id_type,unsigned> >& sideset_ids = it->second;
 
-      for (std::size_t i=0; i<sideset_ids.size(); ++i)
-        {
-          // sideset_ids is a vector of pairs (elem id, side id).  Pull them out
-          // now to make the code below more readable.
-          dof_id_type  abaqus_elem_id = sideset_ids[i].first;
-          unsigned abaqus_side_number = sideset_ids[i].second;
+        for (std::size_t i=0; i<sideset_ids.size(); ++i)
+          {
+            // sideset_ids is a vector of pairs (elem id, side id).  Pull them out
+            // now to make the code below more readable.
+            dof_id_type  abaqus_elem_id = sideset_ids[i].first;
+            unsigned abaqus_side_number = sideset_ids[i].second;
 
-          // Map the Abaqus element ID to LibMesh numbering
-          dof_id_type libmesh_elem_id = _abaqus_to_libmesh_elem_mapping[ abaqus_elem_id ];
+            // Map the Abaqus element ID to LibMesh numbering
+            dof_id_type libmesh_elem_id = _abaqus_to_libmesh_elem_mapping[ abaqus_elem_id ];
 
-          // Get pointer to that element
-          Elem* elem = the_mesh.elem(libmesh_elem_id);
+            // Get pointer to that element
+            Elem* elem = the_mesh.elem(libmesh_elem_id);
 
-          // Check that the pointer returned from the Mesh is non-NULL
-          if (elem == NULL)
-            libmesh_error_msg("Mesh returned NULL pointer for Elem " << libmesh_elem_id);
+            // Check that the pointer returned from the Mesh is non-NULL
+            if (elem == NULL)
+              libmesh_error_msg("Mesh returned NULL pointer for Elem " << libmesh_elem_id);
 
-          // Grab a reference to the element definition for this element type
-          const ElementDefinition& eledef = eletypes[elem->type()];
+            // Grab a reference to the element definition for this element type
+            const ElementDefinition& eledef = eletypes[elem->type()];
 
-          // If the element definition was not found, the call above would have
-          // created one with an uninitialized struct.  Check for that here...
-          if (eledef.abaqus_zero_based_side_id_to_libmesh_side_id.size() == 0)
-            libmesh_error_msg("No Abaqus->LibMesh mapping information for ElemType " \
-                              << Utility::enum_to_string(elem->type())  \
-                              << "!");
+            // If the element definition was not found, the call above would have
+            // created one with an uninitialized struct.  Check for that here...
+            if (eledef.abaqus_zero_based_side_id_to_libmesh_side_id.size() == 0)
+              libmesh_error_msg("No Abaqus->LibMesh mapping information for ElemType " \
+                                << Utility::enum_to_string(elem->type())  \
+                                << "!");
 
-          // Add this node with the current_id (which is determined by the
-          // alphabetical ordering of the map).  Side numbers in Abaqus are 1-based,
-          // so we subtract 1 here before passing the abaqus side number to the
-          // mapping array
-          the_mesh.boundary_info->add_side(elem,
-                                           eledef.abaqus_zero_based_side_id_to_libmesh_side_id[abaqus_side_number-1],
-                                           current_id);
-        }
-    }
+            // Add this node with the current_id (which is determined by the
+            // alphabetical ordering of the map).  Side numbers in Abaqus are 1-based,
+            // so we subtract 1 here before passing the abaqus side number to the
+            // mapping array
+            the_mesh.get_boundary_info().add_side
+              (elem,
+               eledef.abaqus_zero_based_side_id_to_libmesh_side_id[abaqus_side_number-1],
+               current_id);
+          }
+      }
   }
 
 
@@ -998,7 +999,7 @@ void AbaqusIO::assign_sideset_ids()
             // chosen.  It's not necessary to do this for every
             // element in the set, but it's convenient to do it here
             // since we have all the necessary information...
-            the_mesh.boundary_info->sideset_name(elemset_id) = it->first;
+            the_mesh.get_boundary_info().sideset_name(elemset_id) = it->first;
           }
       }
 
@@ -1020,7 +1021,7 @@ void AbaqusIO::assign_sideset_ids()
               // this algorithm...
               for (unsigned short sn=0; sn<elem->n_sides(); sn++)
                 {
-                  AutoPtr<Elem> side (elem->build_side(sn));
+                  UniquePtr<Elem> side (elem->build_side(sn));
 
                   // Build up a node_ids vector, which is the key
                   std::vector<dof_id_type> node_ids(side->n_nodes());
@@ -1037,7 +1038,7 @@ void AbaqusIO::assign_sideset_ids()
                   // Add boundary information for each side in the range.
                   for (provide_bcs_t::const_iterator s_it = range.first;
                        s_it != range.second; ++s_it)
-                    the_mesh.boundary_info->add_side
+                    the_mesh.get_boundary_info().add_side
                       (elem, sn, cast_int<unsigned short>(s_it->second));
                 }
             }

@@ -29,7 +29,7 @@
 #include "libmesh/enum_elem_type.h"
 #include "libmesh/libmesh_common.h"
 #include "libmesh/multi_predicates.h"
-#include "libmesh/partitioner.h" // AutoPtr needs a real declaration
+#include "libmesh/partitioner.h" // UniquePtr needs a real declaration
 #include "libmesh/point_locator_base.h"
 #include "libmesh/variant_filter_iterator.h"
 #include "libmesh/parallel_object.h"
@@ -47,6 +47,8 @@ class Node;
 class Point;
 class MeshData;
 
+template <class MT>
+class MeshInput;
 
 
 /**
@@ -95,7 +97,7 @@ public:
   /**
    * Virtual "copy constructor"
    */
-  virtual AutoPtr<MeshBase> clone() const = 0;
+  virtual UniquePtr<MeshBase> clone() const = 0;
 
   /**
    * Destructor.
@@ -103,16 +105,19 @@ public:
   virtual ~MeshBase ();
 
   /**
-   * This class holds the boundary information.  It can store nodes, edges,
-   * and faces with a corresponding id that facilitates setting boundary
-   * conditions.
-   */
-  AutoPtr<BoundaryInfo> boundary_info;
-
-  /**
    * A partitioner to use at each prepare_for_use()
    */
-  virtual AutoPtr<Partitioner> &partitioner() { return _partitioner; }
+  virtual UniquePtr<Partitioner> &partitioner() { return _partitioner; }
+
+  /**
+   * The information about boundary ids on the mesh
+   */
+  const BoundaryInfo& get_boundary_info() const { return *boundary_info; }
+
+  /**
+   * Writeable information about boundary ids on the mesh
+   */
+  BoundaryInfo& get_boundary_info() { return *boundary_info; }
 
   /**
    * Deletes all the data that are currently stored.
@@ -152,14 +157,23 @@ public:
    * multi-dimensional meshes (e.g. hexes and quads in the same mesh)
    * then this will return the largest such dimension.
    */
-  unsigned int mesh_dimension () const
-  { return cast_int<unsigned int>(_dim); }
+  unsigned int mesh_dimension () const;
 
   /**
-   * Resets the logical dimension of the mesh.
+   * Resets the logical dimension of the mesh. If the mesh has
+   * elements of multiple dimensions, this should be set to the largest
+   * dimension. E.g. if the mesh has 1D and 2D elements, this should
+   * be set to 2. If the mesh has 2D and 3D elements, this should be
+   * set to 3.
    */
   void set_mesh_dimension (unsigned char d)
-  { _dim = d; }
+  { _elem_dims.clear(); _elem_dims.insert(d); }
+
+  /**
+   * @returns set of dimensions of elements present in the mesh.
+   */
+  const std::set<unsigned char>& elem_dimensions() const
+  { return _elem_dims; }
 
   /**
    * Returns the spatial dimension of the mesh.  Note that this is
@@ -430,12 +444,18 @@ public:
    * To add an element locally, set e->processor_id() before adding it.
    * To ensure a specific element id, call e->set_id() before adding it;
    * only do this in parallel if you are manually keeping ids consistent.
+   *
+   * Users should call MeshBase::prepare_for_use() after elements are
+   * added to and/or deleted from the mesh.
    */
   virtual Elem* add_elem (Elem* e) = 0;
 
   /**
    * Insert elem \p e to the element array, preserving its id
    * and replacing/deleting any existing element with the same id.
+   *
+   * Users should call MeshBase::prepare_for_use() after elements are
+   * added to and/or deleted from the mesh.
    */
   virtual Elem* insert_elem (Elem* e) = 0;
 
@@ -444,6 +464,9 @@ public:
    * method may produce isolated nodes, i.e. nodes not connected
    * to any element.  This method must be implemented in derived classes
    * in such a way that it does not invalidate element iterators.
+   *
+   * Users should call MeshBase::prepare_for_use() after elements are
+   * added to and/or deleted from the mesh.
    */
   virtual void delete_elem (Elem* e) = 0;
 
@@ -496,10 +519,11 @@ public:
 
   /**
    * Prepare a newly created (or read) mesh for use.
-   * This involves 3 steps:
+   * This involves 4 steps:
    *  1.) call \p find_neighbors()
    *  2.) call \p partition()
    *  3.) call \p renumber_nodes_and_elements()
+   *  4.) call \p cache_elem_dims()
    *
    * The argument to skip renumbering is now deprecated - to prevent a
    * mesh from being renumbered, set allow_renumbering(false).
@@ -675,7 +699,7 @@ public:
    * non-parallel_only code unless the master has already been
    * constructed.
    */
-  AutoPtr<PointLocatorBase> sub_point_locator () const;
+  UniquePtr<PointLocatorBase> sub_point_locator () const;
 
   /**
    * Releases the current \p PointLocator object.
@@ -699,141 +723,218 @@ public:
   const std::string& subdomain_name(subdomain_id_type id) const;
 
   /**
-   * Returns a the id of the requested block by name.  Throws an error
-   * if a block by name is not found
+   * Returns the id of the named subdomain if it exists,
+   * Elem::invalid_subdomain_id otherwise.
    */
   subdomain_id_type get_id_by_name(const std::string& name) const;
 
-public:
-
-
-
-  /**
-   * Elem iterator accessor functions.  These must be defined in
-   * Concrete base classes.
-   */
-  virtual element_iterator elements_begin                   () = 0;
-  virtual element_iterator elements_end                     () = 0;
-  virtual element_iterator active_elements_begin            () = 0;
-  virtual element_iterator active_elements_end              () = 0;
-  virtual element_iterator ancestor_elements_begin          () = 0;
-  virtual element_iterator ancestor_elements_end            () = 0;
-  virtual element_iterator subactive_elements_begin         () = 0;
-  virtual element_iterator subactive_elements_end           () = 0;
-  virtual element_iterator not_active_elements_begin        () = 0;
-  virtual element_iterator not_active_elements_end          () = 0;
-  virtual element_iterator not_ancestor_elements_begin      () = 0;
-  virtual element_iterator not_ancestor_elements_end        () = 0;
-  virtual element_iterator not_subactive_elements_begin     () = 0;
-  virtual element_iterator not_subactive_elements_end       () = 0;
-  virtual element_iterator local_elements_begin             () = 0;
-  virtual element_iterator local_elements_end               () = 0;
-  virtual element_iterator not_local_elements_begin         () = 0;
-  virtual element_iterator not_local_elements_end           () = 0;
-  virtual element_iterator active_local_elements_begin      () = 0;
-  virtual element_iterator active_local_elements_end        () = 0;
-  virtual element_iterator active_not_local_elements_begin  () = 0;
-  virtual element_iterator active_not_local_elements_end    () = 0;
-  virtual element_iterator level_elements_begin             (const unsigned int level  ) = 0;
-  virtual element_iterator level_elements_end               (const unsigned int level  ) = 0;
-  virtual element_iterator not_level_elements_begin         (const unsigned int level  ) = 0;
-  virtual element_iterator not_level_elements_end           (const unsigned int level  ) = 0;
-  virtual element_iterator local_level_elements_begin       (const unsigned int level  ) = 0;
-  virtual element_iterator local_level_elements_end         (const unsigned int level  ) = 0;
-  virtual element_iterator local_not_level_elements_begin   (const unsigned int level  ) = 0;
-  virtual element_iterator local_not_level_elements_end     (const unsigned int level  ) = 0;
-  virtual element_iterator pid_elements_begin               (const processor_id_type proc_id) = 0;
-  virtual element_iterator pid_elements_end                 (const processor_id_type proc_id) = 0;
-  virtual element_iterator type_elements_begin              (const ElemType type       ) = 0;
-  virtual element_iterator type_elements_end                (const ElemType type       ) = 0;
-  virtual element_iterator active_type_elements_begin       (const ElemType type       ) = 0;
-  virtual element_iterator active_type_elements_end         (const ElemType type       ) = 0;
-  virtual element_iterator active_pid_elements_begin        (const processor_id_type proc_id) = 0;
-  virtual element_iterator active_pid_elements_end          (const processor_id_type proc_id) = 0;
-  virtual element_iterator unpartitioned_elements_begin     () = 0;
-  virtual element_iterator unpartitioned_elements_end       () = 0;
-  virtual element_iterator active_local_subdomain_elements_begin (const subdomain_id_type subdomain_id) = 0;
-  virtual element_iterator active_local_subdomain_elements_end   (const subdomain_id_type subdomain_id) = 0;
-  virtual element_iterator active_subdomain_elements_begin       (const subdomain_id_type subdomain_id) = 0;
-  virtual element_iterator active_subdomain_elements_end         (const subdomain_id_type subdomain_id) = 0;
-
-
-
+  //
+  // element_iterator accessors
+  //
 
   /**
-   * const Elem iterator accessor functions.
+   * Iterate over all the elements in the Mesh.
    */
-  virtual const_element_iterator elements_begin                   () const = 0;
-  virtual const_element_iterator elements_end                     () const = 0;
-  virtual const_element_iterator active_elements_begin            () const = 0;
-  virtual const_element_iterator active_elements_end              () const = 0;
-  virtual const_element_iterator ancestor_elements_begin          () const = 0;
-  virtual const_element_iterator ancestor_elements_end            () const = 0;
-  virtual const_element_iterator subactive_elements_begin         () const = 0;
-  virtual const_element_iterator subactive_elements_end           () const = 0;
-  virtual const_element_iterator not_active_elements_begin        () const = 0;
-  virtual const_element_iterator not_active_elements_end          () const = 0;
-  virtual const_element_iterator not_ancestor_elements_begin      () const = 0;
-  virtual const_element_iterator not_ancestor_elements_end        () const = 0;
-  virtual const_element_iterator not_subactive_elements_begin     () const = 0;
-  virtual const_element_iterator not_subactive_elements_end       () const = 0;
-  virtual const_element_iterator local_elements_begin             () const = 0;
-  virtual const_element_iterator local_elements_end               () const = 0;
-  virtual const_element_iterator not_local_elements_begin         () const = 0;
-  virtual const_element_iterator not_local_elements_end           () const = 0;
-  virtual const_element_iterator active_local_elements_begin      () const = 0;
-  virtual const_element_iterator active_local_elements_end        () const = 0;
-  virtual const_element_iterator active_not_local_elements_begin  () const = 0;
-  virtual const_element_iterator active_not_local_elements_end    () const = 0;
-  virtual const_element_iterator level_elements_begin             (const unsigned int level)   const = 0;
-  virtual const_element_iterator level_elements_end               (const unsigned int level)   const = 0;
-  virtual const_element_iterator not_level_elements_begin         (const unsigned int level)   const = 0;
-  virtual const_element_iterator not_level_elements_end           (const unsigned int level)   const = 0;
-  virtual const_element_iterator local_level_elements_begin       (const unsigned int level)   const = 0;
-  virtual const_element_iterator local_level_elements_end         (const unsigned int level)   const = 0;
-  virtual const_element_iterator local_not_level_elements_begin   (const unsigned int level)   const = 0;
-  virtual const_element_iterator local_not_level_elements_end     (const unsigned int level)   const = 0;
-  virtual const_element_iterator pid_elements_begin               (const processor_id_type proc_id) const = 0;
-  virtual const_element_iterator pid_elements_end                 (const processor_id_type proc_id) const = 0;
-  virtual const_element_iterator type_elements_begin              (const ElemType type)        const = 0;
-  virtual const_element_iterator type_elements_end                (const ElemType type)        const = 0;
-  virtual const_element_iterator active_type_elements_begin       (const ElemType type)        const = 0;
-  virtual const_element_iterator active_type_elements_end         (const ElemType type)        const = 0;
-  virtual const_element_iterator active_pid_elements_begin        (const processor_id_type proc_id) const = 0;
-  virtual const_element_iterator active_pid_elements_end          (const processor_id_type proc_id) const = 0;
-  virtual const_element_iterator unpartitioned_elements_begin     () const = 0;
-  virtual const_element_iterator unpartitioned_elements_end       () const = 0;
-  virtual const_element_iterator active_local_subdomain_elements_begin (const subdomain_id_type subdomain_id) const = 0;
-  virtual const_element_iterator active_local_subdomain_elements_end   (const subdomain_id_type subdomain_id) const = 0;
-  virtual const_element_iterator active_subdomain_elements_begin       (const subdomain_id_type subdomain_id) const = 0;
-  virtual const_element_iterator active_subdomain_elements_end         (const subdomain_id_type subdomain_id) const = 0;
-
+  virtual element_iterator elements_begin () = 0;
+  virtual element_iterator elements_end () = 0;
+  virtual const_element_iterator elements_begin () const = 0;
+  virtual const_element_iterator elements_end () const = 0;
 
   /**
-   * non-const Node iterator accessor functions.
+   * Iterate over elements for which elem->ancestor() returns true.
    */
-  virtual node_iterator nodes_begin        () = 0;
-  virtual node_iterator nodes_end          () = 0;
+  virtual element_iterator ancestor_elements_begin () = 0;
+  virtual element_iterator ancestor_elements_end () = 0;
+  virtual const_element_iterator ancestor_elements_begin () const = 0;
+  virtual const_element_iterator ancestor_elements_end () const = 0;
+
+  /**
+   * Iterate over elements for which elem->subactive() returns true.
+   */
+  virtual element_iterator subactive_elements_begin () = 0;
+  virtual element_iterator subactive_elements_end () = 0;
+  virtual const_element_iterator subactive_elements_begin () const = 0;
+  virtual const_element_iterator subactive_elements_end () const = 0;
+
+  /**
+   * Iterate over elements for which elem->is_semilocal() returns true for the current processor.
+   */
+  virtual element_iterator semilocal_elements_begin () = 0;
+  virtual element_iterator semilocal_elements_end () = 0;
+  virtual const_element_iterator semilocal_elements_begin () const = 0;
+  virtual const_element_iterator semilocal_elements_end () const = 0;
+
+  /**
+   * Iterate over elements which are on or have a neighbor on the current processor.
+   */
+  virtual element_iterator facelocal_elements_begin () = 0;
+  virtual element_iterator facelocal_elements_end () = 0;
+  virtual const_element_iterator facelocal_elements_begin () const = 0;
+  virtual const_element_iterator facelocal_elements_end () const = 0;
+
+  /**
+   * Iterate over elements of a given level.
+   */
+  virtual element_iterator level_elements_begin (unsigned int level) = 0;
+  virtual element_iterator level_elements_end (unsigned int level) = 0;
+  virtual const_element_iterator level_elements_begin (unsigned int level) const = 0;
+  virtual const_element_iterator level_elements_end (unsigned int level) const = 0;
+
+  /**
+   * Iterate over all elements with a specified processor id.
+   */
+  virtual element_iterator pid_elements_begin (processor_id_type proc_id) = 0;
+  virtual element_iterator pid_elements_end (processor_id_type proc_id) = 0;
+  virtual const_element_iterator pid_elements_begin (processor_id_type proc_id) const = 0;
+  virtual const_element_iterator pid_elements_end (processor_id_type proc_id) const = 0;
+
+  /**
+   * Iterate over all elements with a specified geometric type.
+   */
+  virtual element_iterator type_elements_begin (ElemType type) = 0;
+  virtual element_iterator type_elements_end (ElemType type) = 0;
+  virtual const_element_iterator type_elements_begin (ElemType type) const = 0;
+  virtual const_element_iterator type_elements_end (ElemType type) const = 0;
+
+  /**
+   * Iterate over unpartitioned elements in the Mesh.
+   */
+  virtual element_iterator unpartitioned_elements_begin () = 0;
+  virtual element_iterator unpartitioned_elements_end () = 0;
+  virtual const_element_iterator unpartitioned_elements_begin () const = 0;
+  virtual const_element_iterator unpartitioned_elements_end () const = 0;
+
+  /**
+   * Active, local, and negation forms of the element iterators described above.
+   * An "active" element is an element without children (i.e. has not been refined).
+   * A "local" element is one whose processor_id() matches the current processor.
+   */
+  virtual element_iterator active_elements_begin () = 0;
+  virtual element_iterator active_elements_end () = 0;
+  virtual const_element_iterator active_elements_begin () const = 0;
+  virtual const_element_iterator active_elements_end () const = 0;
+
+  virtual element_iterator local_elements_begin () = 0;
+  virtual element_iterator local_elements_end () = 0;
+  virtual const_element_iterator local_elements_begin () const = 0;
+  virtual const_element_iterator local_elements_end () const = 0;
+
+  virtual element_iterator active_type_elements_begin (ElemType type) = 0;
+  virtual element_iterator active_type_elements_end (ElemType type) = 0;
+  virtual const_element_iterator active_type_elements_begin (ElemType type) const = 0;
+  virtual const_element_iterator active_type_elements_end (ElemType type) const = 0;
+
+  virtual element_iterator active_pid_elements_begin (processor_id_type proc_id) = 0;
+  virtual element_iterator active_pid_elements_end (processor_id_type proc_id) = 0;
+  virtual const_element_iterator active_pid_elements_begin (processor_id_type proc_id) const = 0;
+  virtual const_element_iterator active_pid_elements_end (processor_id_type proc_id) const = 0;
+
+  virtual element_iterator active_subdomain_elements_begin (subdomain_id_type subdomain_id) = 0;
+  virtual element_iterator active_subdomain_elements_end (subdomain_id_type subdomain_id) = 0;
+  virtual const_element_iterator active_subdomain_elements_begin (subdomain_id_type subdomain_id) const = 0;
+  virtual const_element_iterator active_subdomain_elements_end (subdomain_id_type subdomain_id) const = 0;
+
+  virtual element_iterator active_local_subdomain_elements_begin (subdomain_id_type subdomain_id) = 0;
+  virtual element_iterator active_local_subdomain_elements_end (subdomain_id_type subdomain_id) = 0;
+  virtual const_element_iterator active_local_subdomain_elements_begin (subdomain_id_type subdomain_id) const = 0;
+  virtual const_element_iterator active_local_subdomain_elements_end (subdomain_id_type subdomain_id) const = 0;
+
+  virtual element_iterator local_level_elements_begin (unsigned int level) = 0;
+  virtual element_iterator local_level_elements_end (unsigned int level) = 0;
+  virtual const_element_iterator local_level_elements_begin (unsigned int level) const = 0;
+  virtual const_element_iterator local_level_elements_end (unsigned int level) const = 0;
+
+  virtual element_iterator local_not_level_elements_begin (unsigned int level) = 0;
+  virtual element_iterator local_not_level_elements_end (unsigned int level) = 0;
+  virtual const_element_iterator local_not_level_elements_begin (unsigned int level) const = 0;
+  virtual const_element_iterator local_not_level_elements_end (unsigned int level) const = 0;
+
+  virtual element_iterator not_level_elements_begin (unsigned int level) = 0;
+  virtual element_iterator not_level_elements_end (unsigned int level) = 0;
+  virtual const_element_iterator not_level_elements_begin (unsigned int level) const = 0;
+  virtual const_element_iterator not_level_elements_end (unsigned int level) const = 0;
+
+  virtual element_iterator active_local_elements_begin () = 0;
+  virtual element_iterator active_local_elements_end () = 0;
+  virtual const_element_iterator active_local_elements_begin () const = 0;
+  virtual const_element_iterator active_local_elements_end () const = 0;
+
+  virtual element_iterator active_not_local_elements_begin () = 0;
+  virtual element_iterator active_not_local_elements_end () = 0;
+  virtual const_element_iterator active_not_local_elements_begin () const = 0;
+  virtual const_element_iterator active_not_local_elements_end () const = 0;
+
+  virtual element_iterator not_local_elements_begin () = 0;
+  virtual element_iterator not_local_elements_end () = 0;
+  virtual const_element_iterator not_local_elements_begin () const = 0;
+  virtual const_element_iterator not_local_elements_end () const = 0;
+
+  virtual element_iterator not_subactive_elements_begin () = 0;
+  virtual element_iterator not_subactive_elements_end () = 0;
+  virtual const_element_iterator not_subactive_elements_begin () const = 0;
+  virtual const_element_iterator not_subactive_elements_end () const = 0;
+
+  virtual element_iterator not_active_elements_begin () = 0;
+  virtual element_iterator not_active_elements_end () = 0;
+  virtual const_element_iterator not_active_elements_begin () const = 0;
+  virtual const_element_iterator not_active_elements_end () const = 0;
+
+  virtual element_iterator not_ancestor_elements_begin () = 0;
+  virtual element_iterator not_ancestor_elements_end () = 0;
+  virtual const_element_iterator not_ancestor_elements_begin () const = 0;
+  virtual const_element_iterator not_ancestor_elements_end () const = 0;
+
+  //
+  // node_iterator accessors
+  //
+
+  /**
+   * Iterate over all the nodes in the Mesh.
+   */
+  virtual node_iterator nodes_begin () = 0;
+  virtual node_iterator nodes_end () = 0;
+  virtual const_node_iterator nodes_begin () const = 0;
+  virtual const_node_iterator nodes_end () const = 0;
+
+  /**
+   * Iterate over only the active nodes in the Mesh.
+   */
   virtual node_iterator active_nodes_begin () = 0;
-  virtual node_iterator active_nodes_end   () = 0;
-  virtual node_iterator local_nodes_begin  () = 0;
-  virtual node_iterator local_nodes_end    () = 0;
-  virtual node_iterator pid_nodes_begin    (const processor_id_type proc_id) = 0;
-  virtual node_iterator pid_nodes_end      (const processor_id_type proc_id) = 0;
-
+  virtual node_iterator active_nodes_end () = 0;
+  virtual const_node_iterator active_nodes_begin () const = 0;
+  virtual const_node_iterator active_nodes_end () const = 0;
 
   /**
-   * const Node iterator accessor functions.
+   * Iterate over local nodes (nodes whose processor_id() matches the current processor).
    */
-  virtual const_node_iterator nodes_begin        () const = 0;
-  virtual const_node_iterator nodes_end          () const = 0;
-  virtual const_node_iterator active_nodes_begin () const = 0;
-  virtual const_node_iterator active_nodes_end   () const = 0;
-  virtual const_node_iterator local_nodes_begin  () const = 0;
-  virtual const_node_iterator local_nodes_end    () const = 0;
-  virtual const_node_iterator pid_nodes_begin    (const processor_id_type proc_id) const = 0;
-  virtual const_node_iterator pid_nodes_end      (const processor_id_type proc_id) const = 0;
+  virtual node_iterator local_nodes_begin () = 0;
+  virtual node_iterator local_nodes_end () = 0;
+  virtual const_node_iterator local_nodes_begin () const = 0;
+  virtual const_node_iterator local_nodes_end () const = 0;
 
+  /**
+   * Iterate over nodes with processor_id() == proc_id
+   */
+  virtual node_iterator pid_nodes_begin (processor_id_type proc_id) = 0;
+  virtual node_iterator pid_nodes_end (processor_id_type proc_id) = 0;
+  virtual const_node_iterator pid_nodes_begin (processor_id_type proc_id) const = 0;
+  virtual const_node_iterator pid_nodes_end (processor_id_type proc_id) const = 0;
+
+  /**
+   * Iterate over nodes for which BoundaryInfo::has_boundary_id(node, bndry_id) returns true.
+   */
+  virtual node_iterator bid_nodes_begin (boundary_id_type bndry_id) = 0;
+  virtual node_iterator bid_nodes_end (boundary_id_type bndry_id) = 0;
+  virtual const_node_iterator bid_nodes_begin (boundary_id_type bndry_id) const = 0;
+  virtual const_node_iterator bid_nodes_end (boundary_id_type bndry_id) const = 0;
+
+  /**
+   * Iterate over nodes for which BoundaryInfo::n_boundary_ids(node) > 0.
+   */
+  virtual node_iterator bnd_nodes_begin () = 0;
+  virtual node_iterator bnd_nodes_end () = 0;
+  virtual const_node_iterator bnd_nodes_begin () const = 0;
+  virtual const_node_iterator bnd_nodes_end () const = 0;
 
   /**
    * Return a writeable reference to the whole subdomain name map
@@ -842,6 +943,26 @@ public:
   { return _block_id_to_name; }
   const std::map<subdomain_id_type, std::string>& get_subdomain_name_map () const
   { return _block_id_to_name; }
+
+
+  /**
+   * Search the mesh and cache the different dimenions of the elements
+   * present in the mesh.  This is done in prepare_for_use(), but can
+   * be done manually by other classes after major mesh modifications.
+   */
+  void cache_elem_dims();
+
+
+  /**
+   * This class holds the boundary information.  It can store nodes, edges,
+   * and faces with a corresponding id that facilitates setting boundary
+   * conditions.
+   *
+   * Direct access to this class will be removed in future libMesh
+   * versions.  Use the \p get_boundary_info() accessor instead.
+   */
+  UniquePtr<BoundaryInfo> boundary_info;
+
 
 protected:
 
@@ -871,11 +992,6 @@ protected:
   unsigned int _n_parts;
 
   /**
-   * The logical dimension of the mesh.
-   */
-  unsigned char _dim;
-
-  /**
    * Flag indicating if the mesh has been prepared for use.
    */
   bool _is_prepared;
@@ -887,7 +1003,7 @@ protected:
    * this needs to be mutable.  Since the PointLocatorBase::build() member is used,
    * and it operates on a constant reference to the mesh, this is OK.
    */
-  mutable AutoPtr<PointLocatorBase> _point_locator;
+  mutable UniquePtr<PointLocatorBase> _point_locator;
 
   /**
    * A partitioner to use at each prepare_for_use().
@@ -895,7 +1011,7 @@ protected:
    * This will be built in the constructor of each derived class, but
    * can be replaced by the user through the partitioner() accessor.
    */
-  AutoPtr<Partitioner> _partitioner;
+  UniquePtr<Partitioner> _partitioner;
 
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
   /**
@@ -924,10 +1040,23 @@ protected:
   std::map<subdomain_id_type, std::string> _block_id_to_name;
 
   /**
+   * We cache the dimension of the elements present in the mesh.
+   * So, if we have a mesh with 1D and 2D elements, this structure
+   * will contain 1 and 2.
+   */
+  std::set<unsigned char> _elem_dims;
+
+  /**
    * The partitioner class is a friend so that it can set
    * the number of partitions.
    */
   friend class Partitioner;
+
+  /**
+   * The MeshInput classes are friends so that they can set the number
+   * of partitions.
+   */
+  friend class MeshInput<MeshBase>;
 
   /**
    * Make the \p BoundaryInfo class a friend so that
@@ -959,9 +1088,7 @@ private:
  * The definition of the element_iterator struct.
  */
 struct
-MeshBase::element_iterator :
-variant_filter_iterator<MeshBase::Predicate,
-                        Elem*>
+MeshBase::element_iterator : variant_filter_iterator<MeshBase::Predicate, Elem*>
 {
   // Templated forwarding ctor -- forwards to appropriate variant_filter_iterator ctor
   template <typename PredType, typename IterType>
@@ -980,11 +1107,10 @@ variant_filter_iterator<MeshBase::Predicate,
  * iterator above, but also provides an additional conversion-to-const ctor.
  */
 struct
-MeshBase::const_element_iterator :
-variant_filter_iterator<MeshBase::Predicate,
-                        Elem* const,
-                        Elem* const&,
-                        Elem* const*>
+MeshBase::const_element_iterator : variant_filter_iterator<MeshBase::Predicate,
+                                                           Elem* const,
+                                                           Elem* const&,
+                                                           Elem* const*>
 {
   // Templated forwarding ctor -- forwards to appropriate variant_filter_iterator ctor
   template <typename PredType, typename IterType>
@@ -1019,9 +1145,7 @@ variant_filter_iterator<MeshBase::Predicate,
  * The definition of the node_iterator struct.
  */
 struct
-MeshBase::node_iterator :
-variant_filter_iterator<MeshBase::Predicate,
-                        Node*>
+MeshBase::node_iterator : variant_filter_iterator<MeshBase::Predicate, Node*>
 {
   // Templated forwarding ctor -- forwards to appropriate variant_filter_iterator ctor
   template <typename PredType, typename IterType>
@@ -1040,11 +1164,10 @@ variant_filter_iterator<MeshBase::Predicate,
  * iterator above, but also provides an additional conversion-to-const ctor.
  */
 struct
-MeshBase::const_node_iterator :
-variant_filter_iterator<MeshBase::Predicate,
-                        Node* const,
-                        Node* const &,
-                        Node* const *>
+MeshBase::const_node_iterator : variant_filter_iterator<MeshBase::Predicate,
+                                                        Node* const,
+                                                        Node* const &,
+                                                        Node* const *>
 {
   // Templated forwarding ctor -- forwards to appropriate variant_filter_iterator ctor
   template <typename PredType, typename IterType>

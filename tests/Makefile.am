@@ -10,21 +10,41 @@ LIBS         = $(libmesh_optional_LIBS) $(CPPUNIT_LIBS)
 
 unit_tests_sources = \
 	driver.C \
+        test_comm.h \
 	base/dof_object_test.h \
+        base/getpot_test.C \
 	geom/node_test.C \
 	geom/point_test.C \
 	geom/point_test.h \
+	mesh/boundary_mesh.C \
+	mesh/mixed_dim_mesh_test.C \
+	mesh/nodal_neighbors.C \
+	numerics/composite_function_test.C \
+	numerics/coupling_matrix_test.C \
 	numerics/distributed_vector_test.C \
+	numerics/eigen_sparse_vector_test.C \
 	numerics/laspack_vector_test.C \
 	numerics/numeric_vector_test.h \
+	numerics/parsed_fem_function_test.C \
 	numerics/petsc_vector_test.C \
 	numerics/trilinos_epetra_vector_test.C \
 	numerics/type_vector_test.h \
+	numerics/type_tensor_test.C \
 	parallel/parallel_test.C \
+	parallel/parallel_point_test.C \
 	quadrature/quadrature_test.C \
+        systems/equation_systems_test.C \
 	utils/vectormap_test.C
 
+EXTRA_DIST = base/getpot_test_input.in
+
+if LIBMESH_ENABLE_FPARSER
+  unit_tests_sources += \
+	fparser/autodiff.C
+endif
+
 check_PROGRAMS = # empty, append below
+noinst_PROGRAMS = # empty, append below
 
 if LIBMESH_OPT_MODE
   check_PROGRAMS         += unit_tests-opt
@@ -34,15 +54,25 @@ if LIBMESH_OPT_MODE
   unit_tests_opt_LDADD    = $(top_builddir)/libmesh_opt.la
 endif
 
-# our GLIBC debugging preprocessor flags break this.
-if !LIBMESH_ENABLE_GLIBCXX_DEBUGGING
+# our GLIBC debugging preprocessor flags seem to potentially conflict
+# with libcppunit binaries.  Some cppunit versions work fine for us,
+# others segfault and/or hang.  By default we will not run
+# GLIBCXX-debugging builds with cppunit unless specificallly
+# configured to.
 if LIBMESH_DBG_MODE
+if LIBMESH_ENABLE_GLIBCXX_DEBUGGING
+if LIBMESH_ENABLE_GLIBCXX_DEBUGGING_CPPUNIT
   check_PROGRAMS         += unit_tests-dbg
+else
+  noinst_PROGRAMS        += unit_tests-dbg
+endif
+else
+  check_PROGRAMS         += unit_tests-dbg
+endif
   unit_tests_dbg_SOURCES  = $(unit_tests_sources)
   unit_tests_dbg_CPPFLAGS = $(CPPFLAGS_DBG) $(AM_CPPFLAGS)
   unit_tests_dbg_CXXFLAGS = $(CXXFLAGS_DBG)
   unit_tests_dbg_LDADD    = $(top_builddir)/libmesh_dbg.la
-endif
 endif
 
 if LIBMESH_DEVEL_MODE
@@ -69,7 +99,40 @@ if LIBMESH_OPROF_MODE
   unit_tests_oprof_LDADD    = $(top_builddir)/libmesh_oprof.la
 endif
 
-TESTS = $(check_PROGRAMS)
+
+# Recursive automake builds subdirectories before parent directories.
+# But here we need the subdirectory to be able to link to
+# already-built parent directory libraries.
+# For most of our modes, this means "you can't run make check unless
+# make already completed", which is an annoying bug; for the dbg
+# noinst case this means "you can't run make unless make already
+# completed", which is a devastating bug.
+
+# As a quick fix we'll ensure library dependencies are built manually:
+# http://lists.gnu.org/archive/html/automake/2009-03/msg00011.html
+
+FORCE:
+
+.PHONY: FORCE
+
+$(top_builddir)/libmesh_dbg.la: FORCE
+	(cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) libmesh_dbg.la)
+
+$(top_builddir)/libmesh_devel.la: FORCE
+	(cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) libmesh_devel.la)
+
+$(top_builddir)/libmesh_opt.la: FORCE
+	(cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) libmesh_opt.la)
+
+$(top_builddir)/libmesh_prof.la: FORCE
+	(cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) libmesh_prof.la)
+
+$(top_builddir)/libmesh_oprof.la: FORCE
+	(cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) libmesh_oprof.la)
+
+
+
+TESTS = run_unit_tests.sh
 
 ######################################################################
 #

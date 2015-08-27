@@ -91,12 +91,11 @@ public:
   void clear ();
 
   /**
-   * Close the data structures and prepare for use.
-   * Synchronizes the \p boundary_mesh
-   * data structures with the \p mesh data structures.
-   * Allows the \p boundary_mesh to be used like any other mesh.
-   * Before this is called the \p boundary_mesh data structure is
-   * empty.
+   * Generates \p boundary_mesh data structures corresponding to the
+   * \p mesh data structures.  Allows the \p boundary_mesh to be used
+   * like any other mesh, except with interior_parent() values defined
+   * for algorithms which couple boundary and interior mesh
+   * information.  Any pre-existing \p boundary_mesh data is cleared.
    *
    * If you are using a MeshData class with this Mesh, you can
    * pass a pointer to both the boundary_mesh's MeshData object,
@@ -107,13 +106,12 @@ public:
              MeshData* this_mesh_data=NULL);
 
   /**
-   * Close the data structures and prepare for use.
-   * Synchronizes the \p boundary_mesh
-   * data structures with the \p mesh data structures.
-   * Allows the \p boundary_mesh to be used like any other mesh.
-   * Before this is called the \p boundary_mesh data structure is
-   * empty.  Only boundary elements with the specified ids are
-   * extracted.
+   * Generates \p boundary_mesh data structures corresponding to the
+   * \p mesh data structures.  Allows the \p boundary_mesh to be used
+   * like any other mesh, except with interior_parent() values defined
+   * for algorithms which couple boundary and interior mesh
+   * information.  Any pre-existing \p boundary_mesh data is cleared.
+   * Only boundary elements with the specified ids are extracted.
    *
    * If you are using a MeshData class with this Mesh, you can
    * pass a pointer to both the boundary_mesh's MeshData object,
@@ -123,6 +121,20 @@ public:
              UnstructuredMesh& boundary_mesh,
              MeshData* boundary_mesh_data=NULL,
              MeshData* this_mesh_data=NULL);
+
+
+  /**
+   * Generates \p elements along the boundary of our _mesh, which
+   * use pre-existing nodes on the boundary_mesh, and which have
+   * interior_parent values properly defined.
+   *
+   * The \p boundary_mesh may be the *same* as the interior mesh; this
+   * generates a mesh with elements of mixed dimension.
+   *
+   * Only boundary elements with the specified ids are created.
+   */
+  void add_elements (const std::set<boundary_id_type> &requested_boundary_ids,
+                     UnstructuredMesh& boundary_mesh);
 
   /**
    * Add \p Node \p node with boundary id \p id to the boundary
@@ -345,12 +357,12 @@ public:
   /**
    * Builds the list of unique node boundary ids.
    */
-  void build_node_boundary_ids(std::vector<boundary_id_type> &b_ids);
+  void build_node_boundary_ids(std::vector<boundary_id_type> &b_ids) const;
 
   /**
    * Builds the list of unique side boundary ids.
    */
-  void build_side_boundary_ids(std::vector<boundary_id_type> &b_ids);
+  void build_side_boundary_ids(std::vector<boundary_id_type> &b_ids) const;
 
   /**
    * @returns the number of element-side-based boundary conditions.
@@ -446,20 +458,30 @@ public:
   void print_summary (std::ostream& out=libMesh::out) const;
 
   /**
-   * Returns a writable reference for getting/setting an optional
-   * name for a sideset name.
+   * Returns a reference for getting an optional name for a sideset.
+   */
+  const std::string& get_sideset_name(boundary_id_type id) const;
+
+  /**
+   * Returns a writable reference for setting an optional
+   * name for a sideset.
    */
   std::string& sideset_name(boundary_id_type id);
 
   /**
-   * Returns a writable reference for getting/setting an optional
-   * name for a nodeset name.
+   * Returns a reference for getting an optional name for a nodeset.
+   */
+  const std::string& get_nodeset_name(boundary_id_type id) const;
+
+  /**
+   * Returns a writable reference for setting an optional
+   * name for a nodeset.
    */
   std::string& nodeset_name(boundary_id_type id);
 
   /**
-   * Returns a the id of the requested boundary by name.  Throws an error
-   * if a sideset or nodeset by name is not found
+   * Returns the id of the named boundary if it exists, invalid_id
+   * otherwise.
    */
   boundary_id_type get_id_by_name(const std::string& name) const;
 
@@ -488,6 +510,17 @@ public:
 
 private:
 
+  /**
+   * Helper method for finding consistent maps of interior to boundary
+   * dof_object ids.  Either node_id_map or side_id_map can be NULL,
+   * in which case it will not be filled.
+   */
+  void _find_id_maps
+    (const std::set<boundary_id_type> &requested_boundary_ids,
+     dof_id_type first_free_node_id,
+     std::map<dof_id_type, dof_id_type> * node_id_map,
+     dof_id_type first_free_elem_id,
+     std::map<std::pair<dof_id_type, unsigned char>, dof_id_type> * side_id_map);
 
   /**
    * The Mesh this boundary info pertains to.

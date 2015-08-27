@@ -16,7 +16,6 @@
 /* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 
-#include "libmesh/boundary_info.h"
 #include "libmesh/dirichlet_boundaries.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/fe_base.h"
@@ -57,8 +56,8 @@ public:
     output(_v_var) = 0;
   }
 
-  virtual AutoPtr<FunctionBase<Number> > clone() const
-  { return AutoPtr<FunctionBase<Number> > (new BdyFunction(_u_var, _v_var, _sign)); }
+  virtual UniquePtr<FunctionBase<Number> > clone() const
+  { return UniquePtr<FunctionBase<Number> > (new BdyFunction(_u_var, _v_var, _sign)); }
 
 private:
   const unsigned int _u_var, _v_var;
@@ -108,8 +107,6 @@ void CoupledSystem::init_data ()
 
   // Useful debugging options
   this->verify_analytic_jacobians = infile("verify_analytic_jacobians", 0.);
-  this->print_jacobians = infile("print_jacobians", false);
-  this->print_element_jacobians = infile("print_element_jacobians", false);
 
   // Set Dirichlet boundary conditions
   const boundary_id_type left_inlet_id = 0;
@@ -194,7 +191,7 @@ void CoupledSystem::init_context(DiffContext &context)
 
   side_fe->get_JxW();
   side_fe->get_phi();
-  side_fe->get_dphi();
+  side_fe->get_xyz();
 }
 
 
@@ -335,6 +332,9 @@ bool CoupledSystem::element_constraint (bool request_jacobian,
   FEBase* u_elem_fe = NULL;
   c.get_element_fe( u_var, u_elem_fe );
 
+  FEBase* p_elem_fe = NULL;
+  c.get_element_fe( p_var, p_elem_fe );
+
   // Element Jacobian * quadrature weight for interior integration
   const std::vector<Real> &JxW = u_elem_fe->get_JxW();
 
@@ -344,7 +344,7 @@ bool CoupledSystem::element_constraint (bool request_jacobian,
 
   // The pressure shape functions at interior
   // quadrature points.
-  const std::vector<std::vector<Real> >& psi = u_elem_fe->get_phi();
+  const std::vector<std::vector<Real> >& psi = p_elem_fe->get_phi();
 
   // The number of local degrees of freedom in each variable
   const unsigned int n_u_dofs = c.get_dof_indices(u_var).size();

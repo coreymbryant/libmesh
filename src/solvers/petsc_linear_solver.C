@@ -684,6 +684,9 @@ PetscLinearSolver<T>::solve (SparseMatrix<T>&  matrix_in,
                              this->same_preconditioner ? SAME_PRECONDITIONER : DIFFERENT_NONZERO_PATTERN);
 #else
       ierr = KSPSetOperators(_ksp, submat, subprecond);
+
+      PetscBool ksp_reuse_preconditioner = this->same_preconditioner ? PETSC_TRUE : PETSC_FALSE;
+      ierr = KSPSetReusePreconditioner(_ksp, ksp_reuse_preconditioner);
 #endif
       LIBMESH_CHKERRABORT(ierr);
 
@@ -697,11 +700,14 @@ PetscLinearSolver<T>::solve (SparseMatrix<T>&  matrix_in,
     }
   else
     {
- #if PETSC_RELEASE_LESS_THAN(3,5,0)
+#if PETSC_RELEASE_LESS_THAN(3,5,0)
       ierr = KSPSetOperators(_ksp, matrix->mat(), precond->mat(),
                              this->same_preconditioner ? SAME_PRECONDITIONER : DIFFERENT_NONZERO_PATTERN);
 #else
       ierr = KSPSetOperators(_ksp, matrix->mat(), precond->mat());
+
+      PetscBool ksp_reuse_preconditioner = this->same_preconditioner ? PETSC_TRUE : PETSC_FALSE;
+      ierr = KSPSetReusePreconditioner(_ksp, ksp_reuse_preconditioner);
 #endif
       LIBMESH_CHKERRABORT(ierr);
 
@@ -757,7 +763,7 @@ PetscLinearSolver<T>::solve (SparseMatrix<T>&  matrix_in,
           break;
 
         default:
-          libmesh_error();
+          libmesh_error_msg("Invalid subset solve mode = " << _subset_solve_mode);
         }
       ierr = VecScatterBegin(scatter,subsolution,solution->vec(),INSERT_VALUES,SCATTER_REVERSE);
       LIBMESH_CHKERRABORT(ierr);
@@ -980,7 +986,7 @@ PetscLinearSolver<T>::adjoint_solve (SparseMatrix<T>&  matrix_in,
       if(_subset_solve_mode!=SUBSET_ZERO)
         {
           _create_complement_is(rhs_in);
-          PetscInt is_complement_local_size = 
+          PetscInt is_complement_local_size =
             cast_int<PetscInt>(rhs_in.local_size()-is_local_size);
 
           Vec subvec1 = NULL;
@@ -1032,6 +1038,9 @@ PetscLinearSolver<T>::adjoint_solve (SparseMatrix<T>&  matrix_in,
                              this->same_preconditioner ? SAME_PRECONDITIONER : DIFFERENT_NONZERO_PATTERN);
 #else
       ierr = KSPSetOperators(_ksp, submat, subprecond);
+
+      PetscBool ksp_reuse_preconditioner = this->same_preconditioner ? PETSC_TRUE : PETSC_FALSE;
+      ierr = KSPSetReusePreconditioner(_ksp, ksp_reuse_preconditioner);
 #endif
       LIBMESH_CHKERRABORT(ierr);
 
@@ -1050,6 +1059,9 @@ PetscLinearSolver<T>::adjoint_solve (SparseMatrix<T>&  matrix_in,
                              this->same_preconditioner ? SAME_PRECONDITIONER : DIFFERENT_NONZERO_PATTERN);
 #else
       ierr = KSPSetOperators(_ksp, matrix->mat(), precond->mat());
+
+      PetscBool ksp_reuse_preconditioner = this->same_preconditioner ? PETSC_TRUE : PETSC_FALSE;
+      ierr = KSPSetReusePreconditioner(_ksp, ksp_reuse_preconditioner);
 #endif
       LIBMESH_CHKERRABORT(ierr);
 
@@ -1105,7 +1117,7 @@ PetscLinearSolver<T>::adjoint_solve (SparseMatrix<T>&  matrix_in,
           break;
 
         default:
-          libmesh_error();
+          libmesh_error_msg("Invalid subset solve mode = " << _subset_solve_mode);
         }
       ierr = VecScatterBegin(scatter,subsolution,solution->vec(),INSERT_VALUES,SCATTER_REVERSE);
       LIBMESH_CHKERRABORT(ierr);
@@ -1390,7 +1402,7 @@ PetscLinearSolver<T>::solve (const ShellMatrix<T>& shell_matrix,
           break;
 
         default:
-          libmesh_error();
+          libmesh_error_msg("Invalid subset solve mode = " << _subset_solve_mode);
         }
       ierr = VecScatterBegin(scatter,subsolution,solution->vec(),INSERT_VALUES,SCATTER_REVERSE);
       LIBMESH_CHKERRABORT(ierr);
@@ -1692,7 +1704,7 @@ PetscLinearSolver<T>::solve (const ShellMatrix<T>& shell_matrix,
           break;
 
         default:
-          libmesh_error();
+          libmesh_error_msg("Invalid subset solve mode = " << _subset_solve_mode);
         }
       ierr = VecScatterBegin(scatter,subsolution,solution->vec(),INSERT_VALUES,SCATTER_REVERSE);
       LIBMESH_CHKERRABORT(ierr);

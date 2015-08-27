@@ -204,7 +204,9 @@ public:
      * be called to compute derivatived of quantities of interest and
      * must be provided by the user in a derived class.
      */
-    virtual void qoi_derivative (const QoISet& qoi_indices) = 0;
+    virtual void qoi_derivative (const QoISet& qoi_indices,
+                                 bool include_liftfunc,
+                                 bool apply_constraints) = 0;
   };
 
 
@@ -245,6 +247,16 @@ public:
   virtual void reinit ();
 
   /**
+   * Reinitializes the constraints for this system.
+   */
+  virtual void reinit_constraints ();
+
+  /**
+   * Returns true iff this system has been initialized.
+   */
+  bool is_initialized();
+
+  /**
    * Update the local values to reflect the solution
    * on neighboring processors.
    */
@@ -270,7 +282,9 @@ public:
    * @e Can be overloaded in derived classes.
    */
   virtual void assemble_qoi_derivative
-  (const QoISet &qoi_indices = QoISet());
+  (const QoISet &qoi_indices = QoISet(),
+   bool include_liftfunc = true,
+   bool apply_constraints = true);
 
   /**
    * Calls residual parameter derivative function.
@@ -854,7 +868,7 @@ public:
    */
   const std::string & vector_name (const NumericVector<Number> & vec_reference) const;
 
-   /**
+  /**
    * Allows one to set the QoI index controlling whether the vector
    * identified by vec_name represents a solution from the adjoint
    * (qoi_num >= 0) or primal (qoi_num == -1) space.  This becomes
@@ -871,9 +885,9 @@ public:
    * vec_name represents a solution from an adjoint (non-negative) or
    * the primal (-1) space.
    */
-  int vector_as_adjoint (const std::string &vec_name) const;
+  int vector_is_adjoint (const std::string &vec_name) const;
 
- /**
+  /**
    * Allows one to set the boolean controlling whether the vector
    * identified by vec_name should be "preserved": projected to new
    * meshes, saved, etc.
@@ -1296,7 +1310,7 @@ public:
    * allows for optimization for the multiple vector case by only communicating
    * the metadata once.
    */
-  dof_id_type write_serialized_vectors (Xdr &io,
+  std::size_t write_serialized_vectors (Xdr &io,
                                         const std::vector<const NumericVector<Number>*> &vectors) const;
 
   /**
@@ -1371,7 +1385,9 @@ public:
    */
   void attach_QOI_derivative (void fptr(EquationSystems& es,
                                         const std::string& name,
-                                        const QoISet& qoi_indices));
+                                        const QoISet& qoi_indices,
+                                        bool include_liftfunc,
+                                        bool apply_constraints));
 
   /**
    * Register a user object for evaluating derivatives of a quantity
@@ -1408,7 +1424,10 @@ public:
    * Calls user's attached quantity of interest derivative function,
    * or is overloaded by the user in derived classes.
    */
-  virtual void user_QOI_derivative (const QoISet& qoi_indices);
+  virtual void user_QOI_derivative
+  (const QoISet &qoi_indices = QoISet(),
+   bool include_liftfunc = true,
+   bool apply_constraints = true);
 
   /**
    * Re-update the local values when the mesh has changed.
@@ -1493,7 +1512,7 @@ public:
   /**
    * Data structure to hold solution values.
    */
-  AutoPtr<NumericVector<Number> > solution;
+  UniquePtr<NumericVector<Number> > solution;
 
   /**
    * All the values I need to compute my contribution
@@ -1505,7 +1524,7 @@ public:
    * the contents of the \p solution and \p current_local_solution
    * vectors.
    */
-  AutoPtr<NumericVector<Number> > current_local_solution;
+  UniquePtr<NumericVector<Number> > current_local_solution;
 
   /**
    * For time-dependent problems, this is the time t at the beginning of
@@ -1597,6 +1616,14 @@ public:
    * var_num.
    */
   void zero_variable (NumericVector<Number>& v, unsigned int var_num) const;
+
+
+  /**
+   * Returns a writeable reference to a boolean that determines if this system
+   * can be written to file or not.  If set to \p true, then
+   * \p EquationSystems::write will ignore this system.
+   */
+  bool & hide_output() { return _hide_output; }
 
 protected:
 
@@ -1708,7 +1735,7 @@ private:
    * Returns the number of values written
    */
   template <typename iterator_type>
-  dof_id_type write_serialized_blocked_dof_objects (const std::vector<const NumericVector<Number>*> &vecs,
+  std::size_t write_serialized_blocked_dof_objects (const std::vector<const NumericVector<Number>*> &vecs,
                                                     const dof_id_type n_objects,
                                                     const iterator_type begin,
                                                     const iterator_type end,
@@ -1783,7 +1810,9 @@ private:
    */
   void (* _qoi_evaluate_derivative_function) (EquationSystems& es,
                                               const std::string& name,
-                                              const QoISet& qoi_indices);
+                                              const QoISet& qoi_indices,
+                                              bool include_liftfunc,
+                                              bool apply_constraints);
 
   /**
    * Object to compute derivatives of quantities of interest.
@@ -1794,7 +1823,7 @@ private:
    * Data structure describing the relationship between
    * nodes, variables, etc... and degrees of freedom.
    */
-  AutoPtr<DofMap> _dof_map;
+  UniquePtr<DofMap> _dof_map;
 
   /**
    * Constant reference to the \p EquationSystems object
@@ -1878,10 +1907,10 @@ private:
   bool _basic_system_only;
 
   /**
-   * \p true when additional vectors do not require immediate
-   * initialization, \p false otherwise.
+   * \p true when additional vectors and variables do not require
+   * immediate initialization, \p false otherwise.
    */
-  bool _can_add_vectors;
+  bool _is_initialized;
 
   /**
    * \p true when \p VariableGroup structures should be automatically
@@ -1914,6 +1943,12 @@ private:
    * it again.
    */
   bool adjoint_already_solved;
+
+  /**
+   * Are we allowed to write this system to file?  If \p _hide_output is
+   * \p true, then \p EquationSystems::write will ignore this system.
+   */
+  bool _hide_output;
 };
 
 
@@ -1988,6 +2023,14 @@ inline
 void System::deactivate ()
 {
   _active = false;
+}
+
+
+
+inline
+bool System::is_initialized ()
+{
+  return _is_initialized;
 }
 
 

@@ -63,6 +63,9 @@
 EXTERN_C_FOR_PETSC_BEGIN
 # include <petsc.h>
 # include <petscerror.h>
+#if !PETSC_RELEASE_LESS_THAN(3,3,0)
+#include "libmesh/petscdmlibmesh.h"
+#endif
 EXTERN_C_FOR_PETSC_END
 # if defined(LIBMESH_HAVE_SLEPC)
 #  include "libmesh/slepc_macro.h"
@@ -72,22 +75,19 @@ EXTERN_C_FOR_PETSC_END
 # endif // #if defined(LIBMESH_HAVE_SLEPC)
 #endif // #if defined(LIBMESH_HAVE_PETSC)
 
-
 // --------------------------------------------------------
 // Local anonymous namespace to hold miscelaneous bits
 namespace {
 
-using libMesh::AutoPtr;
-
-AutoPtr<GetPot> command_line (NULL);
-AutoPtr<std::ofstream> _ofstream (NULL);
+libMesh::UniquePtr<GetPot> command_line;
+libMesh::UniquePtr<std::ofstream> _ofstream;
 // If std::cout and std::cerr are redirected, we need to
 // be a little careful and save the original streambuf objects,
 // replacing them in the destructor before program termination.
 std::streambuf* out_buf (NULL);
 std::streambuf* err_buf (NULL);
 
-AutoPtr<libMesh::Threads::task_scheduler_init> task_scheduler (NULL);
+libMesh::UniquePtr<libMesh::Threads::task_scheduler_init> task_scheduler;
 #if defined(LIBMESH_HAVE_MPI)
 bool libmesh_initialized_mpi = false;
 #endif
@@ -123,6 +123,25 @@ void libmesh_handleFPE(int /*signo*/, siginfo_t *info, void * /*context*/)
 
   libmesh_error_msg("\nTo track this down, compile in debug mode, then in gdb do:\n" \
                     << "  break libmesh_handleFPE\n"                    \
+                    << "  run ...\n"                                    \
+                    << "  bt");
+}
+
+
+void libmesh_handleSEGV(int /*signo*/, siginfo_t *info, void * /*context*/)
+{
+  libMesh::err << std::endl;
+  libMesh::err << "Segmentation fault exception signaled (";
+  switch (info->si_code)
+    {
+    case SEGV_MAPERR: libMesh::err << "Address not mapped"; break;
+    case SEGV_ACCERR: libMesh::err << "Invalid permissions"; break;
+    default:         libMesh::err << "unrecognized"; break;
+    }
+  libMesh::err << ")!" << std::endl;
+
+  libmesh_error_msg("\nTo track this down, compile in debug mode, then in gdb do:\n" \
+                    << "  break libmesh_handleSEGV\n"                    \
                     << "  run ...\n"                                    \
                     << "  bt");
 }
@@ -188,6 +207,7 @@ Parallel::Communicator& Parallel::Communicator_World = CommWorld;
 OStreamProxy out(std::cout);
 OStreamProxy err(std::cerr);
 
+bool warned_about_auto_ptr(false);
 
 PerfLog            perflog ("libMesh",
 #ifdef LIBMESH_ENABLE_PERFORMANCE_LOGGING
@@ -287,6 +307,11 @@ void libmesh_terminate_handler()
   // unwind, for example.
   libMesh::write_traceout();
 
+  // We may care about performance data pre-crash; it would be sad to
+  // throw that away.
+  libMesh::perflog.print_log();
+  libMesh::perflog.clear();
+
   // If we have MPI and it has been initialized, we need to be sure
   // and call MPI_Abort instead of std::abort, so that the parallel
   // job can die nicely.
@@ -368,8 +393,8 @@ LibMeshInit::LibMeshInit (int argc, const char* const* argv,
 #if MPI_VERSION > 1
           int mpi_thread_provided;
           const int mpi_thread_requested = libMesh::n_threads() > 1 ?
-                                           MPI_THREAD_FUNNELED :
-                                           MPI_THREAD_SINGLE;
+            MPI_THREAD_FUNNELED :
+            MPI_THREAD_SINGLE;
 
           MPI_Init_thread (&argc, const_cast<char***>(&argv),
                            mpi_thread_requested, &mpi_thread_provided);
@@ -377,10 +402,10 @@ LibMeshInit::LibMeshInit (int argc, const char* const* argv,
           if ((libMesh::n_threads() > 1) &&
               (mpi_thread_provided < MPI_THREAD_FUNNELED))
             {
-              libmesh_warning("Warning: MPI failed to guarantee MPI_THREAD_FUNNELED\n" <<
-                              "for a threaded run.\n" <<
-                              "Be sure your library is funneled-thread-safe..." <<
-                               std::endl);
+              libmesh_warning("Warning: MPI failed to guarantee MPI_THREAD_FUNNELED\n"
+                              << "for a threaded run.\n"
+                              << "Be sure your library is funneled-thread-safe..."
+                              << std::endl);
 
               // Ideally, if an MPI stack tells us it's unsafe for us
               // to use threads, we shouldn't use threads.
@@ -501,6 +526,15 @@ LibMeshInit::LibMeshInit (int argc, const char* const* argv,
           CHKERRABORT(libMesh::GLOBAL_COMM_WORLD,ierr);
         }
 # endif
+#if !PETSC_RELEASE_LESS_THAN(3,3,0)
+      // Register the reference implementation of DMlibMesh
+#if PETSC_RELEASE_LESS_THAN(3,4,0)
+      ierr = DMRegister(DMLIBMESH, PETSC_NULL, "DMCreate_libMesh", DMCreate_libMesh); CHKERRABORT(libMesh::GLOBAL_COMM_WORLD,ierr);
+#else
+      ierr = DMRegister(DMLIBMESH, DMCreate_libMesh); CHKERRABORT(libMesh::GLOBAL_COMM_WORLD,ierr);
+#endif
+
+#endif
     }
 #endif
 
@@ -568,6 +602,9 @@ LibMeshInit::LibMeshInit (int argc, const char* const* argv,
 
   if (libMesh::on_command_line("--enable-fpe"))
     libMesh::enableFPE(true);
+
+  if (libMesh::on_command_line("--enable-segv"))
+    libMesh::enableSEGV(true);
 
   // The library is now ready for use
   libMeshPrivateData::_is_initialized = true;
@@ -743,7 +780,34 @@ void enableFPE(bool on)
       _MM_SET_EXCEPTION_MASK(flags);
 #  endif
 #endif
-      signal(SIGFPE, 0);
+      signal(SIGFPE, SIG_DFL);
+    }
+}
+
+
+// Enable handling of SIGSEGV by libMesh
+// (potentially instead of PETSc)
+void enableSEGV(bool on)
+{
+  static struct sigaction old_action;
+  static bool was_on = false;
+
+  if (on)
+    {
+      struct sigaction new_action;
+      was_on = true;
+
+      // Set up the structure to specify the new action.
+      new_action.sa_sigaction = libmesh_handleSEGV;
+      sigemptyset (&new_action.sa_mask);
+      new_action.sa_flags = SA_SIGINFO;
+
+      sigaction (SIGSEGV, &new_action, &old_action);
+    }
+  else if (was_on)
+    {
+      was_on = false;
+      sigaction (SIGSEGV, &old_action, NULL);
     }
 }
 

@@ -48,7 +48,7 @@ public:
   /**
    * Builds an FETransformation object based on the finite element type
    */
-  static AutoPtr<FETransformationBase<OutputShape> > build( const FEType& type );
+  static UniquePtr<FETransformationBase<OutputShape> > build( const FEType& type );
 
   /**
    * Evaluates shape functions in physical coordinates based on proper
@@ -79,7 +79,6 @@ public:
    * finite element transformation.
    */
   virtual void map_d2phi( const unsigned int dim,
-                          const Elem* const elem,
                           const std::vector<Point>& qp,
                           const FEGenericBase<OutputShape>& fe,
                           std::vector<std::vector<typename FEGenericBase<OutputShape>::OutputTensor> >& d2phi,

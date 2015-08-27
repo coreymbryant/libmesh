@@ -189,7 +189,8 @@ void init_order_to_enum ()
       order_to_enum["SIXTEENTH"    ]=SIXTEENTH;
       order_to_enum["SEVENTEENTH"  ]=SEVENTEENTH;
       order_to_enum["EIGHTTEENTH"  ]=EIGHTTEENTH;
-      order_to_enum["NINTEENTH"    ]=NINTEENTH;
+      order_to_enum["NINTEENTH"    ]=NINTEENTH; // deprecated
+      order_to_enum["NINETEENTH"   ]=NINETEENTH;
       order_to_enum["TWENTIETH"    ]=TWENTIETH;
 
       order_to_enum["TWENTYFIRST"  ]=TWENTYFIRST;
@@ -281,6 +282,7 @@ void init_quadrature_type_to_enum ()
       quadrature_type_to_enum["QTRAP"      ]=QTRAP;
       quadrature_type_to_enum["QGRID"      ]=QGRID;
       quadrature_type_to_enum["QCLOUGH"    ]=QCLOUGH;
+      quadrature_type_to_enum["QGAUSS_LOBATTO"    ]=QGAUSS_LOBATTO;
     }
 }
 
@@ -522,6 +524,7 @@ void init_solverpackage_type_to_enum ()
       solverpackage_type_to_enum["LASPACK_SOLVERS"  ]=LASPACK_SOLVERS;
       solverpackage_type_to_enum["SLEPC_SOLVERS"    ]=SLEPC_SOLVERS;
       solverpackage_type_to_enum["EIGEN_SOLVERS"    ]=EIGEN_SOLVERS;
+      solverpackage_type_to_enum["NLOPT_SOLVERS"    ]=NLOPT_SOLVERS;
       solverpackage_type_to_enum["INVALID_SOLVER_PACKAGE" ]=INVALID_SOLVER_PACKAGE;
     }
 }

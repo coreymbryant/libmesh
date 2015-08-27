@@ -28,13 +28,13 @@
 
 // Bring in bits from the libMesh namespace.
 // Just the bits we're using, since this is a header.
-using libMesh::AutoPtr;
 using libMesh::DirichletBoundary;
 using libMesh::EquationSystems;
 using libMesh::FEMContext;
 using libMesh::RBConstruction;
 using libMesh::RBEvaluation;
 using libMesh::Real;
+using libMesh::UniquePtr;
 
 
 // A simple subclass of RBEvaluation, which just needs to specify
@@ -79,7 +79,7 @@ public:
                         const unsigned int number_in)
     : Parent(es, name_in, number_in),
       ex6_assembly_expansion(*this),
-      dirichlet_bc(AutoPtr<DirichletBoundary>(NULL))
+      dirichlet_bc(UniquePtr<DirichletBoundary>())
   {}
 
   /**
@@ -162,7 +162,7 @@ public:
   /**
    * The object that defines which degrees of freedom are on a Dirichlet boundary.
    */
-  AutoPtr<DirichletBoundary> dirichlet_bc;
+  UniquePtr<DirichletBoundary> dirichlet_bc;
 
 };
 

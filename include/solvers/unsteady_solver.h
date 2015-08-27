@@ -119,6 +119,13 @@ public:
   virtual Real error_order () const = 0;
 
   /**
+   * Returns the maximum order of time derivatives for which the
+   * UnsteadySolver subclass is capable of handling. E.g. EulerSolver
+   * will have time_order = 1 and NewmarkSolver will have time_order = 2
+   */
+  virtual unsigned int time_order () const = 0;
+
+  /**
    * @returns the old nonlinear solution for the specified global
    * DOF.
    */
@@ -127,7 +134,7 @@ public:
   /**
    * Serial vector of _system.get_vector("_old_nonlinear_solution")
    */
-  AutoPtr<NumericVector<Number> > old_local_nonlinear_solution;
+  UniquePtr<NumericVector<Number> > old_local_nonlinear_solution;
 
   /**
    * Computes the size of ||u^{n+1} - u^{n}|| in some norm.

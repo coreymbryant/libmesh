@@ -34,9 +34,9 @@ namespace
 using namespace libMesh;
 
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
-static const unsigned int header_size = 11;
+static const unsigned int header_size = 12;
 #else
-static const unsigned int header_size = 10;
+static const unsigned int header_size = 11;
 #endif
 
 static const largest_id_type elem_magic_header = 987654321;
@@ -93,7 +93,7 @@ unsigned int packed_size (const Elem*,
         {
           const int n_bcs = cast_int<int>
             (*(in + pre_indexing_size + indexing_size +
-              total_packed_bc_data++));
+               total_packed_bc_data++));
           libmesh_assert_greater_equal (n_bcs, 0);
           total_packed_bc_data += n_bcs;
         }
@@ -102,7 +102,7 @@ unsigned int packed_size (const Elem*,
         {
           const int n_bcs = cast_int<int>
             (*(in + pre_indexing_size + indexing_size +
-              total_packed_bc_data++));
+               total_packed_bc_data++));
           libmesh_assert_greater_equal (n_bcs, 0);
           total_packed_bc_data += n_bcs;
         }
@@ -134,11 +134,13 @@ unsigned int packable_size (const Elem* elem, const MeshBase* mesh)
     {
       total_packed_bcs += elem->n_sides();
       for (unsigned short s = 0; s != elem->n_sides(); ++s)
-        total_packed_bcs += mesh->boundary_info->n_boundary_ids(elem,s);
+        total_packed_bcs +=
+          mesh->get_boundary_info().n_boundary_ids(elem,s);
 
       total_packed_bcs += elem->n_edges();
       for (unsigned short e = 0; e != elem->n_edges(); ++e)
-        total_packed_bcs += mesh->boundary_info->n_edge_boundary_ids(elem,e);
+        total_packed_bcs +=
+          mesh->get_boundary_info().n_edge_boundary_ids(elem,e);
     }
 
   return
@@ -177,7 +179,18 @@ void pack (const Elem* elem,
 #ifdef LIBMESH_ENABLE_AMR
   data.push_back (static_cast<largest_id_type>(elem->level()));
   data.push_back (static_cast<largest_id_type>(elem->p_level()));
-  data.push_back (static_cast<largest_id_type>(elem->refinement_flag()));
+
+  // Encode both the refinement flag and whether the element has
+  // children together.  This coding is unambiguous because our
+  // refinement state encoding starts at 0 and ends at
+  // INVALID_REFINEMENTSTATE
+  largest_id_type refinement_info =
+    static_cast<largest_id_type>(elem->refinement_flag());
+  if (elem->has_children())
+    refinement_info +=
+      static_cast<largest_id_type>(Elem::INVALID_REFINEMENTSTATE) + 1;
+  data.push_back (refinement_info);
+
   data.push_back (static_cast<largest_id_type>(elem->p_refinement_flag()));
 #else
   data.push_back (0);
@@ -199,11 +212,11 @@ void pack (const Elem* elem,
 #endif
 
 #ifdef LIBMESH_ENABLE_AMR
-  // use parent_ID of -1 to indicate a level 0 element
+  // use parent_ID of invalid_id to indicate a level 0 element
   if (elem->level() == 0)
     {
-      data.push_back(-1);
-      data.push_back(-1);
+      data.push_back(DofObject::invalid_id);
+      data.push_back(DofObject::invalid_id);
     }
   else
     {
@@ -211,9 +224,15 @@ void pack (const Elem* elem,
       data.push_back(elem->parent()->which_child_am_i(elem));
     }
 #else
-  data.push_back (-1);
-  data.push_back (-1);
+  data.push_back (DofObject::invalid_id);
+  data.push_back (DofObject::invalid_id);
 #endif
+
+  if ((elem->dim() < LIBMESH_DIM) &&
+      elem->interior_parent())
+    data.push_back(elem->interior_parent()->id());
+  else
+    data.push_back(DofObject::invalid_id);
 
   for (unsigned int n=0; n<elem->n_nodes(); n++)
     data.push_back (elem->node(n));
@@ -224,7 +243,7 @@ void pack (const Elem* elem,
       if (neigh)
         data.push_back (neigh->id());
       else
-        data.push_back (-1);
+        data.push_back (DofObject::invalid_id);
     }
 
 #ifndef NDEBUG
@@ -248,7 +267,7 @@ void pack (const Elem* elem,
       for (unsigned short s = 0; s != elem->n_sides(); ++s)
         {
           std::vector<boundary_id_type> bcs =
-            mesh->boundary_info->boundary_ids(elem, s);
+            mesh->get_boundary_info().boundary_ids(elem, s);
 
           data.push_back(bcs.size());
 
@@ -259,7 +278,7 @@ void pack (const Elem* elem,
       for (unsigned short e = 0; e != elem->n_edges(); ++e)
         {
           std::vector<boundary_id_type> bcs =
-            mesh->boundary_info->edge_boundary_ids(elem, e);
+            mesh->get_boundary_info().edge_boundary_ids(elem, e);
 
           data.push_back(bcs.size());
 
@@ -303,12 +322,19 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
   const unsigned int p_level =
     cast_int<unsigned int>(*in++);
 
-  // int 2: refinement flag
+  // int 2: refinement flag and encoded has_children
   const int rflag = cast_int<int>(*in++);
+  const int invalid_rflag =
+    cast_int<int>(Elem::INVALID_REFINEMENTSTATE);
   libmesh_assert_greater_equal (rflag, 0);
-  libmesh_assert_less (rflag, Elem::INVALID_REFINEMENTSTATE);
-  const Elem::RefinementState refinement_flag =
-    cast_int<Elem::RefinementState>(rflag);
+
+  libmesh_assert_less (rflag, invalid_rflag*2+1);
+
+  const bool has_children = (rflag > invalid_rflag);
+
+  const Elem::RefinementState refinement_flag = has_children ?
+      cast_int<Elem::RefinementState>(rflag - invalid_rflag - 1) :
+      cast_int<Elem::RefinementState>(rflag);
 
   // int 3: p refinement flag
   const int pflag = cast_int<int>(*in++);
@@ -352,18 +378,31 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
 #endif
 
 #ifdef LIBMESH_ENABLE_AMR
-  // int 9: parent dof object id
+  // int 9: parent dof object id.
+  // Note: If level==0, then (*in) == invalid_id.  In
+  // this case, the equality check in cast_int<unsigned>(*in) will
+  // never succeed.  Therefore, we should only attempt the more
+  // rigorous cast verification in cases where level != 0.
   const dof_id_type parent_id =
-    cast_int<dof_id_type>(*in++);
+    (level == 0)
+    ? static_cast<dof_id_type>(*in++)
+    : cast_int<dof_id_type>(*in++);
   libmesh_assert (level == 0 || parent_id != DofObject::invalid_id);
   libmesh_assert (level != 0 || parent_id == DofObject::invalid_id);
 
   // int 10: local child id
+  // Note: If level==0, then which_child_am_i is not valid, so don't
+  // do the more rigorous cast verification.
   const unsigned int which_child_am_i =
-    cast_int<unsigned int>(*in++);
+    (level == 0)
+    ? static_cast<unsigned int>(*in++)
+    : cast_int<unsigned int>(*in++);
 #else
   in += 2;
 #endif // LIBMESH_ENABLE_AMR
+
+  const dof_id_type interior_parent_id =
+    static_cast<dof_id_type>(*in++);
 
   // Make sure we don't miscount above when adding the "magic" header
   // plus the real data header
@@ -398,12 +437,59 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
 #ifdef LIBMESH_ENABLE_AMR
       libmesh_assert_equal_to (elem->p_level(), p_level);
       libmesh_assert_equal_to (elem->refinement_flag(), refinement_flag);
+      libmesh_assert_equal_to (elem->has_children(), has_children);
       libmesh_assert_equal_to (elem->p_refinement_flag(), p_refinement_flag);
 
       libmesh_assert (!level || elem->parent() != NULL);
       libmesh_assert (!level || elem->parent()->id() == parent_id);
       libmesh_assert (!level || elem->parent()->child(which_child_am_i) == elem);
 #endif
+      // Our interior_parent link should be "close to" correct - we
+      // may have to update it, but we can check for some
+      // inconsistencies.
+      {
+        // If the sending processor sees no interior_parent here, we'd
+        // better agree.
+        if (interior_parent_id == DofObject::invalid_id)
+          {
+            if (elem->dim() < LIBMESH_DIM)
+              libmesh_assert (!(elem->interior_parent()));
+          }
+
+        // If the sending processor has a remote_elem interior_parent,
+        // then all we know is that we'd better have *some*
+        // interior_parent
+        else if (interior_parent_id == remote_elem->id())
+          {
+            libmesh_assert(elem->interior_parent());
+          }
+        else
+          {
+            Elem *ip = mesh->query_elem(interior_parent_id);
+
+            // The sending processor sees an interior parent here, so
+            // if we don't have that interior element, then we'd
+            // better have a remote_elem signifying that fact.
+            if (!ip)
+              libmesh_assert_equal_to (elem->interior_parent(), remote_elem);
+            else
+              {
+                // The sending processor has an interior_parent here,
+                // and we have that element, but that does *NOT* mean
+                // we're already linking to it.  Perhaps we initially
+                // received elem from a processor on which the
+                // interior_parent link was remote?
+                libmesh_assert(elem->interior_parent() == ip ||
+                               elem->interior_parent() == remote_elem);
+
+                // If the link was originally remote, update it
+                if (elem->interior_parent() == remote_elem)
+                  {
+                    elem->set_interior_parent(ip);
+                  }
+              }
+          }
+      }
 
       // Our neighbor links should be "close to" correct - we may have
       // to update them, but we can check for some inconsistencies.
@@ -480,7 +566,7 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
         }
       // Or assert that the sending processor sees no parent
       else
-        libmesh_assert_equal_to (parent_id, static_cast<dof_id_type>(-1));
+        libmesh_assert_equal_to (parent_id, DofObject::invalid_id);
 #else
       // No non-level-0 elements without AMR
       libmesh_assert_equal_to (level, 0);
@@ -505,10 +591,10 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
       elem->set_p_refinement_flag(p_refinement_flag);
       libmesh_assert_equal_to (elem->level(), level);
 
-      // If this element definitely should have children, assign
-      // remote_elem to all of them for now, for consistency.  Later
-      // unpacked elements may overwrite that.
-      if (!elem->active())
+      // If this element should have children, assign remote_elem to
+      // all of them for now, for consistency.  Later unpacked
+      // elements may overwrite that.
+      if (has_children)
         for (unsigned int c=0; c != elem->n_children(); ++c)
           elem->add_child(const_cast<RemoteElem*>(remote_elem), c);
 
@@ -529,6 +615,31 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
         elem->set_node(n) =
           mesh->node_ptr
           (cast_int<dof_id_type>(*in++));
+
+      // Set interior_parent if found
+      {
+        // We may be unpacking an element that was a ghost element on the
+        // sender, in which case the element's interior_parent may not be
+        // known by the packed element.  We'll have to set such
+        // interior_parents to remote_elem ourselves and wait for a
+        // later packed element to give us better information.
+        if (interior_parent_id == remote_elem->id())
+          {
+            elem->set_interior_parent
+              (const_cast<RemoteElem*>(remote_elem));
+          }
+        else if (interior_parent_id != DofObject::invalid_id)
+          {
+            // If we don't have the interior parent element, then it's
+            // a remote_elem until we get it.
+            Elem *ip = mesh->query_elem(interior_parent_id);
+            if (!ip )
+              elem->set_interior_parent
+                (const_cast<RemoteElem*>(remote_elem));
+            else
+              elem->set_interior_parent(ip);
+          }
+      }
 
       for (unsigned int n=0; n<elem->n_neighbors(); n++)
         {
@@ -581,7 +692,7 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
             cast_int<boundary_id_type>(*in++);
 
           for(boundary_id_type bc_it=0; bc_it < num_bcs; bc_it++)
-            mesh->boundary_info->add_side
+            mesh->get_boundary_info().add_side
               (elem, s, cast_int<boundary_id_type>(*in++));
         }
 
@@ -591,7 +702,7 @@ void unpack(std::vector<largest_id_type>::const_iterator in,
             cast_int<boundary_id_type>(*in++);
 
           for(boundary_id_type bc_it=0; bc_it < num_bcs; bc_it++)
-            mesh->boundary_info->add_edge
+            mesh->get_boundary_info().add_edge
               (elem, e, cast_int<boundary_id_type>(*in++));
         }
     }

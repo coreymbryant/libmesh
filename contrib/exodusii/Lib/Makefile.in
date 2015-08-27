@@ -69,15 +69,18 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ac_cxx_rtti.m4 \
 	$(top_srcdir)/m4/ax_openmp.m4 $(top_srcdir)/m4/ax_pthread.m4 \
 	$(top_srcdir)/m4/ax_split_version.m4 \
 	$(top_srcdir)/m4/ax_tls.m4 $(top_srcdir)/m4/backtrace.m4 \
-	$(top_srcdir)/m4/boost.m4 $(top_srcdir)/m4/compiler.m4 \
+	$(top_srcdir)/m4/boost.m4 $(top_srcdir)/m4/capnproto.m4 \
+	$(top_srcdir)/m4/compiler.m4 \
 	$(top_srcdir)/m4/config_environment.m4 \
 	$(top_srcdir)/m4/config_summary.m4 \
 	$(top_srcdir)/m4/coverage.m4 $(top_srcdir)/m4/cppunit.m4 \
 	$(top_srcdir)/m4/cxx11.m4 $(top_srcdir)/m4/demangle.m4 \
-	$(top_srcdir)/m4/eigen.m4 $(top_srcdir)/m4/exodus.m4 \
-	$(top_srcdir)/m4/feexcept.m4 $(top_srcdir)/m4/fparser.m4 \
-	$(top_srcdir)/m4/glpk.m4 $(top_srcdir)/m4/gmv.m4 \
-	$(top_srcdir)/m4/gz.m4 $(top_srcdir)/m4/hdf5.m4 \
+	$(top_srcdir)/m4/dlopen.m4 $(top_srcdir)/m4/eigen.m4 \
+	$(top_srcdir)/m4/exodus.m4 $(top_srcdir)/m4/feexcept.m4 \
+	$(top_srcdir)/m4/fparser.m4 $(top_srcdir)/m4/glpk.m4 \
+	$(top_srcdir)/m4/gmv.m4 $(top_srcdir)/m4/gz.m4 \
+	$(top_srcdir)/m4/hdf5.m4 \
+	$(top_srcdir)/m4/hinnant_unique_ptr.m4 \
 	$(top_srcdir)/m4/laspack.m4 $(top_srcdir)/m4/libhilbert.m4 \
 	$(top_srcdir)/m4/libmesh_compiler_features.m4 \
 	$(top_srcdir)/m4/libmesh_core_features.m4 \
@@ -89,16 +92,17 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ac_cxx_rtti.m4 \
 	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/mpi.m4 \
 	$(top_srcdir)/m4/namespaces.m4 $(top_srcdir)/m4/nanoflann.m4 \
 	$(top_srcdir)/m4/nemesis.m4 $(top_srcdir)/m4/netcdf.m4 \
-	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/petsc.m4 \
-	$(top_srcdir)/m4/precision.m4 \
+	$(top_srcdir)/m4/nlopt.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/petsc.m4 $(top_srcdir)/m4/precision.m4 \
 	$(top_srcdir)/m4/prefix_config.m4 $(top_srcdir)/m4/qhull.m4 \
-	$(top_srcdir)/m4/sfc.m4 $(top_srcdir)/m4/slepc.m4 \
-	$(top_srcdir)/m4/sstream.m4 $(top_srcdir)/m4/strstream.m4 \
-	$(top_srcdir)/m4/tbb.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/m4/tecplot.m4 $(top_srcdir)/m4/tetgen.m4 \
-	$(top_srcdir)/m4/threads.m4 $(top_srcdir)/m4/triangle.m4 \
-	$(top_srcdir)/m4/trilinos.m4 $(top_srcdir)/m4/unordered.m4 \
-	$(top_srcdir)/m4/vtk.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/sanitize.m4 $(top_srcdir)/m4/sfc.m4 \
+	$(top_srcdir)/m4/slepc.m4 $(top_srcdir)/m4/sstream.m4 \
+	$(top_srcdir)/m4/strstream.m4 $(top_srcdir)/m4/tbb.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/m4/tecplot.m4 \
+	$(top_srcdir)/m4/tetgen.m4 $(top_srcdir)/m4/threads.m4 \
+	$(top_srcdir)/m4/triangle.m4 $(top_srcdir)/m4/trilinos.m4 \
+	$(top_srcdir)/m4/unordered.m4 $(top_srcdir)/m4/vtk.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -914,6 +918,9 @@ BUILD_USER = @BUILD_USER@
 BUILD_VERSION = @BUILD_VERSION@
 BUNZIP2 = @BUNZIP2@
 BZIP2 = @BZIP2@
+CAPNPROTO_INCLUDE = @CAPNPROTO_INCLUDE@
+CAPNPROTO_LIBRARY = @CAPNPROTO_LIBRARY@
+CAPNP_BINARY = @CAPNP_BINARY@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -971,6 +978,7 @@ FLIBS = @FLIBS@
 FPARSER_INCLUDE = @FPARSER_INCLUDE@
 FPARSER_LIBRARY = @FPARSER_LIBRARY@
 GCOV_FLAGS = @GCOV_FLAGS@
+GCOV_LDFLAGS = @GCOV_LDFLAGS@
 GIT_REVISION = @GIT_REVISION@
 GLPK_INCLUDE = @GLPK_INCLUDE@
 GLPK_LIBRARY = @GLPK_LIBRARY@
@@ -1029,6 +1037,8 @@ MPI_LIBS_PATHS = @MPI_LIBS_PATHS@
 NANOFLANN_INCLUDE = @NANOFLANN_INCLUDE@
 NEMESIS_INCLUDE = @NEMESIS_INCLUDE@
 NETCDF_INCLUDE = @NETCDF_INCLUDE@
+NLOPT_INCLUDE = @NLOPT_INCLUDE@
+NLOPT_LIBRARY = @NLOPT_LIBRARY@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NODEPRECATEDFLAG = @NODEPRECATEDFLAG@
@@ -1131,6 +1141,7 @@ dvidir = @dvidir@
 enabledefaultcommworld = @enabledefaultcommworld@
 enablelegacyincludepaths = @enablelegacyincludepaths@
 enablepetsc = @enablepetsc@
+enableuniqueptr = @enableuniqueptr@
 enablewarnings = @enablewarnings@
 exec_prefix = @exec_prefix@
 gitquery = @gitquery@
