@@ -35,11 +35,9 @@ namespace libMesh
  * This class stores the set of RBTheta functor objects that define
  * the "parameter-dependent expansion" of a PDE.
  *
- * @author David J. Knezevic, 2011
+ * \author David J. Knezevic
+ * \date 2011
  */
-
-// ------------------------------------------------------------
-// TransientRBThetaExpansion class definition
 class TransientRBThetaExpansion : public RBThetaExpansion
 {
 public:
@@ -60,7 +58,7 @@ public:
    * in subclasses.
    */
   virtual Number eval_M_theta(unsigned int q,
-                              const RBParameters& mu);
+                              const RBParameters & mu);
 
   /**
    * Get Q_m, the number of terms in the affine
@@ -73,15 +71,14 @@ public:
    * Attach a pointer to a functor object that defines one
    * of the theta_q_m terms.
    */
-  virtual void attach_M_theta(RBTheta* theta_q_m);
+  virtual void attach_M_theta(RBTheta * theta_q_m);
 
 private:
 
   /**
    * Vector storing the pointers to the RBTheta functors.
    */
-  std::vector<RBTheta*> _M_theta_vector;
-
+  std::vector<RBTheta *> _M_theta_vector;
 };
 
 }

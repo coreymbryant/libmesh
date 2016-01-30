@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,7 @@ namespace libMesh
  * The \p Tri is an element in 2D composed of 3 sides.
  * It looks like this:
  * \verbatim
+ *
  *          ^
  *         / \
  *        /   \
@@ -60,20 +61,20 @@ public:
    * parent. Derived classes implement 'true' elements.
    */
   Tri (const unsigned int nn,
-       Elem* p,
-       Node** nodelinkdata) :
+       Elem * p,
+       Node ** nodelinkdata) :
     Face(nn, Tri::n_sides(), p, _elemlinks_data, nodelinkdata)
   {
     // Make sure the interior parent isn't undefined
     if (LIBMESH_DIM > 2)
-      this->set_interior_parent(NULL);
+      this->set_interior_parent(libmesh_nullptr);
   }
 
   /**
    * @returns the \p Point associated with local \p Node \p i,
    * in master element rather than physical coordinates.
    */
-  Point master_point (const unsigned int i) const
+  virtual Point master_point (const unsigned int i) const libmesh_override
   {
     libmesh_assert_less(i, this->n_nodes());
     return Point(_master_points[i][0],
@@ -85,60 +86,72 @@ public:
    * @returns 3.  All tri-derivatives are guaranteed to have at
    * least 3 nodes.
    */
-  unsigned int n_nodes() const { return 3; }
+  virtual unsigned int n_nodes() const libmesh_override { return 3; }
 
   /**
    * @returns 3
    */
-  unsigned int n_sides() const { return 3; }
+  virtual unsigned int n_sides() const libmesh_override { return 3; }
 
   /**
    * @returns 3.  All triangles have 3 vertices.
    */
-  unsigned int n_vertices() const { return 3; }
+  virtual unsigned int n_vertices() const libmesh_override { return 3; }
 
   /**
    * @returns 3.  All triangles have 3 edges.
    */
-  unsigned int n_edges() const { return 3; }
+  virtual unsigned int n_edges() const libmesh_override { return 3; }
 
   /**
    * @returns 4
    */
-  unsigned int n_children() const { return 4; }
+  virtual unsigned int n_children() const libmesh_override { return 4; }
 
   /*
    * @returns true iff the specified child is on the
    * specified side
    */
   virtual bool is_child_on_side(const unsigned int c,
-                                const unsigned int s) const;
+                                const unsigned int s) const libmesh_override;
+
+  /**
+   * Don't hide Elem::key() defined in the base class.
+   */
+  using Elem::key;
 
   /**
    * @returns an id associated with the \p s side of this element.
-   * The id is not necessariy unique, but should be close.  This is
+   * The id is not necessarily unique, but should be close.  This is
    * particularly useful in the \p MeshBase::find_neighbors() routine.
    */
-  dof_id_type key (const unsigned int s) const;
+  virtual dof_id_type key (const unsigned int s) const libmesh_override;
+
+  /**
+   * @returns an id associated with the global node ids of this
+   * element.  The id is not necessarily unique, but should be
+   * close.
+   */
+  virtual dof_id_type key () const libmesh_override;
 
   /**
    * @returns a primitive (2-noded) edge for
    * edge i.
    */
-  UniquePtr<Elem> side (const unsigned int i) const;
+  virtual UniquePtr<Elem> side (const unsigned int i) const libmesh_override;
 
   /**
    * Based on the quality metric q specified by the user,
    * returns a quantitative assessment of element quality.
    */
-  Real quality (const ElemQuality q) const;
+  virtual Real quality (const ElemQuality q) const libmesh_override;
 
   /**
    * Returns the suggested quality bounds for
    * the hex based on quality measure q.  These are
    * the values suggested by the CUBIT User's Manual.
    */
-  std::pair<Real, Real> qual_bounds (const ElemQuality q) const;
+  virtual std::pair<Real, Real> qual_bounds (const ElemQuality q) const libmesh_override;
 
 
 protected:
@@ -146,16 +159,13 @@ protected:
   /**
    * Data for links to parent/neighbor/interior_parent elements.
    */
-  Elem* _elemlinks_data[4+(LIBMESH_DIM>2)];
+  Elem * _elemlinks_data[4+(LIBMESH_DIM>2)];
 
   /**
    * Master element node locations
    */
   static const Real _master_points[6][3];
 };
-
-// ------------------------------------------------------------
-// Tri class member functions
 
 } // namespace libMesh
 

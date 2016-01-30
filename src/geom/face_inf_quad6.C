@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -108,6 +108,31 @@ const float InfQuad6::_embedding_matrix[2][6][6] =
 
 
 
+dof_id_type InfQuad6::key (const unsigned int s) const
+{
+  libmesh_assert_less (s, this->n_sides());
+
+  switch (s)
+    {
+      // Edge3 side
+    case 0:
+      return this->compute_key (this->node(4));
+
+      // InfEdge
+    case 1:
+    case 2:
+      return InfQuad::key(s);
+
+    default:
+      libmesh_error_msg("Invalid side s = " << s);
+    }
+
+  libmesh_error_msg("We'll never get here!");
+  return 0;
+}
+
+
+
 UniquePtr<Elem> InfQuad6::build_side (const unsigned int i,
                                       bool proxy) const
 {
@@ -132,47 +157,34 @@ UniquePtr<Elem> InfQuad6::build_side (const unsigned int i,
   else
     {
       // Create NULL pointer to be initialized, returned later.
-      Elem* edge = NULL;
+      Elem * edge = libmesh_nullptr;
 
       switch (i)
         {
         case 0:
           {
             edge = new Edge3;
-
-            edge->set_node(0) = this->get_node(0);
-            edge->set_node(1) = this->get_node(1);
-            edge->set_node(2) = this->get_node(4);
-
             break;
           }
 
+          // adjacent to another infinite element
         case 1:
-          {
-            // adjacent to another infinite element
-            edge = new InfEdge2;
-
-            edge->set_node(0) = this->get_node(1);
-            edge->set_node(1) = this->get_node(3);
-
-            break;
-          }
-
         case 2:
           {
-            // adjacent to another infinite element
             edge = new InfEdge2;
-
-            edge->set_node(0) = this->get_node(0); // be aware of swapped nodes,
-            edge->set_node(1) = this->get_node(2); // compared to conventional side numbering
-
             break;
           }
+
         default:
           libmesh_error_msg("Invalid side i = " << i);
         }
 
       edge->subdomain_id() = this->subdomain_id();
+
+      // Set the nodes
+      for (unsigned n=0; n<edge->n_nodes(); ++n)
+        edge->set_node(n) = this->get_node(InfQuad6::side_nodes_map[i][n]);
+
       return UniquePtr<Elem>(edge);
     }
 
@@ -185,7 +197,7 @@ UniquePtr<Elem> InfQuad6::build_side (const unsigned int i,
 
 void InfQuad6::connectivity(const unsigned int sf,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const
+                            std::vector<dof_id_type> & conn) const
 {
   libmesh_assert_less (sf, this->n_sub_elem());
   libmesh_assert_not_equal_to (iop, INVALID_IO_PACKAGE);

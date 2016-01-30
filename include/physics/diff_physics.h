@@ -1,6 +1,6 @@
 
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,6 @@
 // Local Includes
 #include "libmesh/libmesh.h"
 #include "libmesh/auto_ptr.h"
-#include "libmesh/diff_context.h"
 
 // C++ includes
 #include <vector>
@@ -34,9 +33,7 @@ namespace libMesh
 
 // Forward Declarations
 class System;
-class TimeSolver;
-
-template <typename T> class NumericVector;
+class DiffContext;
 
 /**
  * This class provides a specific system class.  It aims
@@ -72,12 +69,9 @@ template <typename T> class NumericVector;
  * DiffContext::get_elem_solution_accel_derivative(). The should be incorporated
  * into the Jacobian evaluations, if the Jacobian is being provided.
  *
- * @author Roy H. Stogner 2006
+ * \author Roy H. Stogner
+ * \date 2006
  */
-
-// ------------------------------------------------------------
-// DifferentiablePhysics class definition
-
 class DifferentiablePhysics
 {
 public:
@@ -88,7 +82,7 @@ public:
    */
   DifferentiablePhysics () :
     compute_internal_sides (false),
-    _mesh_sys              (NULL),
+    _mesh_sys              (libmesh_nullptr),
     _mesh_x_var            (libMesh::invalid_uint),
     _mesh_y_var            (libMesh::invalid_uint),
     _mesh_z_var            (libMesh::invalid_uint)
@@ -112,7 +106,7 @@ public:
   /**
    * Initialize any data structures associated with the physics.
    */
-  virtual void init_physics (const System& sys);
+  virtual void init_physics (const System & sys);
 
   /**
    * Adds the time derivative contribution on \p elem to elem_residual.
@@ -335,7 +329,7 @@ public:
    * themselves.
    */
   virtual bool nonlocal_mass_residual (bool request_jacobian,
-                                       DiffContext &c);
+                                       DiffContext & c);
 
   /**
    * Subtracts a damping vector contribution on \p elem from
@@ -353,7 +347,7 @@ public:
    * Otherwise, this must be reimplemented.
    */
   virtual bool damping_residual (bool request_jacobian,
-                              DiffContext &) {
+                                 DiffContext &) {
     return request_jacobian;
   }
 
@@ -420,20 +414,20 @@ public:
    * This code is experimental.  "Trust but verify, and not in that
    * order"
    */
-  virtual void set_mesh_system(System* sys);
+  virtual void set_mesh_system(System * sys);
 
   /**
    * Returns a const reference to the system with variables corresponding to
    * mesh nodal coordinates, or NULL if the mesh is fixed.
    * Useful for ALE calculations.
    */
-  const System* get_mesh_system() const;
+  const System * get_mesh_system() const;
 
   /**
    * Returns a reference to the system with variables corresponding to
    * mesh nodal coordinates, or NULL if the mesh is fixed.
    */
-  System* get_mesh_system();
+  System * get_mesh_system();
 
   /**
    * Tells the DifferentiablePhysics that variable \p var from the mesh system
@@ -487,7 +481,7 @@ public:
    * pointer-to-member-function when refactoring.
    */
   bool _eulerian_time_deriv (bool request_jacobian,
-                             DiffContext&);
+                             DiffContext &);
 
 
 protected:
@@ -495,7 +489,7 @@ protected:
   /**
    * System from which to acquire moving mesh information
    */
-  System *_mesh_sys;
+  System * _mesh_sys;
 
   /**
    * Variables from which to acquire moving mesh information
@@ -516,7 +510,7 @@ protected:
 
 
 inline
-void DifferentiablePhysics::set_mesh_system(System* sys)
+void DifferentiablePhysics::set_mesh_system(System * sys)
 {
   // For now we assume that we're doing fully coupled mesh motion
   //  if (sys && sys != this)
@@ -560,13 +554,13 @@ void DifferentiablePhysics::set_mesh_z_var (unsigned int var)
 
 
 inline
-const System* DifferentiablePhysics::get_mesh_system() const
+const System * DifferentiablePhysics::get_mesh_system() const
 {
   return _mesh_sys;
 }
 
 inline
-System* DifferentiablePhysics::get_mesh_system()
+System * DifferentiablePhysics::get_mesh_system()
 {
   return _mesh_sys;
 }

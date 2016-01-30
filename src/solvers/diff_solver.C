@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@ namespace libMesh
 
 
 
-DiffSolver::DiffSolver (sys_type& s) :
+DiffSolver::DiffSolver (sys_type & s) :
   ParallelObject(s),
   max_linear_iterations(1000),
   max_nonlinear_iterations(100),
@@ -50,7 +50,7 @@ DiffSolver::DiffSolver (sys_type& s) :
 
 
 
-UniquePtr<DiffSolver> DiffSolver::build (sys_type& s)
+UniquePtr<DiffSolver> DiffSolver::build (sys_type & s)
 {
   return UniquePtr<DiffSolver>(new NewtonSolver(s));
 }

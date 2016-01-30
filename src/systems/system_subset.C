@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // SystemSubset implementation
-SystemSubset::SystemSubset (const System& system):
+SystemSubset::SystemSubset (const System & system):
   _system(system)
 {
 }
@@ -39,7 +39,7 @@ SystemSubset::~SystemSubset (void)
 }
 
 
-const System&
+const System &
 SystemSubset::get_system(void)const
 {
   return _system;

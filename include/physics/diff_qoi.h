@@ -1,6 +1,6 @@
 
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -22,8 +22,6 @@
 #define LIBMESH_DIFF_QOI_H
 
 // Local Includes
-#include "libmesh/diff_context.h"
-#include "libmesh/qoi_set.h"
 #include "libmesh/auto_ptr.h"
 #include "libmesh/parallel.h"
 
@@ -31,6 +29,10 @@
 
 namespace libMesh
 {
+
+// Forward declarations
+class DiffContext;
+class QoISet;
 
 /**
  * This class provides a specific system class.  It aims
@@ -41,12 +43,9 @@ namespace libMesh
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2006
+ * \author Roy H. Stogner
+ * \date 2006
  */
-
-// ------------------------------------------------------------
-// DifferentiableQoI class definition
-
 class DifferentiableQoI
 {
 public:
@@ -66,7 +65,7 @@ public:
    * Initialize system qoi. By default, does nothing in order to maintain backward
    * compatibility for FEMSystem applications that control qoi.
    */
-  virtual void init_qoi( std::vector<Number>& /*sys_qoi*/){}
+  virtual void init_qoi( std::vector<Number> & /*sys_qoi*/){}
 
   /**
    * Clear all the data structures associated with
@@ -105,8 +104,8 @@ public:
    * Only qois included in the supplied \p QoISet need to be
    * assembled.
    */
-  virtual void element_qoi (DiffContext&,
-                            const QoISet&)
+  virtual void element_qoi (DiffContext &,
+                            const QoISet &)
   {}
 
   /**
@@ -117,8 +116,8 @@ public:
    * Only qois included in the supplied \p QoISet need their
    * derivatives assembled.
    */
-  virtual void element_qoi_derivative (DiffContext&,
-                                       const QoISet&)
+  virtual void element_qoi_derivative (DiffContext &,
+                                       const QoISet &)
   {}
 
   /**
@@ -128,8 +127,8 @@ public:
    * Only qois included in the supplied \p QoISet need to be
    * assembled.
    */
-  virtual void side_qoi (DiffContext&,
-                         const QoISet&)
+  virtual void side_qoi (DiffContext &,
+                         const QoISet &)
   {}
 
   /**
@@ -140,8 +139,8 @@ public:
    * Only qois included in the supplied \p QoISet need their
    * derivatives assembled.
    */
-  virtual void side_qoi_derivative (DiffContext&,
-                                    const QoISet&)
+  virtual void side_qoi_derivative (DiffContext &,
+                                    const QoISet &)
   {}
 
   /**
@@ -160,16 +159,18 @@ public:
   /**
    * Method to combine thread-local qois. By default, simply sums thread qois.
    */
-  virtual void thread_join( std::vector<Number>& qoi, const std::vector<Number>& other_qoi,
-                            const QoISet& qoi_indices );
+  virtual void thread_join(std::vector<Number> & qoi,
+                           const std::vector<Number> & other_qoi,
+                           const QoISet & qoi_indices);
 
   /**
    * Method to populate system qoi data structure with process-local qoi. By default, simply
    * sums process qois into system qoi.
    */
-  virtual void parallel_op(const Parallel::Communicator &communicator,
-                           std::vector<Number>& sys_qoi, std::vector<Number>& local_qoi,
-                           const QoISet& qoi_indices );
+  virtual void parallel_op(const Parallel::Communicator & communicator,
+                           std::vector<Number> & sys_qoi,
+                           std::vector<Number> & local_qoi,
+                           const QoISet & qoi_indices);
 };
 
 } // namespace libMesh

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -54,10 +54,10 @@ template <typename T>
 class scalable_allocator : public tbb::scalable_allocator<T>
 {
 public:
-  typedef T* pointer;
-  typedef const T* const_pointer;
-  //     typedef T& reference;              // Intel 7.1 tries to instantiate an allocator<void>,
-  //     typedef const T& const_reference;  // so we can't typedef a reference to void.
+  typedef T * pointer;
+  typedef const T * const_pointer;
+  //     typedef T & reference;              // Intel 7.1 tries to instantiate an allocator<void>,
+  //     typedef const T & const_reference;  // so we can't typedef a reference to void.
   typedef T value_type;
   typedef size_t size_type;
   typedef ptrdiff_t difference_type;
@@ -71,11 +71,11 @@ public:
   scalable_allocator () :
     tbb::scalable_allocator<T>() {}
 
-  scalable_allocator (const scalable_allocator &a) :
+  scalable_allocator (const scalable_allocator & a) :
     tbb::scalable_allocator<T>(a) {}
 
   template<typename U>
-  scalable_allocator(const scalable_allocator<U> &a) :
+  scalable_allocator(const scalable_allocator<U> & a) :
     tbb::scalable_allocator<T>(a) {}
 };
 
@@ -93,10 +93,10 @@ template <typename T>
 class scalable_allocator : public std::allocator<T>
 {
 public:
-  typedef T* pointer;
-  typedef const T* const_pointer;
-  //     typedef T& reference;              // Intel 7.1 tries to instantiate an allocator<void>,
-  //     typedef const T& const_reference;  // so we can't typedef a reference to void.
+  typedef T * pointer;
+  typedef const T * const_pointer;
+  //     typedef T & reference;              // Intel 7.1 tries to instantiate an allocator<void>,
+  //     typedef const T & const_reference;  // so we can't typedef a reference to void.
   typedef T value_type;
   typedef size_t size_type;
   typedef ptrdiff_t difference_type;
@@ -110,11 +110,11 @@ public:
   scalable_allocator () :
     std::allocator<T>() {}
 
-  scalable_allocator (const scalable_allocator &a) :
+  scalable_allocator (const scalable_allocator & a) :
     std::allocator<T>(a) {}
 
   template<typename U>
-  scalable_allocator(const scalable_allocator<U> &a) :
+  scalable_allocator(const scalable_allocator<U> & a) :
     std::allocator<T>(a) {}
 };
 

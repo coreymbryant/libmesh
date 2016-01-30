@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,6 @@ namespace libMesh
 // Forward declarations:
 class MeshBase;
 
-
-
 /**
  * This class implements writing meshes in the mesh format
  * used by the MEdit visualization tool developed in the Gamma Project
@@ -43,11 +41,9 @@ class MeshBase;
  * MEdit software see the
  * <a href="http://www-rocq1.inria.fr/gamma/medit/medit.html">MEdit home page</a>.
  *
- * @author F. Prill, 2004
+ * \author Florian Prill
+ * \date 2004
  */
-
-// ------------------------------------------------------------
-// medit_io class definition
 class MEDITIO : public MeshOutput<MeshBase>
 {
 public:
@@ -57,27 +53,27 @@ public:
    * This constructor will only allow us to write the mesh.
    */
   explicit
-  MEDITIO (const MeshBase&);
+  MEDITIO (const MeshBase &);
 
   /**
    * Constructor.  Takes a reference to a constant mesh object.
    * and the desired scalar index for mesh colouring.
    * MEdit seems to understand only one scalar value.
    */
-  MEDITIO (const MeshBase&, unsigned int c);
+  MEDITIO (const MeshBase &, unsigned int c);
 
   /**
    * This method implements writing a mesh to a specified ".mesh" file.
    */
-  virtual void write (const std::string& );
+  virtual void write (const std::string &) libmesh_override;
 
   /**
    * This method implements writing a mesh with nodal data to a
    * specified file where the nodal data and variable names are provided.
    */
-  virtual void write_nodal_data (const std::string&,
-                                 const std::vector<Number>&,
-                                 const std::vector<std::string>&);
+  virtual void write_nodal_data (const std::string &,
+                                 const std::vector<Number> &,
+                                 const std::vector<std::string> &) libmesh_override;
 
   /**
    * Flag indicating whether or not to write a binary file
@@ -91,9 +87,9 @@ private:
    * specified file where the nodal data and variable names are optionally
    * provided.  This will write an ASCII file.
    */
-  virtual void write_ascii (const std::string&,
-                            const std::vector<Number>* = NULL,
-                            const std::vector<std::string>* = NULL);
+  void write_ascii (const std::string &,
+                    const std::vector<Number> * = libmesh_nullptr,
+                    const std::vector<std::string> * = libmesh_nullptr);
 
   /**
    * Flag to write binary data.
@@ -108,7 +104,7 @@ private:
 // ------------------------------------------------------------
 // medit_io inline members
 inline
-MEDITIO::MEDITIO (const MeshBase& mesh_in) :
+MEDITIO::MEDITIO (const MeshBase & mesh_in) :
   MeshOutput<MeshBase> (mesh_in),
   _binary (false),
   scalar_idx (0)
@@ -116,7 +112,7 @@ MEDITIO::MEDITIO (const MeshBase& mesh_in) :
 }
 
 inline
-MEDITIO::MEDITIO (const MeshBase& mesh_in, unsigned int c) :
+MEDITIO::MEDITIO (const MeshBase & mesh_in, unsigned int c) :
   MeshOutput<MeshBase> (mesh_in),
   _binary    (false),
   scalar_idx (c)

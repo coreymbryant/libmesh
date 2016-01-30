@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -47,42 +47,33 @@ public:
    */
   InfCell (const unsigned int nn,
            const unsigned int ns,
-           Elem* p,
-           Elem** elemlinkdata,
-           Node** nodelinkdata) :
+           Elem * p,
+           Elem ** elemlinkdata,
+           Node ** nodelinkdata) :
     Elem (nn, ns, p, elemlinkdata, nodelinkdata)
   {}
 
   /**
    * @returns 3, the dimensionality of the object.
    */
-  unsigned int dim () const { return 3; }
+  virtual unsigned int dim () const libmesh_override { return 3; }
 
   /**
    * @returns \p true.  All classes derived from \p InfCell
    * are infinite elements.
    */
-  bool infinite () const { return true; }
+  virtual bool infinite () const libmesh_override { return true; }
 
   /**
    * @returns the origin of this infinite element.
    */
-  Point origin () const;
-
+  virtual Point origin () const libmesh_override
+  {
+    return (this->point(0)*2 - this->point(this->n_vertices()/2));
+  }
 };
 
-
-// ------------------------------------------------------------
-// InfCell inline functions
-inline
-Point InfCell::origin () const
-{
-  return ( this->point(0)*2 - this->point( this->n_vertices()/2 ) );
-}
-
-
 } // namespace libMesh
-
 
 #endif // ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
 

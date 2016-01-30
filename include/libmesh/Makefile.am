@@ -115,9 +115,9 @@ BUILT_SOURCES = \
         edge_inf_edge2.h \
         elem.h \
         elem_cutter.h \
+        elem_hash.h \
         elem_quality.h \
         elem_range.h \
-        elem_type.h \
         face.h \
         face_inf_quad.h \
         face_inf_quad4.h \
@@ -223,10 +223,13 @@ BUILT_SOURCES = \
         laspack_vector.h \
         numeric_vector.h \
         parsed_fem_function.h \
+        parsed_fem_function_parameter.h \
         parsed_function.h \
+        parsed_function_parameter.h \
         petsc_macro.h \
         petsc_matrix.h \
         petsc_preconditioner.h \
+        petsc_solver_exception.h \
         petsc_vector.h \
         preconditioner.h \
         raw_accessor.h \
@@ -285,7 +288,6 @@ BUILT_SOURCES = \
         quadrature_grid.h \
         quadrature_jacobi.h \
         quadrature_monomial.h \
-        quadrature_rules.h \
         quadrature_simpson.h \
         quadrature_trap.h \
         rb_assembly_expansion.h \
@@ -329,7 +331,6 @@ BUILT_SOURCES = \
         euler_solver.h \
         first_order_unsteady_solver.h \
         laspack_linear_solver.h \
-        linear.h \
         linear_solver.h \
         memory_solution_history.h \
         newmark_solver.h \
@@ -347,7 +348,7 @@ BUILT_SOURCES = \
         slepc_eigen_solver.h \
         slepc_macro.h \
         solution_history.h \
-        solver.h \
+        solver_configuration.h \
         steady_solver.h \
         tao_optimization_solver.h \
         time_solver.h \
@@ -389,6 +390,7 @@ BUILT_SOURCES = \
         error_vector.h \
         hashword.h \
         ignore_warnings.h \
+        libmesh_nullptr.h \
         location_maps.h \
         mapvector.h \
         null_output_iterator.h \
@@ -403,6 +405,7 @@ BUILT_SOURCES = \
         point_locator_tree.h \
         pool_allocator.h \
         restore_warnings.h \
+        safe_bool.h \
         statistics.h \
         string_to_enum.h \
         timestamp.h \
@@ -846,13 +849,13 @@ elem.h: $(top_srcdir)/include/geom/elem.h
 elem_cutter.h: $(top_srcdir)/include/geom/elem_cutter.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+elem_hash.h: $(top_srcdir)/include/geom/elem_hash.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 elem_quality.h: $(top_srcdir)/include/geom/elem_quality.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 elem_range.h: $(top_srcdir)/include/geom/elem_range.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
-elem_type.h: $(top_srcdir)/include/geom/elem_type.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 face.h: $(top_srcdir)/include/geom/face.h
@@ -1170,7 +1173,13 @@ numeric_vector.h: $(top_srcdir)/include/numerics/numeric_vector.h
 parsed_fem_function.h: $(top_srcdir)/include/numerics/parsed_fem_function.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+parsed_fem_function_parameter.h: $(top_srcdir)/include/numerics/parsed_fem_function_parameter.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 parsed_function.h: $(top_srcdir)/include/numerics/parsed_function.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+parsed_function_parameter.h: $(top_srcdir)/include/numerics/parsed_function_parameter.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 petsc_macro.h: $(top_srcdir)/include/numerics/petsc_macro.h
@@ -1180,6 +1189,9 @@ petsc_matrix.h: $(top_srcdir)/include/numerics/petsc_matrix.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 petsc_preconditioner.h: $(top_srcdir)/include/numerics/petsc_preconditioner.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+petsc_solver_exception.h: $(top_srcdir)/include/numerics/petsc_solver_exception.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 petsc_vector.h: $(top_srcdir)/include/numerics/petsc_vector.h
@@ -1356,9 +1368,6 @@ quadrature_jacobi.h: $(top_srcdir)/include/quadrature/quadrature_jacobi.h
 quadrature_monomial.h: $(top_srcdir)/include/quadrature/quadrature_monomial.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
-quadrature_rules.h: $(top_srcdir)/include/quadrature/quadrature_rules.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
 quadrature_simpson.h: $(top_srcdir)/include/quadrature/quadrature_simpson.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1488,9 +1497,6 @@ first_order_unsteady_solver.h: $(top_srcdir)/include/solvers/first_order_unstead
 laspack_linear_solver.h: $(top_srcdir)/include/solvers/laspack_linear_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
-linear.h: $(top_srcdir)/include/solvers/linear.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
 linear_solver.h: $(top_srcdir)/include/solvers/linear_solver.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1542,7 +1548,7 @@ slepc_macro.h: $(top_srcdir)/include/solvers/slepc_macro.h
 solution_history.h: $(top_srcdir)/include/solvers/solution_history.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
-solver.h: $(top_srcdir)/include/solvers/solver.h
+solver_configuration.h: $(top_srcdir)/include/solvers/solver_configuration.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 steady_solver.h: $(top_srcdir)/include/solvers/steady_solver.h
@@ -1668,6 +1674,9 @@ hashword.h: $(top_srcdir)/include/utils/hashword.h
 ignore_warnings.h: $(top_srcdir)/include/utils/ignore_warnings.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
+libmesh_nullptr.h: $(top_srcdir)/include/utils/libmesh_nullptr.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
 location_maps.h: $(top_srcdir)/include/utils/location_maps.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -1708,6 +1717,9 @@ pool_allocator.h: $(top_srcdir)/include/utils/pool_allocator.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 restore_warnings.h: $(top_srcdir)/include/utils/restore_warnings.h
+	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
+
+safe_bool.h: $(top_srcdir)/include/utils/safe_bool.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 statistics.h: $(top_srcdir)/include/utils/statistics.h

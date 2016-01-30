@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@ using namespace libMesh;
 
 unsigned char dim = 2; // This gets overridden by most mesh formats
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   LibMeshInit init(argc, argv);
 
@@ -76,8 +76,8 @@ int main(int argc, char** argv)
   for (unsigned int i = 0; i != sysnames.size(); ++i)
     {
       const std::string sysname = sysnames[i];
-      const System &sys1 = es1.get_system(sysname);
-      const System &sys2 = es2.get_system(sysname);
+      const System & sys1 = es1.get_system(sysname);
+      const System & sys2 = es2.get_system(sysname);
 
       for (unsigned int j = 0; j != sys1.n_vars(); ++j)
         {

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -46,9 +46,9 @@ template <typename T> class TensorValue;
  * for a real-valued point in LIBMESH_DIM-space, or \p SpaceVector for a real
  * or complex-valued vector in LIBMESH_DIM-space.
  *
- * \author Benjamin S. Kirk, 2003.
+ * \author Benjamin S. Kirk
+ * \date 2003
  */
-
 template <typename T>
 class TypeVector
 {
@@ -90,13 +90,31 @@ protected:
               boostcopy::enable_if_c<ScalarTraits<Scalar3>::value,
               const Scalar3>::type z=0);
 
+
+  /**
+   * Constructor-from-scalar.  Sets higher dimensional entries to 0.
+   * Necessary because for some reason the constructor-from-scalars
+   * alone is insufficient to let the compiler figure out
+   * TypeVector<Complex> v = 0;
+   */
+  template <typename Scalar>
+  TypeVector (const Scalar x,
+              typename
+              boostcopy::enable_if_c<ScalarTraits<Scalar>::value,
+              const Scalar>::type * sfinae = libmesh_nullptr);
+
 public:
+
+  /**
+   * Helper typedef for C++98 generic programming
+   */
+  typedef T value_type;
 
   /**
    * Copy-constructor.
    */
   template <typename T2>
-  TypeVector (const TypeVector<T2>& p);
+  TypeVector (const TypeVector<T2> & p);
 
   /**
    * Destructor.
@@ -115,8 +133,8 @@ public:
   template <typename Scalar>
   typename boostcopy::enable_if_c<
     ScalarTraits<Scalar>::value,
-    TypeVector&>::type
-  operator = (const Scalar& p)
+    TypeVector &>::type
+  operator = (const Scalar & p)
   { libmesh_assert_equal_to (p, Scalar(0)); this->zero(); return *this; }
 
   /**
@@ -268,25 +286,27 @@ public:
    * @returns \p true iff two vectors occupy approximately the same
    * physical location in space, to within a relative tolerance of \p tol.
    */
-  bool relative_fuzzy_equals(const TypeVector<T>& rhs, Real tol = TOLERANCE) const;
+  bool relative_fuzzy_equals(const TypeVector<T> & rhs,
+                             Real tol = TOLERANCE) const;
 
   /**
    * @returns \p true iff two vectors occupy approximately the same
    * physical location in space, to within an absolute tolerance of \p tol.
    */
-  bool absolute_fuzzy_equals(const TypeVector<T>& rhs, Real tol = TOLERANCE) const;
+  bool absolute_fuzzy_equals(const TypeVector<T> & rhs,
+                             Real tol = TOLERANCE) const;
 
   /**
    * @returns \p true iff two vectors occupy approximately the same
    * physical location in space, to within an absolute tolerance of \p TOLERANCE.
    */
-  bool operator == (const TypeVector<T>& rhs) const;
+  bool operator == (const TypeVector<T> & rhs) const;
 
   /**
    * @returns \p true iff two vectors do not occupy approximately the same
    * physical location in space.
    */
-  bool operator != (const TypeVector<T>& rhs) const;
+  bool operator != (const TypeVector<T> & rhs) const;
 
   /**
    * @returns \p true if this vector is "less"
@@ -294,7 +314,7 @@ public:
    * Also used for choosing some arbitrary basis function
    * orientations
    */
-  bool operator < (const TypeVector<T>& rhs) const;
+  bool operator < (const TypeVector<T> & rhs) const;
 
   /**
    * @returns \p true if this vector is "less"
@@ -302,7 +322,7 @@ public:
    * Also used for choosing some arbitrary constraint
    * equation directions
    */
-  bool operator <= (const TypeVector<T>& rhs) const;
+  bool operator <= (const TypeVector<T> & rhs) const;
 
   /**
    * @returns \p true if this vector is "greater"
@@ -310,7 +330,7 @@ public:
    * Also used for choosing some arbitrary basis function
    * orientations
    */
-  bool operator > (const TypeVector<T>& rhs) const;
+  bool operator > (const TypeVector<T> & rhs) const;
 
   /**
    * @returns \p true if this vector is "greater"
@@ -318,19 +338,19 @@ public:
    * Also used for choosing some arbitrary constraint
    * equation directions
    */
-  bool operator >= (const TypeVector<T>& rhs) const;
+  bool operator >= (const TypeVector<T> & rhs) const;
 
   /**
    * Formatted print, by default to \p libMesh::out.
    */
-  void print(std::ostream& os = libMesh::out) const;
+  void print(std::ostream & os = libMesh::out) const;
 
   /**
    * Formatted print as above but allows you to do
    * Point p(1,2,3);
    * std::cout << p << std::endl;
    */
-  friend std::ostream& operator << (std::ostream& os, const TypeVector<T>& t)
+  friend std::ostream & operator << (std::ostream & os, const TypeVector<T> & t)
   {
     t.print(os);
     return os;
@@ -341,7 +361,7 @@ public:
    * of the vector separated by spaces.  Optionally prints a newline,
    * which it does by default.
    */
-  void write_unformatted (std::ostream &out, const bool newline = true) const;
+  void write_unformatted (std::ostream & out, const bool newline = true) const;
 
 protected:
 
@@ -428,9 +448,30 @@ TypeVector<T>::TypeVector (typename
 
 
 template <typename T>
+template <typename Scalar>
+inline
+TypeVector<T>::TypeVector (const Scalar x,
+                           typename
+                           boostcopy::enable_if_c<ScalarTraits<Scalar>::value,
+                           const Scalar>::type * /*sfinae*/)
+{
+  _coords[0] = x;
+
+#if LIBMESH_DIM > 1
+  _coords[1] = 0;
+#endif
+
+#if LIBMESH_DIM > 2
+  _coords[2] = 0;
+#endif
+}
+
+
+
+template <typename T>
 template <typename T2>
 inline
-TypeVector<T>::TypeVector (const TypeVector<T2> &p)
+TypeVector<T>::TypeVector (const TypeVector<T2> & p)
 {
   // copy the nodes from vector p to me
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
@@ -450,7 +491,7 @@ TypeVector<T>::~TypeVector ()
 template <typename T>
 template <typename T2>
 inline
-void TypeVector<T>::assign (const TypeVector<T2> &p)
+void TypeVector<T>::assign (const TypeVector<T2> & p)
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     _coords[i] = p._coords[i];
@@ -484,7 +525,7 @@ template <typename T>
 template <typename T2>
 inline
 TypeVector<typename CompareTypes<T, T2>::supertype>
-TypeVector<T>::operator + (const TypeVector<T2> &p) const
+TypeVector<T>::operator + (const TypeVector<T2> & p) const
 {
   typedef typename CompareTypes<T, T2>::supertype TS;
 #if LIBMESH_DIM == 1
@@ -509,7 +550,7 @@ TypeVector<T>::operator + (const TypeVector<T2> &p) const
 template <typename T>
 template <typename T2>
 inline
-const TypeVector<T> & TypeVector<T>::operator += (const TypeVector<T2> &p)
+const TypeVector<T> & TypeVector<T>::operator += (const TypeVector<T2> & p)
 {
   this->add (p);
 
@@ -521,7 +562,7 @@ const TypeVector<T> & TypeVector<T>::operator += (const TypeVector<T2> &p)
 template <typename T>
 template <typename T2>
 inline
-void TypeVector<T>::add (const TypeVector<T2> &p)
+void TypeVector<T>::add (const TypeVector<T2> & p)
 {
 #if LIBMESH_DIM == 1
   _coords[0] += p._coords[0];
@@ -545,7 +586,7 @@ void TypeVector<T>::add (const TypeVector<T2> &p)
 template <typename T>
 template <typename T2>
 inline
-void TypeVector<T>::add_scaled (const TypeVector<T2> &p, const T factor)
+void TypeVector<T>::add_scaled (const TypeVector<T2> & p, const T factor)
 {
 #if LIBMESH_DIM == 1
   _coords[0] += factor*p(0);
@@ -570,7 +611,7 @@ template <typename T>
 template <typename T2>
 inline
 TypeVector<typename CompareTypes<T, T2>::supertype>
-TypeVector<T>::operator - (const TypeVector<T2> &p) const
+TypeVector<T>::operator - (const TypeVector<T2> & p) const
 {
   typedef typename CompareTypes<T, T2>::supertype TS;
 
@@ -596,7 +637,7 @@ TypeVector<T>::operator - (const TypeVector<T2> &p) const
 template <typename T>
 template <typename T2>
 inline
-const TypeVector<T> & TypeVector<T>::operator -= (const TypeVector<T2> &p)
+const TypeVector<T> & TypeVector<T>::operator -= (const TypeVector<T2> & p)
 {
   this->subtract (p);
 
@@ -608,7 +649,7 @@ const TypeVector<T> & TypeVector<T>::operator -= (const TypeVector<T2> &p)
 template <typename T>
 template <typename T2>
 inline
-void TypeVector<T>::subtract (const TypeVector<T2>& p)
+void TypeVector<T>::subtract (const TypeVector<T2> & p)
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     _coords[i] -= p._coords[i];
@@ -619,7 +660,7 @@ void TypeVector<T>::subtract (const TypeVector<T2>& p)
 template <typename T>
 template <typename T2>
 inline
-void TypeVector<T>::subtract_scaled (const TypeVector<T2> &p, const T factor)
+void TypeVector<T>::subtract_scaled (const TypeVector<T2> & p, const T factor)
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     _coords[i] -= factor*p(i);
@@ -685,7 +726,7 @@ typename boostcopy::enable_if_c<
   ScalarTraits<Scalar>::value,
   TypeVector<typename CompareTypes<T, Scalar>::supertype> >::type
 operator * (const Scalar factor,
-            const TypeVector<T> &v)
+            const TypeVector<T> & v)
 {
   return v * factor;
 }
@@ -768,7 +809,7 @@ template <typename T>
 template <typename T2>
 inline
 typename CompareTypes<T, T2>::supertype
-TypeVector<T>::operator * (const TypeVector<T2> &p) const
+TypeVector<T>::operator * (const TypeVector<T2> & p) const
 {
 #if LIBMESH_DIM == 1
   return _coords[0]*p._coords[0];
@@ -790,7 +831,7 @@ template <typename T>
 template <typename T2>
 inline
 typename CompareTypes<T, T2>::supertype
-TypeVector<T>::contract(const TypeVector<T2> &p) const
+TypeVector<T>::contract(const TypeVector<T2> & p) const
 {
   return (*this)*(p);
 }
@@ -800,7 +841,7 @@ TypeVector<T>::contract(const TypeVector<T2> &p) const
 template <typename T>
 template <typename T2>
 TypeVector<typename CompareTypes<T, T2>::supertype>
-TypeVector<T>::cross(const TypeVector<T2>& p) const
+TypeVector<T>::cross(const TypeVector<T2> & p) const
 {
   typedef typename CompareTypes<T, T2>::supertype TS;
   libmesh_assert_equal_to (LIBMESH_DIM, 3);
@@ -859,7 +900,7 @@ Real TypeVector<T>::size_sq() const
 
 template <typename T>
 inline
-bool TypeVector<T>::absolute_fuzzy_equals(const TypeVector<T>& rhs, Real tol) const
+bool TypeVector<T>::absolute_fuzzy_equals(const TypeVector<T> & rhs, Real tol) const
 {
 #if LIBMESH_DIM == 1
   return (std::abs(_coords[0] - rhs._coords[0])
@@ -884,7 +925,7 @@ bool TypeVector<T>::absolute_fuzzy_equals(const TypeVector<T>& rhs, Real tol) co
 
 template <typename T>
 inline
-bool TypeVector<T>::relative_fuzzy_equals(const TypeVector<T>& rhs, Real tol) const
+bool TypeVector<T>::relative_fuzzy_equals(const TypeVector<T> & rhs, Real tol) const
 {
 #if LIBMESH_DIM == 1
   return this->absolute_fuzzy_equals(rhs, tol *
@@ -909,7 +950,7 @@ bool TypeVector<T>::relative_fuzzy_equals(const TypeVector<T>& rhs, Real tol) co
 
 template <typename T>
 inline
-bool TypeVector<T>::operator == (const TypeVector<T>& rhs) const
+bool TypeVector<T>::operator == (const TypeVector<T> & rhs) const
 {
 #if LIBMESH_DIM == 1
   return (_coords[0] == rhs._coords[0]);
@@ -929,9 +970,9 @@ bool TypeVector<T>::operator == (const TypeVector<T>& rhs) const
 
 
 
-template <>
+template <typename T>
 inline
-bool TypeVector<Real>::operator != (const TypeVector<Real>& rhs) const
+bool TypeVector<T>::operator != (const TypeVector<T> & rhs) const
 {
   return (!(*this == rhs));
 }

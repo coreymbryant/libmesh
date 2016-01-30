@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,17 +33,13 @@
 namespace libMesh
 {
 
-
-
 /**
  * This is the base class for enabling reference counting.  It
  * should not be used by the user, thus it has a private constructor.
  *
- * \author Benjamin S. Kirk, 2002-2007
+ * \author Benjamin S. Kirk
+ * \date 2002-2007
  */
-
-// ------------------------------------------------------------
-// ReferenceCounter class definition
 class ReferenceCounter
 {
 protected:
@@ -70,7 +66,7 @@ public:
   /**
    * Prints the reference information, by default to \p libMesh::out.
    */
-  static void print_info (std::ostream& out = libMesh::out);
+  static void print_info (std::ostream & out = libMesh::out);
 
   /**
    * Prints the number of outstanding (created, but not yet
@@ -96,14 +92,14 @@ protected:
    * the constructor of any derived class that will be
    * reference counted.
    */
-  void increment_constructor_count (const std::string& name);
+  void increment_constructor_count (const std::string & name);
 
   /**
    * Increments the destruction counter. Should be called in
    * the destructor of any derived class that will be
    * reference counted.
    */
-  void increment_destructor_count (const std::string& name);
+  void increment_destructor_count (const std::string & name);
 
   /**
    * Data structure to log the information.  The log is
@@ -160,10 +156,10 @@ inline ReferenceCounter::~ReferenceCounter()
 
 #if defined(LIBMESH_ENABLE_REFERENCE_COUNTING) && defined(DEBUG)
 inline
-void ReferenceCounter::increment_constructor_count (const std::string& name)
+void ReferenceCounter::increment_constructor_count (const std::string & name)
 {
   Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-  std::pair<unsigned int, unsigned int>& p = _counts[name];
+  std::pair<unsigned int, unsigned int> & p = _counts[name];
 
   p.first++;
 }
@@ -173,10 +169,10 @@ void ReferenceCounter::increment_constructor_count (const std::string& name)
 
 #if defined(LIBMESH_ENABLE_REFERENCE_COUNTING) && defined(DEBUG)
 inline
-void ReferenceCounter::increment_destructor_count (const std::string& name)
+void ReferenceCounter::increment_destructor_count (const std::string & name)
 {
   Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
-  std::pair<unsigned int, unsigned int>& p = _counts[name];
+  std::pair<unsigned int, unsigned int> & p = _counts[name];
 
   p.second++;
 }

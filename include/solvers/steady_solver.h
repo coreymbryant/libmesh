@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -41,11 +41,9 @@ class TimeSolver;
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2006
+ * \author Roy H. Stogner
+ * \date 2006
  */
-
-// ------------------------------------------------------------
-// Solver class definition
 class SteadySolver : public TimeSolver
 {
 public:
@@ -64,7 +62,7 @@ public:
    * to be solved.
    */
   explicit
-  SteadySolver (sys_type& s) : Parent(s) {}
+  SteadySolver (sys_type & s) : Parent(s) {}
 
   /**
    * Destructor.
@@ -83,7 +81,7 @@ public:
    * to build a full residual/jacobian on an element.
    */
   virtual bool element_residual (bool request_jacobian,
-                                 DiffContext &);
+                                 DiffContext &) libmesh_override;
 
   /**
    * This method uses the DifferentiablePhysics'
@@ -91,7 +89,7 @@ public:
    * to build a full residual/jacobian on an element's side.
    */
   virtual bool side_residual (bool request_jacobian,
-                              DiffContext &);
+                              DiffContext &) libmesh_override;
 
   /**
    * This method uses the DifferentiablePhysics'
@@ -99,19 +97,19 @@ public:
    * to build a full residual/jacobian for non-local terms.
    */
   virtual bool nonlocal_residual (bool request_jacobian,
-                                  DiffContext &);
+                                  DiffContext &) libmesh_override;
 
   /**
    * Nominally computes the size of the difference between
    * successive solution iterates ||u^{n+1} - u^{n}|| in some norm,
    * but for this class just returns 0.
    */
-  virtual Real du(const SystemNorm&) const { return 0; }
+  virtual Real du(const SystemNorm &) const libmesh_override { return 0; }
 
   /**
    * This is a steady-state solver.
    */
-  virtual bool is_steady() const { return true; }
+  virtual bool is_steady() const libmesh_override { return true; }
 
 protected:
 
@@ -120,7 +118,7 @@ protected:
    * residual methods.
    */
   virtual bool _general_residual (bool request_jacobian,
-                                  DiffContext&,
+                                  DiffContext &,
                                   ResFuncType time_deriv,
                                   ResFuncType constraint);
 };

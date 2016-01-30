@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -52,11 +52,9 @@ class SystemNorm;
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2006
+ * \author Roy H. Stogner
+ * \date 2006
  */
-
-// ------------------------------------------------------------
-// Solver class definition
 class TimeSolver : public ReferenceCountedObject<TimeSolver>
 {
 public:
@@ -70,7 +68,7 @@ public:
    * to be solved.
    */
   explicit
-  TimeSolver (sys_type& s);
+  TimeSolver (sys_type & s);
 
   /**
    * Destructor.
@@ -180,12 +178,12 @@ public:
   /**
    * An implicit linear or nonlinear solver to use at each timestep.
    */
-  virtual UniquePtr<DiffSolver> &diff_solver() { return _diff_solver; }
+  virtual UniquePtr<DiffSolver> & diff_solver() { return _diff_solver; }
 
   /**
    * An implicit linear solver to use for adjoint and sensitivity problems.
    */
-  virtual UniquePtr<LinearSolver<Number> > &linear_solver() { return _linear_solver; }
+  virtual UniquePtr<LinearSolver<Number> > & linear_solver() { return _linear_solver; }
 
   /**
    * Print extra debugging information if quiet ==  false.
@@ -201,7 +199,7 @@ public:
    * then you'll get a result of zero since old_nonlinear_solution
    * is set equal to nonlinear_solution in this function.
    */
-  virtual Real du(const SystemNorm& norm) const = 0;
+  virtual Real du(const SystemNorm & norm) const = 0;
 
   /**
    * Is this effectively a steady-state solver?
@@ -255,7 +253,7 @@ protected:
   /**
    * A reference to the system we are solving.
    */
-  sys_type& _system;
+  sys_type & _system;
 
   /**
    * An UniquePtr to a SolutionHistory object. Default is

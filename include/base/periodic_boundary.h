@@ -1,6 +1,6 @@
 
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -53,26 +53,26 @@ public:
   /**
    * Copy constructor, with option for the copy to represent an inverse transformation.
    */
-  PeriodicBoundary(const PeriodicBoundary& o, TransformationType t = FORWARD);
+  PeriodicBoundary(const PeriodicBoundary & o, TransformationType t = FORWARD);
 
   /**
    * Constructor taking a reference to the translation vector.
    */
-  PeriodicBoundary(const RealVectorValue& vector);
+  PeriodicBoundary(const RealVectorValue & vector);
 
   /**
    * This function should be overloaded by derived classes to
    * define how one finds corresponding nodes on the periodic
    * boundary pair.
    */
-  virtual Point get_corresponding_pos(const Point& pt) const;
+  virtual Point get_corresponding_pos(const Point & pt) const libmesh_override;
 
   /**
    * If we want the DofMap to be able to make copies of references and
    * store them in the underlying map, this class must be clone'able,
    * i.e. have a kind of virtual construction mechanism.
    */
-  virtual UniquePtr<PeriodicBoundaryBase> clone(TransformationType t = FORWARD) const;
+  virtual UniquePtr<PeriodicBoundaryBase> clone(TransformationType t = FORWARD) const libmesh_override;
 
 protected:
   // One of these days we'll support rotated boundaries

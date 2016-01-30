@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -60,95 +60,108 @@ public:
    * Constructor.  By default this element has no parent.
    */
   explicit
-  Quad9 (Elem* p=NULL) :
+  Quad9 (Elem * p=libmesh_nullptr) :
     Quad(Quad9::n_nodes(), p, _nodelinks_data) {}
 
   /**
    * @returns \p QUAD9
    */
-  ElemType type () const { return QUAD9; }
+  virtual ElemType type () const libmesh_override { return QUAD9; }
 
   /**
    * @returns 9
    */
-  unsigned int n_nodes() const { return 9; }
+  virtual unsigned int n_nodes() const libmesh_override { return 9; }
 
   /**
    * @returns 4
    */
-  unsigned int n_sub_elem() const { return 4; }
+  virtual unsigned int n_sub_elem() const libmesh_override { return 4; }
 
   /**
    * @returns true iff the specified (local) node number is a vertex.
    */
-  virtual bool is_vertex(const unsigned int i) const;
+  virtual bool is_vertex(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is an edge.
    */
-  virtual bool is_edge(const unsigned int i) const;
+  virtual bool is_edge(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is a face.
    */
-  virtual bool is_face(const unsigned int i) const;
+  virtual bool is_face(const unsigned int i) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified side
    */
   virtual bool is_node_on_side(const unsigned int n,
-                               const unsigned int s) const;
+                               const unsigned int s) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified edge (== is_node_on_side in 2D)
    */
   virtual bool is_node_on_edge(const unsigned int n,
-                               const unsigned int e) const
+                               const unsigned int e) const libmesh_override
   { return this->is_node_on_side(n,e); }
 
   /*
    * @returns true iff the element map is definitely affine within
    * numerical tolerances
    */
-  virtual bool has_affine_map () const;
+  virtual bool has_affine_map () const libmesh_override;
 
   /**
    * @returns SECOND
    */
-  Order default_order() const { return SECOND; }
+  virtual Order default_order() const libmesh_override { return SECOND; }
+
+  /**
+   * Don't hide Elem::key() defined in the base class.
+   */
+  using Elem::key;
 
   /**
    * @returns an id associated with the \p s side of this element.
-   * The id is not necessariy unique, but should be close.  This is
+   * The id is not necessarily unique, but should be close.  This is
    * particularly useful in the \p MeshBase::find_neighbors() routine.
    *
    * We reimplemenet this method here for the \p Quad9 since we can
    * use the center node of each edge to provide a perfect (unique)
    * key.
    */
-  dof_id_type key (const unsigned int s) const;
+  virtual dof_id_type key (const unsigned int s) const libmesh_override;
 
-  UniquePtr<Elem> build_side (const unsigned int i,
-                              bool proxy) const;
+  /**
+   * Compute a unique key for this element which is suitable for
+   * hashing (not necessarily unique, but close).  The key is based
+   * solely on the mid-face node's global id, to be consistent with 3D
+   * elements that have Quad9 faces (Hex27, Prism18, etc.).
+   */
+  virtual dof_id_type key () const libmesh_override;
+
+  virtual UniquePtr<Elem> build_side (const unsigned int i,
+                                      bool proxy) const libmesh_override;
 
   virtual void connectivity(const unsigned int sf,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const;
+                            std::vector<dof_id_type> & conn) const libmesh_override;
 
   /**
    * @returns 2 for edge nodes and 4 for the face node.
    */
-  unsigned int n_second_order_adjacent_vertices (const unsigned int n) const;
+  virtual unsigned int n_second_order_adjacent_vertices (const unsigned int n) const libmesh_override;
 
   /**
    * @returns the element-local number of the  \f$ v^{th} \f$ vertex
    * that defines the \f$ n^{th} \f$ second-order node.
    * Note that \p n is counted as depicted above, \f$ 4 \le n < 8 \f$.
    */
-  unsigned short int second_order_adjacent_vertex (const unsigned int n,
-                                                   const unsigned int v) const;
+  virtual unsigned short int second_order_adjacent_vertex (const unsigned int n,
+                                                           const unsigned int v) const libmesh_override;
 
   /**
    * @returns the child number \p c and element-local index \p v of the
@@ -160,7 +173,7 @@ public:
    * \p this->get_node(n)==this->child(c)->get_node(v)
    */
   virtual std::pair<unsigned short int, unsigned short int>
-  second_order_child_vertex (const unsigned int n) const;
+  second_order_child_vertex (const unsigned int n) const libmesh_override;
 
   /**
    * This maps the \f$ j^{th} \f$ node of the \f$ i^{th} \f$ side to
@@ -168,13 +181,18 @@ public:
    */
   static const unsigned int side_nodes_map[4][3];
 
+  /**
+   * An optimized method for approximating the area of a
+   * QUAD9 using quadrature.
+   */
+  virtual Real volume () const libmesh_override;
 
 protected:
 
   /**
    * Data for links to nodes
    */
-  Node* _nodelinks_data[9];
+  Node * _nodelinks_data[9];
 
 
 
@@ -183,9 +201,9 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int i,
-                          const unsigned int j,
-                          const unsigned int k) const
+  virtual float embedding_matrix (const unsigned int i,
+                                  const unsigned int j,
+                                  const unsigned int k) const libmesh_override
   { return _embedding_matrix[i][j][k]; }
 
   /**

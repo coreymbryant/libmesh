@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ namespace Utility
 // 04 February 2010 01:56:43 PM
 std::string get_timestamp();
 
-inline void print_timestamp (std::ostream& target = std::cout)
+inline void print_timestamp (std::ostream & target = std::cout)
 {
   target << get_timestamp() << std::endl;
 }

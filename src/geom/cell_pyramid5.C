@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -131,59 +131,21 @@ UniquePtr<Elem> Pyramid5::build_side (const unsigned int i,
   else
     {
       // Create NULL pointer to be initialized, returned later.
-      Elem* face = NULL;
+      Elem * face = libmesh_nullptr;
 
       switch (i)
         {
-        case 0:  // triangular face 1
+        case 0: // triangular face 1
+        case 1: // triangular face 2
+        case 2: // triangular face 3
+        case 3: // triangular face 4
           {
             face = new Tri3;
-
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(1);
-            face->set_node(2) = this->get_node(4);
-
             break;
           }
-        case 1:  // triangular face 2
-          {
-            face = new Tri3;
-
-            face->set_node(0) = this->get_node(1);
-            face->set_node(1) = this->get_node(2);
-            face->set_node(2) = this->get_node(4);
-
-            break;
-          }
-        case 2:  // triangular face 3
-          {
-            face = new Tri3;
-
-            face->set_node(0) = this->get_node(2);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(4);
-
-            break;
-          }
-        case 3:  // triangular face 4
-          {
-            face = new Tri3;
-
-            face->set_node(0) = this->get_node(3);
-            face->set_node(1) = this->get_node(0);
-            face->set_node(2) = this->get_node(4);
-
-            break;
-          }
-        case 4:  // the quad face at z=0
+        case 4: // the quad face at z=0
           {
             face = new Quad4;
-
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(2);
-            face->set_node(3) = this->get_node(1);
-
             break;
           }
         default:
@@ -191,6 +153,11 @@ UniquePtr<Elem> Pyramid5::build_side (const unsigned int i,
         }
 
       face->subdomain_id() = this->subdomain_id();
+
+      // Set the nodes
+      for (unsigned n=0; n<face->n_nodes(); ++n)
+        face->set_node(n) = this->get_node(Pyramid5::side_nodes_map[i][n]);
+
       return UniquePtr<Elem>(face);
     }
 
@@ -211,7 +178,7 @@ UniquePtr<Elem> Pyramid5::build_edge (const unsigned int i) const
 
 void Pyramid5::connectivity(const unsigned int libmesh_dbg_var(sc),
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const
+                            std::vector<dof_id_type> & conn) const
 {
   libmesh_assert(_nodes);
   libmesh_assert_less (sc, this->n_sub_elem());
@@ -255,11 +222,11 @@ Real Pyramid5::volume () const
   // The pyramid with a bilinear base has volume given by the
   // formula in: "Calculation of the Volume of a General Hexahedron
   // for Flow Predictions", AIAA Journal v.23, no.6, 1984, p.954-
-  Node* node0 = this->get_node(0);
-  Node* node1 = this->get_node(1);
-  Node* node2 = this->get_node(2);
-  Node* node3 = this->get_node(3);
-  Node* node4 = this->get_node(4);
+  Node * node0 = this->get_node(0);
+  Node * node1 = this->get_node(1);
+  Node * node2 = this->get_node(2);
+  Node * node3 = this->get_node(3);
+  Node * node4 = this->get_node(4);
 
   // Construct Various edge and diagonal vectors
   Point v40 ( *node0 - *node4 );

@@ -1,3 +1,22 @@
+// rbOOmit: An implementation of the Certified Reduced Basis method.
+// Copyright (C) 2009, 2010, 2015 David J. Knezevic
+
+// This file is part of rbOOmit.
+
+// rbOOmit is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+
+// rbOOmit is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 #include "libmesh/libmesh_config.h"
 #if defined(LIBMESH_HAVE_CAPNPROTO)
 
@@ -8,6 +27,9 @@
 #include "libmesh/mesh.h"
 #include "libmesh/rb_data_deserialization.h"
 #include "libmesh/transient_rb_theta_expansion.h"
+#include "libmesh/transient_rb_evaluation.h"
+#include "libmesh/rb_eim_evaluation.h"
+#include "libmesh/rb_scm_evaluation.h"
 
 // Cap'n'Proto includes
 #include "capnp/serialize.h"
@@ -29,7 +51,7 @@ namespace
  * the libMesh config options.
  */
 template <typename T>
-Number load_scalar_value(const T& value)
+Number load_scalar_value(const T & value)
 {
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
   return Number(value.getReal(), value.getImag());
@@ -45,7 +67,7 @@ namespace RBDataDeserialization
 
 // ---- RBEvaluationDeserialization (BEGIN) ----
 
-RBEvaluationDeserialization::RBEvaluationDeserialization(RBEvaluation& rb_eval)
+RBEvaluationDeserialization::RBEvaluationDeserialization(RBEvaluation & rb_eval)
   :
   _rb_eval(rb_eval)
 {}
@@ -53,7 +75,7 @@ RBEvaluationDeserialization::RBEvaluationDeserialization(RBEvaluation& rb_eval)
 RBEvaluationDeserialization::~RBEvaluationDeserialization()
 {}
 
-void RBEvaluationDeserialization::read_from_file(const std::string& path,
+void RBEvaluationDeserialization::read_from_file(const std::string & path,
                                                  bool read_error_bound_data)
 {
   START_LOG("read_from_file()", "RBEvaluationDeserialization");
@@ -87,14 +109,14 @@ void RBEvaluationDeserialization::read_from_file(const std::string& path,
 // ---- TransientRBEvaluationDeserialization (BEGIN) ----
 
 TransientRBEvaluationDeserialization::
-TransientRBEvaluationDeserialization(TransientRBEvaluation& trans_rb_eval) :
+TransientRBEvaluationDeserialization(TransientRBEvaluation & trans_rb_eval) :
   _trans_rb_eval(trans_rb_eval)
 {}
 
 TransientRBEvaluationDeserialization::~TransientRBEvaluationDeserialization()
 {}
 
-void TransientRBEvaluationDeserialization::read_from_file(const std::string& path,
+void TransientRBEvaluationDeserialization::read_from_file(const std::string & path,
                                                           bool read_error_bound_data)
 {
   START_LOG("read_from_file()", "TransientRBEvaluationDeserialization");
@@ -135,14 +157,14 @@ void TransientRBEvaluationDeserialization::read_from_file(const std::string& pat
 // ---- RBEIMEvaluationDeserialization (BEGIN) ----
 
 RBEIMEvaluationDeserialization::
-RBEIMEvaluationDeserialization(RBEIMEvaluation& rb_eim_eval) :
+RBEIMEvaluationDeserialization(RBEIMEvaluation & rb_eim_eval) :
   _rb_eim_eval(rb_eim_eval)
 {}
 
 RBEIMEvaluationDeserialization::~RBEIMEvaluationDeserialization()
 {}
 
-void RBEIMEvaluationDeserialization::read_from_file(const std::string& path)
+void RBEIMEvaluationDeserialization::read_from_file(const std::string & path)
 {
   START_LOG("read_from_file()", "RBEIMEvaluationDeserialization");
 
@@ -185,14 +207,14 @@ void RBEIMEvaluationDeserialization::read_from_file(const std::string& path)
 #if defined(LIBMESH_HAVE_SLEPC) && (LIBMESH_HAVE_GLPK)
 
 RBSCMEvaluationDeserialization::
-RBSCMEvaluationDeserialization(RBSCMEvaluation& rb_scm_eval) :
+RBSCMEvaluationDeserialization(RBSCMEvaluation & rb_scm_eval) :
   _rb_scm_eval(rb_scm_eval)
 {}
 
 RBSCMEvaluationDeserialization::~RBSCMEvaluationDeserialization()
 {}
 
-void RBSCMEvaluationDeserialization::read_from_file(const std::string& path)
+void RBSCMEvaluationDeserialization::read_from_file(const std::string & path)
 {
   START_LOG("read_from_file()", "RBSCMEvaluationDeserialization");
 
@@ -222,9 +244,9 @@ void RBSCMEvaluationDeserialization::read_from_file(const std::string& path)
 
 // ---- Helper functions for loading data from buffers (BEGIN) ----
 
-void load_parameter_ranges(RBParametrized& rb_evaluation,
-                           RBData::ParameterRanges::Reader& parameter_ranges,
-                           RBData::DiscreteParameterList::Reader& discrete_parameters_list)
+void load_parameter_ranges(RBParametrized & rb_evaluation,
+                           RBData::ParameterRanges::Reader & parameter_ranges,
+                           RBData::DiscreteParameterList::Reader & discrete_parameters_list)
 {
   // Continuous parameters
   RBParameters parameters_min;
@@ -268,8 +290,8 @@ void load_parameter_ranges(RBParametrized& rb_evaluation,
 }
 
 template <typename RBEvaluationReaderNumber>
-void load_rb_evaluation_data(RBEvaluation& rb_evaluation,
-                             RBEvaluationReaderNumber& rb_evaluation_reader,
+void load_rb_evaluation_data(RBEvaluation & rb_evaluation,
+                             RBEvaluationReaderNumber & rb_evaluation_reader,
                              bool read_error_bound_data)
 {
   // Set number of basis functions
@@ -287,7 +309,7 @@ void load_rb_evaluation_data(RBEvaluation& rb_evaluation,
                         parameter_ranges,
                         discrete_parameters_list);
 
-  const RBThetaExpansion& rb_theta_expansion = rb_evaluation.get_rb_theta_expansion();
+  const RBThetaExpansion & rb_theta_expansion = rb_evaluation.get_rb_theta_expansion();
 
   unsigned int n_F_terms = rb_theta_expansion.get_n_F_terms();
   unsigned int n_A_terms = rb_theta_expansion.get_n_A_terms();
@@ -458,9 +480,9 @@ void load_rb_evaluation_data(RBEvaluation& rb_evaluation,
 }
 
 template <typename RBEvaluationReaderNumber, typename TransRBEvaluationReaderNumber>
-void load_transient_rb_evaluation_data(TransientRBEvaluation& trans_rb_eval,
-                                       RBEvaluationReaderNumber& rb_eval_reader,
-                                       TransRBEvaluationReaderNumber& trans_rb_eval_reader,
+void load_transient_rb_evaluation_data(TransientRBEvaluation & trans_rb_eval,
+                                       RBEvaluationReaderNumber & rb_eval_reader,
+                                       TransRBEvaluationReaderNumber & trans_rb_eval_reader,
                                        bool read_error_bound_data)
 {
   load_rb_evaluation_data(trans_rb_eval,
@@ -476,8 +498,8 @@ void load_transient_rb_evaluation_data(TransientRBEvaluation& trans_rb_eval,
   unsigned int n_F_terms = trans_rb_eval.get_rb_theta_expansion().get_n_F_terms();
   unsigned int n_A_terms = trans_rb_eval.get_rb_theta_expansion().get_n_A_terms();
 
-  TransientRBThetaExpansion& trans_theta_expansion =
-    cast_ref<TransientRBThetaExpansion&>(trans_rb_eval.get_rb_theta_expansion());
+  TransientRBThetaExpansion & trans_theta_expansion =
+    cast_ref<TransientRBThetaExpansion &>(trans_rb_eval.get_rb_theta_expansion());
   unsigned int n_M_terms = trans_theta_expansion.get_n_M_terms();
 
   // L2 matrix
@@ -610,9 +632,9 @@ void load_transient_rb_evaluation_data(TransientRBEvaluation& trans_rb_eval,
 }
 
 template <typename RBEvaluationReaderNumber, typename RBEIMEvaluationReaderNumber>
-void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_evaluation,
-                                 RBEvaluationReaderNumber& rb_evaluation_reader,
-                                 RBEIMEvaluationReaderNumber& rb_eim_evaluation_reader)
+void load_rb_eim_evaluation_data(RBEIMEvaluation & rb_eim_evaluation,
+                                 RBEvaluationReaderNumber & rb_evaluation_reader,
+                                 RBEIMEvaluationReaderNumber & rb_eim_evaluation_reader)
 {
   // We use read_error_bound_data=false here, since the RBEvaluation error bound data
   // is not relevant to EIM.
@@ -691,7 +713,7 @@ void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_evaluation,
   // Interpolation elements (including the "extra one")
   {
     libMesh::dof_id_type elem_id = 0;
-    libMesh::SerialMesh& interpolation_points_mesh =
+    libMesh::SerialMesh & interpolation_points_mesh =
       rb_eim_evaluation.get_interpolation_points_mesh();
     interpolation_points_mesh.clear();
 
@@ -711,7 +733,7 @@ void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_evaluation,
         libMesh::ElemType elem_type =
           libMesh::Utility::string_to_enum<libMesh::ElemType>(elem_type_name);
 
-        libMesh::Elem* elem = libMesh::Elem::build(elem_type).release();
+        libMesh::Elem * elem = libMesh::Elem::build(elem_type).release();
         elem->set_id(elem_id++);
         load_elem_into_mesh(mesh_elem_reader, elem, interpolation_points_mesh);
 
@@ -725,7 +747,7 @@ void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_evaluation,
     libMesh::ElemType elem_type =
       libMesh::Utility::string_to_enum<libMesh::ElemType>(elem_type_name);
 
-    libMesh::Elem* elem = libMesh::Elem::build(elem_type).release();
+    libMesh::Elem * elem = libMesh::Elem::build(elem_type).release();
     elem->set_id(elem_id++);
     load_elem_into_mesh(extra_interpolation_point_elem_reader,
                         elem,
@@ -736,8 +758,8 @@ void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_evaluation,
 }
 
 #if defined(LIBMESH_HAVE_SLEPC) && (LIBMESH_HAVE_GLPK)
-void load_rb_scm_evaluation_data(RBSCMEvaluation& rb_scm_eval,
-                                 RBData::RBSCMEvaluation::Reader& rb_scm_evaluation_reader)
+void load_rb_scm_evaluation_data(RBSCMEvaluation & rb_scm_eval,
+                                 RBData::RBSCMEvaluation::Reader & rb_scm_evaluation_reader)
 {
   auto parameter_ranges =
     rb_scm_evaluation_reader.getParameterRanges();
@@ -827,7 +849,7 @@ void load_rb_scm_evaluation_data(RBSCMEvaluation& rb_scm_eval,
 
 
 
-void load_point(RBData::Point3D::Reader point_reader, Point& point)
+void load_point(RBData::Point3D::Reader point_reader, Point & point)
 {
   point(0) = point_reader.getX();
 
@@ -840,8 +862,8 @@ void load_point(RBData::Point3D::Reader point_reader, Point& point)
 
 
 void load_elem_into_mesh(RBData::MeshElem::Reader mesh_elem_reader,
-                         libMesh::Elem* elem,
-                         libMesh::SerialMesh& mesh)
+                         libMesh::Elem * elem,
+                         libMesh::SerialMesh & mesh)
 {
   auto mesh_elem_point_list = mesh_elem_reader.getPoints();
   unsigned int n_points = mesh_elem_point_list.size();
@@ -851,9 +873,9 @@ void load_elem_into_mesh(RBData::MeshElem::Reader mesh_elem_reader,
 
   for(unsigned int i=0; i < n_points; ++i)
     {
-      libMesh::Node* node = new libMesh::Node(mesh_elem_point_list[i].getX(),
-                                              mesh_elem_point_list[i].getY(),
-                                              mesh_elem_point_list[i].getZ());
+      libMesh::Node * node = new libMesh::Node(mesh_elem_point_list[i].getX(),
+                                               mesh_elem_point_list[i].getY(),
+                                               mesh_elem_point_list[i].getZ());
 
       mesh.add_node(node);
 

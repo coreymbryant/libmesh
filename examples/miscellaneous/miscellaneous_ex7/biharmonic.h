@@ -1,9 +1,10 @@
-#ifndef __biharmonic_h__
-#define __biharmonic_h__
+#ifndef BIHARMONIC_H
+#define BIHARMONIC_H
 
 #include "libmesh/equation_systems.h"
 #include "libmesh/serial_mesh.h"
 #include "libmesh/exodusII_io.h"
+#include "libmesh/mesh_refinement.h"
 
 // Bring in bits from the libMesh namespace.
 // Just the bits we're using, since this is a header.
@@ -56,8 +57,8 @@ public:
    * Static creation/destruction routines.  FIXME - this looks like
    * object-oriented C, can we get rid of it?
    */
-  static void Create(Biharmonic** b, const libMesh::Parallel::Communicator &comm);
-  static void Destroy(Biharmonic** b);
+  static void Create(Biharmonic ** b, const libMesh::Parallel::Communicator & comm);
+  static void Destroy(Biharmonic ** b);
 
 
   /**
@@ -67,7 +68,7 @@ public:
    * We recommend that this be used through the factory Create function, which allocates
    * the mesh. In that case don't forget to call Destroy at the end, to free the mesh up.
    */
-  Biharmonic(UnstructuredMesh* m);
+  Biharmonic(UnstructuredMesh * m);
 
 
   /**
@@ -88,8 +89,8 @@ public:
   // Public interface functions
   void viewParameters();
   void init();
-  void step(const Real& dt = -1.0);
-  void output(int timestep, const Real& t, Real& o_t, bool force = false);
+  void step(const Real & dt = -1.0);
+  void output(int timestep, const Real & t, Real & o_t, bool force = false);
   void run();
 
 private:
@@ -107,15 +108,15 @@ private:
   Real _cnWeight;
   //
   std::string  _ofile_base, _ofile;
-  ExodusII_IO* _exio;
+  ExodusII_IO * _exio;
   Real    _o_dt;
   int     _o_count;
   //
   friend class JR;
   class JR;       // forward
-  UnstructuredMesh*                       _mesh;
-  MeshRefinement*                         _meshRefinement;
-  JR*                                     _jr;
+  UnstructuredMesh * _mesh;
+  MeshRefinement * _meshRefinement;
+  JR * _jr;
 };
 
 
@@ -124,4 +125,4 @@ private:
 
 
 
-#endif // __biharmonic_h__
+#endif // BIHARMONIC_H

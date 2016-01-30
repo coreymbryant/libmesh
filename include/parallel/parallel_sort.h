@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -56,8 +56,8 @@ public:
    * a Sort object takes O(nlogn) time,
    * where n is the length of the vector.
    */
-  Sort (const Parallel::Communicator &comm,
-        std::vector<KeyType>& d);
+  Sort (const Parallel::Communicator & comm,
+        std::vector<KeyType> & d);
 
 
   /**
@@ -73,7 +73,7 @@ public:
    * us to do things like check if sorting was successful
    * by printing _my_bin.
    */
-  const std::vector<KeyType>& bin();
+  const std::vector<KeyType> & bin();
 
 private:
 
@@ -97,7 +97,7 @@ private:
    * be sorted (in parallel) across all
    * processors.
    */
-  std::vector<KeyType>& _data;
+  std::vector<KeyType> & _data;
 
   /**
    * Vector which holds the size of each

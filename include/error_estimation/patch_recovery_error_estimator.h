@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -41,8 +41,9 @@ class Elem;
 /**
  * This class implements the Patch Recovery error indicator.
  *
- *
- * @author Varis Carey, Benjamin S. Kirk, 2004.
+ * \author Varis Carey
+ * \author Benjamin S. Kirk
+ * \date 2004
  */
 class PatchRecoveryErrorEstimator : public ErrorEstimator
 {
@@ -72,10 +73,10 @@ public:
    * The estimated error is output in the vector
    * \p error_per_cell
    */
-  virtual void estimate_error (const System& system,
-                               ErrorVector& error_per_cell,
-                               const NumericVector<Number>* solution_vector = NULL,
-                               bool estimate_parent_error = false);
+  virtual void estimate_error (const System & system,
+                               ErrorVector & error_per_cell,
+                               const NumericVector<Number> * solution_vector = libmesh_nullptr,
+                               bool estimate_parent_error = false) libmesh_override;
 
   /**
    * The PatchErrorEstimator will build patches of at least this many
@@ -91,9 +92,9 @@ public:
    */
   Patch::PMF patch_growth_strategy;
 
-  void set_patch_reuse (bool );
+  void set_patch_reuse (bool);
 
-  virtual ErrorEstimatorType type() const
+  virtual ErrorEstimatorType type() const libmesh_override
   { return PATCH_RECOVERY;}
 
 protected:
@@ -107,7 +108,7 @@ protected:
                                     const Point p,
                                     const unsigned int matsize);
 
-  bool patch_reuse ;
+  bool patch_reuse;
 
 private:
 
@@ -118,15 +119,15 @@ private:
   class EstimateError
   {
   public:
-    EstimateError (const System& sys,
-                   const PatchRecoveryErrorEstimator &ee,
-                   ErrorVector& epc) :
+    EstimateError (const System & sys,
+                   const PatchRecoveryErrorEstimator & ee,
+                   ErrorVector & epc) :
       system(sys),
       error_estimator(ee),
       error_per_cell(epc)
     {}
 
-    void operator()(const ConstElemRange &range) const;
+    void operator()(const ConstElemRange & range) const;
 
     /**
      * Function to set the boolean patch_reuse in case the user
@@ -135,9 +136,9 @@ private:
 
   private:
 
-    const System &system;
-    const PatchRecoveryErrorEstimator &error_estimator;
-    ErrorVector &error_per_cell;
+    const System & system;
+    const PatchRecoveryErrorEstimator & error_estimator;
+    ErrorVector & error_per_cell;
   };
 
   friend class EstimateError;

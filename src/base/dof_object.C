@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -39,10 +39,10 @@ const processor_id_type DofObject::invalid_processor_id;
 // ------------------------------------------------------------
 // DofObject class members
 // Copy Constructor
-DofObject::DofObject (const DofObject& dof_obj) :
+DofObject::DofObject (const DofObject & dof_obj) :
   ReferenceCountedObject<DofObject>(),
 #ifdef LIBMESH_ENABLE_AMR
-  old_dof_object (NULL),
+  old_dof_object (libmesh_nullptr),
 #endif
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
   _unique_id     (dof_obj._unique_id),
@@ -79,7 +79,7 @@ DofObject::DofObject (const DofObject& dof_obj) :
 
 
 // Deep-copying assignment operator
-DofObject& DofObject::operator= (const DofObject& dof_obj)
+DofObject & DofObject::operator= (const DofObject & dof_obj)
 {
   if (&dof_obj == this)
     return *this;
@@ -134,7 +134,7 @@ DofObject& DofObject::operator= (const DofObject& dof_obj)
 void  DofObject::clear_old_dof_object ()
 {
   delete this->old_dof_object;
-  this->old_dof_object = NULL;
+  this->old_dof_object = libmesh_nullptr;
 }
 
 
@@ -217,7 +217,7 @@ void DofObject::add_system()
 
 
 void DofObject::set_n_vars_per_group(const unsigned int s,
-                                     const std::vector<unsigned int> &nvpg)
+                                     const std::vector<unsigned int> & nvpg)
 {
 
   libmesh_assert_less (s, this->n_systems());
@@ -423,7 +423,7 @@ void DofObject::set_dof_number(const unsigned int s,
 
   libmesh_assert_less ((start_idx_sys + 2*vg + 1), _idx_buf.size());
 
-  dof_id_type &base_idx = _idx_buf[start_idx_sys + 2*vg + 1];
+  dof_id_type & base_idx = _idx_buf[start_idx_sys + 2*vg + 1];
 
   // We intend to change all dof numbers together or not at all
   if (comp || vig)
@@ -452,7 +452,7 @@ unsigned int DofObject::packed_indexing_size() const
   return
     cast_int<unsigned int> (
 #ifdef LIBMESH_ENABLE_AMR
-                            ((old_dof_object == NULL) ? 0 : old_dof_object->packed_indexing_size()) + 2 +
+                            ((old_dof_object == libmesh_nullptr) ? 0 : old_dof_object->packed_indexing_size()) + 2 +
 #else
                             1 +
 #endif
@@ -462,8 +462,8 @@ unsigned int DofObject::packed_indexing_size() const
 
 
 // FIXME: it'll be tricky getting this to work with 64-bit dof_id_type
-unsigned int DofObject::unpackable_indexing_size
-(std::vector<largest_id_type>::const_iterator begin)
+unsigned int
+DofObject::unpackable_indexing_size(std::vector<largest_id_type>::const_iterator begin)
 {
 #ifdef LIBMESH_ENABLE_AMR
   const bool has_old_dof_object = cast_int<bool>(*begin++);
@@ -521,12 +521,12 @@ void DofObject::unpack_indexing(std::vector<largest_id_type>::const_iterator beg
 
 
 // FIXME: it'll be tricky getting this to work with 64-bit dof_id_type
-void DofObject::pack_indexing
-(std::back_insert_iterator<std::vector<largest_id_type> > target) const
+void
+DofObject::pack_indexing(std::back_insert_iterator<std::vector<largest_id_type> > target) const
 {
 #ifdef LIBMESH_ENABLE_AMR
   // We might need to pack old_dof_object too
-  *target++ = (old_dof_object == NULL) ? 0 : 1;
+  *target++ = (old_dof_object == libmesh_nullptr) ? 0 : 1;
 #endif
 
   *target++ = _idx_buf.size();

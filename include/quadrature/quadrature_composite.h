@@ -41,12 +41,12 @@ namespace libMesh
  * applying the base rule on each subelement.  This class uses the
  * ElemCutter, which is only available if libmesh is configured with
  * --disable-strict-lgpl.
+ *
+ * \author Benjamin Kirk
+ * \date 2013
  */
-
-// ------------------------------------------------------------
-// QComposite class definition
 template <class QSubCell>
-class QComposite : public QSubCell
+class QComposite libmesh_final : public QSubCell
 {
 public:
 
@@ -72,7 +72,7 @@ public:
   /**
    * @returns \p QCOMPOSITE
    */
-  QuadratureType type() const { return QCOMPOSITE; }
+  virtual QuadratureType type() const libmesh_override { return QCOMPOSITE; }
 
   /**
    * Initializes the data structures for a specific, potentially cut
@@ -82,8 +82,8 @@ public:
    * cut the element into subelements, for example, and constuct a
    * composite quadrature rule for the cut element.
    */
-  virtual void init (const Elem &elem,
-                     const std::vector<Real> &vertex_distance_func,
+  virtual void init (const Elem & elem,
+                     const std::vector<Real> & vertex_distance_func,
                      unsigned int p_level=0);
 
 private:
@@ -91,7 +91,7 @@ private:
   /**
    *
    */
-  void add_subelem_values (const std::vector<Elem const*> &subelem);
+  void add_subelem_values (const std::vector<Elem const *> & subelem);
 
   /**
    * Subcell quadrature object.

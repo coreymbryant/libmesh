@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,15 +29,10 @@
 namespace libMesh
 {
 
-
-
 /**
  * The \p SFCPartitioner uses a Hilbert or Morton-ordered space
  * filling curve to partition the elements.
  */
-
-// ------------------------------------------------------------
-// SFCPartitioner class definition
 class SFCPartitioner : public Partitioner
 {
 public:
@@ -54,7 +49,7 @@ public:
    * Creates a new partitioner of this type and returns it in
    * an \p UniquePtr.
    */
-  virtual UniquePtr<Partitioner> clone () const
+  virtual UniquePtr<Partitioner> clone () const libmesh_override
   {
     return UniquePtr<Partitioner>(new SFCPartitioner());
   }
@@ -63,7 +58,7 @@ public:
    * Sets the type of space-filling curve to use.  Valid types are
    * "Hilbert" (the default) and "Morton"
    */
-  void set_sfc_type (const std::string& sfc_type);
+  void set_sfc_type (const std::string & sfc_type);
 
 
 protected:
@@ -71,18 +66,16 @@ protected:
   /**
    * Partition the \p MeshBase into \p n subdomains.
    */
-  virtual void _do_partition (MeshBase& mesh,
-                              const unsigned int n);
+  virtual void _do_partition (MeshBase & mesh,
+                              const unsigned int n) libmesh_override;
 
 
 private:
-
 
   /**
    * The type of space-filling curve to use.  Hilbert by default.
    */
   std::string _sfc_type;
-
 };
 
 
@@ -90,7 +83,7 @@ private:
 // ------------------------------------------------------------
 // LinearPartitioner inline members
 inline
-void SFCPartitioner::set_sfc_type (const std::string& sfc_type)
+void SFCPartitioner::set_sfc_type (const std::string & sfc_type)
 {
   libmesh_assert ((sfc_type == "Hilbert") ||
                   (sfc_type == "Morton"));

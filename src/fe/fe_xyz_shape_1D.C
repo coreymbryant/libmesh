@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ template <>
 Real FE<1,XYZ>::shape(const ElemType,
                       const Order,
                       const unsigned int,
-                      const Point&)
+                      const Point &)
 {
   libmesh_error_msg("XYZ polynomials require the element \n because the centroid is needed.");
   return 0.;
@@ -55,10 +55,10 @@ Real FE<1,XYZ>::shape(const ElemType,
 
 
 template <>
-Real FE<1,XYZ>::shape(const Elem* elem,
+Real FE<1,XYZ>::shape(const Elem * elem,
                       const Order libmesh_dbg_var(order),
                       const unsigned int i,
-                      const Point& point_in)
+                      const Point & point_in)
 {
   libmesh_assert(elem);
   libmesh_assert_less_equal (i, order + elem->p_level());
@@ -124,7 +124,7 @@ Real FE<1,XYZ>::shape_deriv(const ElemType,
                             const Order,
                             const unsigned int,
                             const unsigned int,
-                            const Point&)
+                            const Point &)
 {
   libmesh_error_msg("XYZ polynomials require the element \nbecause the centroid is needed.");
   return 0.;
@@ -133,11 +133,11 @@ Real FE<1,XYZ>::shape_deriv(const ElemType,
 
 
 template <>
-Real FE<1,XYZ>::shape_deriv(const Elem* elem,
+Real FE<1,XYZ>::shape_deriv(const Elem * elem,
                             const Order libmesh_dbg_var(order),
                             const unsigned int i,
                             const unsigned int libmesh_dbg_var(j),
-                            const Point& point_in)
+                            const Point & point_in)
 {
   libmesh_assert(elem);
   libmesh_assert_less_equal (i, order + elem->p_level());
@@ -206,7 +206,7 @@ Real FE<1,XYZ>::shape_second_deriv(const ElemType,
                                    const Order,
                                    const unsigned int,
                                    const unsigned int,
-                                   const Point&)
+                                   const Point &)
 {
   libmesh_error_msg("XYZ polynomials require the element \nbecause the centroid is needed.");
   return 0.;
@@ -215,11 +215,11 @@ Real FE<1,XYZ>::shape_second_deriv(const ElemType,
 
 
 template <>
-Real FE<1,XYZ>::shape_second_deriv(const Elem* elem,
+Real FE<1,XYZ>::shape_second_deriv(const Elem * elem,
                                    const Order libmesh_dbg_var(order),
                                    const unsigned int i,
                                    const unsigned int libmesh_dbg_var(j),
-                                   const Point& point_in)
+                                   const Point & point_in)
 {
   libmesh_assert(elem);
   libmesh_assert_less_equal (i, order + elem->p_level());

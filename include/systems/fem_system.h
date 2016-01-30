@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -46,12 +46,9 @@ class FEMContext;
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2006
+ * \author Roy H. Stogner
+ * \date 2006
  */
-
-// ------------------------------------------------------------
-// FEMSystem class definition
-
 class FEMSystem : public DifferentiableSystem,
                   public FEMPhysics
 {
@@ -61,8 +58,8 @@ public:
    * Constructor.  Optionally initializes required
    * data structures.
    */
-  FEMSystem (EquationSystems& es,
-             const std::string& name,
+  FEMSystem (EquationSystems & es,
+             const std::string & name,
              const unsigned int number);
 
   /**
@@ -81,18 +78,13 @@ public:
   typedef DifferentiableSystem Parent;
 
   /**
-   * Clear all the data structures associated with
-   * the system.
-   */
-  virtual void clear ();
-
-  /**
    * Prepares \p matrix or \p rhs for matrix assembly.
    * Users may reimplement this to add pre- or post-assembly
    * code before or after calling FEMSystem::assembly()
    */
-  virtual void assembly (bool get_residual, bool get_jacobian,
-                         bool apply_heterogeneous_constraints = false);
+  virtual void assembly (bool get_residual,
+                         bool get_jacobian,
+                         bool apply_heterogeneous_constraints = false) libmesh_override;
 
   /**
    * Invokes the solver associated with the system.  For steady state
@@ -102,7 +94,7 @@ public:
    * For moving mesh systems, this also translates the mesh to the
    * solution position.
    */
-  virtual void solve ();
+  virtual void solve () libmesh_override;
 
   /**
    * Tells the FEMSystem to set the degree of freedom coefficients
@@ -124,7 +116,7 @@ public:
    * who subclass FEMContext will need to also reimplement this method to build
    * it.
    */
-  virtual UniquePtr<DiffContext> build_context();
+  virtual UniquePtr<DiffContext> build_context() libmesh_override;
 
   /*
    * Prepares the result of a build_context() call for use.
@@ -132,13 +124,13 @@ public:
    * Most FEMSystem-based problems will need to reimplement this in order to
    * call FE::get_*() as their particular physics requires.
    */
-  virtual void init_context(DiffContext &);
+  virtual void init_context(DiffContext &) libmesh_override;
 
   /**
    * Runs a postprocessing loop over all elements, and if
    * \p postprocess_sides is true over all sides.
    */
-  virtual void postprocess ();
+  virtual void postprocess () libmesh_override;
 
   /**
    * Runs a qoi assembly loop over all elements, and if
@@ -148,8 +140,7 @@ public:
    * quantities of interest that are not expressible as a sum of
    * element qois.
    */
-  virtual void assemble_qoi
-  (const QoISet& indices = QoISet());
+  virtual void assemble_qoi (const QoISet & indices = QoISet()) libmesh_override;
 
   /**
    * Runs a qoi derivative assembly loop over all elements, and if
@@ -158,10 +149,9 @@ public:
    * Users may have to override this function for quantities of
    * interest that are not expressible as a sum of element qois.
    */
-  virtual void assemble_qoi_derivative
-  (const QoISet &qoi_indices = QoISet(),
-   bool include_liftfunc = true,
-   bool apply_constraints = true);
+  virtual void assemble_qoi_derivative (const QoISet & qoi_indices = QoISet(),
+                                        bool include_liftfunc = true,
+                                        bool apply_constraints = true) libmesh_override;
 
   /**
    * If fe_reinit_during_postprocess is true (it is true by default), FE
@@ -174,9 +164,26 @@ public:
   /**
    * If calculating numeric jacobians is required, the FEMSystem
    * will perturb each solution vector entry by numerical_jacobian_h
-   * when calculating finite differences.
+   * when calculating finite differences.  This defaults to the
+   * libMesh TOLERANCE but can be set manually.
+   *
+   * For ALE terms, the FEMSystem will perturb each mesh point in an
+   * element by numerical_jacobian_h * Elem::hmin()
    */
   Real numerical_jacobian_h;
+
+  /**
+   * If numerical_jacobian_h_for_var(var_num) is changed from its
+   * default value (numerical_jacobian_h), the FEMSystem will perturb
+   * solution vector entries for variable var_num by that amount when
+   * calculating finite differences with respect to that variable.
+   *
+   * This is useful in multiphysics problems which have not been
+   * normalized.
+   */
+  Real numerical_jacobian_h_for_var(unsigned int var_num) const;
+
+  void set_numerical_jacobian_h_for_var(unsigned int var_num, Real new_h);
 
   /**
    * If verify_analytic_jacobian is equal to zero (as it is by
@@ -196,44 +203,71 @@ public:
   /**
    * Syntax sugar to make numerical_jacobian() declaration easier.
    */
-  typedef bool (TimeSolver::*TimeSolverResPtr)(bool, DiffContext&);
+  typedef bool (TimeSolver::*TimeSolverResPtr)(bool, DiffContext &);
 
   /**
    * Uses the results of multiple \p res calls
    * to numerically differentiate the corresponding jacobian.
    */
   void numerical_jacobian (TimeSolverResPtr res,
-                           FEMContext &context) const;
+                           FEMContext & context) const;
 
   /**
    * Uses the results of multiple element_residual() calls
    * to numerically differentiate the corresponding jacobian
    * on an element.
    */
-  void numerical_elem_jacobian (FEMContext &context) const;
+  void numerical_elem_jacobian (FEMContext & context) const;
 
   /**
    * Uses the results of multiple side_residual() calls
    * to numerically differentiate the corresponding jacobian
    * on an element's side.
    */
-  void numerical_side_jacobian (FEMContext &context) const;
+  void numerical_side_jacobian (FEMContext & context) const;
 
   /**
    * Uses the results of multiple side_residual() calls
    * to numerically differentiate the corresponding jacobian
    * on nonlocal DoFs.
    */
-  void numerical_nonlocal_jacobian (FEMContext &context) const;
+  void numerical_nonlocal_jacobian (FEMContext & context) const;
 
 protected:
   /**
    * Initializes the member data fields associated with
    * the system, so that, e.g., \p assemble() may be used.
    */
-  virtual void init_data ();
+  virtual void init_data () libmesh_override;
+
+private:
+  std::vector<Real> _numerical_jacobian_h_for_var;
 };
 
+// --------------------------------------------------------------
+// FEMSystem inline methods
+inline
+Real
+FEMSystem::numerical_jacobian_h_for_var(unsigned int var_num) const
+{
+  if ((var_num >= _numerical_jacobian_h_for_var.size()) ||
+      _numerical_jacobian_h_for_var[var_num] == Real(0))
+    return numerical_jacobian_h;
+
+  return _numerical_jacobian_h_for_var[var_num];
+}
+
+inline
+void FEMSystem::set_numerical_jacobian_h_for_var(unsigned int var_num,
+                                                 Real new_h)
+{
+  if (_numerical_jacobian_h_for_var.size() <= var_num)
+    _numerical_jacobian_h_for_var.resize(var_num+1,Real(0));
+
+  libmesh_assert_greater(new_h, 0);
+
+  _numerical_jacobian_h_for_var[var_num] = new_h;
+}
 
 } // namespace libMesh
 

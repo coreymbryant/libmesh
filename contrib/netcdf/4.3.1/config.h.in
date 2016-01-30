@@ -308,8 +308,7 @@
 /* If true, turn on logging. */
 #undef LOGGING
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* max size of the default per-var chunk cache. */
@@ -320,9 +319,6 @@
 
 /* no IEEE float on this platform */
 #undef NO_IEEE_FLOAT
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* do not build the netCDF version 2 API */
 #undef NO_NETCDF_2

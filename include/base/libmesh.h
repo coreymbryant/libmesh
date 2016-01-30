@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -65,17 +65,17 @@ public:
    * of the library functionality.  This method may take an optional
    * parameter to use a user-specified MPI communicator.
    */
-  LibMeshInit(int argc, const char* const* argv,
+  LibMeshInit(int argc, const char * const * argv,
               MPI_Comm COMM_WORLD_IN=MPI_COMM_WORLD);
 #else
-  LibMeshInit(int argc, const char* const* argv);
+  LibMeshInit(int argc, const char * const * argv);
 #endif
 
   virtual ~LibMeshInit();
 
-  const Parallel::Communicator& comm() const { return _comm; }
+  const Parallel::Communicator & comm() const { return _comm; }
 
-  Parallel::Communicator& comm() { return _comm; }
+  Parallel::Communicator & comm() { return _comm; }
 
 private:
   Parallel::Communicator _comm;
@@ -111,7 +111,7 @@ void enableSEGV(bool on);
  * @returns true if the argument \p arg was specified on the command line,
  * \p false otherwise.
  */
-bool on_command_line (const std::string& arg);
+bool on_command_line (const std::string & arg);
 
 /**
  * \returns the value associated with name on the command line if it is specified,
@@ -135,7 +135,7 @@ T command_line_next (const std::string &, T);
  * otherwise return the default, provided array.
  */
 template <typename T>
-void command_line_vector (const std::string &, std::vector<T>&);
+void command_line_vector (const std::string &, std::vector<T> &);
 
 /**
  * The imaginary unit, \f$ \sqrt{-1} \f$.

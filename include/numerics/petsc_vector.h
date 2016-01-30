@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/petsc_macro.h"
 #include "libmesh/libmesh_common.h"
+#include "libmesh/petsc_solver_exception.h"
 #include LIBMESH_INCLUDE_UNORDERED_MAP
 
 /**
@@ -47,8 +48,6 @@ EXTERN_C_FOR_PETSC_END
 namespace libMesh
 {
 
-
-
 // forward declarations
 template <typename T> class SparseMatrix;
 
@@ -56,11 +55,11 @@ template <typename T> class SparseMatrix;
  * Petsc vector. Provides a nice interface to the
  * Petsc C-based data structures for parallel vectors.
  *
- * @author Benjamin S. Kirk, 2002
+ * \author Benjamin S. Kirk
+ * \date 2002
  */
-
 template <typename T>
-class PetscVector : public NumericVector<T>
+class PetscVector libmesh_final : public NumericVector<T>
 {
 public:
 
@@ -68,14 +67,14 @@ public:
    *  Dummy-Constructor. Dimension=0
    */
   explicit
-  PetscVector (const Parallel::Communicator &comm_in,
+  PetscVector (const Parallel::Communicator & comm_in,
                const ParallelType type = AUTOMATIC);
 
   /**
    * Constructor. Set dimension to \p n and initialize all elements with zero.
    */
   explicit
-  PetscVector (const Parallel::Communicator &comm_in,
+  PetscVector (const Parallel::Communicator & comm_in,
                const numeric_index_type n,
                const ParallelType type = AUTOMATIC);
 
@@ -83,7 +82,7 @@ public:
    * Constructor. Set local dimension to \p n_local, the global dimension
    * to \p n, and initialize all elements with zero.
    */
-  PetscVector (const Parallel::Communicator &comm_in,
+  PetscVector (const Parallel::Communicator & comm_in,
                const numeric_index_type n,
                const numeric_index_type n_local,
                const ParallelType type = AUTOMATIC);
@@ -93,10 +92,10 @@ public:
    * dimension to \p n, but additionally reserve memory for the
    * indices specified by the \p ghost argument.
    */
-  PetscVector (const Parallel::Communicator &comm_in,
+  PetscVector (const Parallel::Communicator & comm_in,
                const numeric_index_type N,
                const numeric_index_type n_local,
-               const std::vector<numeric_index_type>& ghost,
+               const std::vector<numeric_index_type> & ghost,
                const ParallelType type = AUTOMATIC);
 
   /**
@@ -107,7 +106,7 @@ public:
    * and to simply provide additional functionality with the PetscVector.
    */
   PetscVector(Vec v,
-              const Parallel::Communicator &comm_in
+              const Parallel::Communicator & comm_in
               LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -119,30 +118,30 @@ public:
   /**
    * Call the assemble functions
    */
-  void close ();
+  virtual void close () libmesh_override;
 
   /**
    * @returns the \p PetscVector<T> to a pristine state.
    */
-  void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
    * faster.
    */
-  void zero ();
+  virtual void zero () libmesh_override;
 
   /**
    * Creates a vector which has the same type, size and partitioning
    * as this vector, but whose data is all zero.  Returns it in an \p
    * UniquePtr.
    */
-  virtual UniquePtr<NumericVector<T> > zero_clone () const;
+  virtual UniquePtr<NumericVector<T> > zero_clone () const libmesh_override;
 
   /**
    * Creates a copy of this vector and returns it in an \p UniquePtr.
    */
-  UniquePtr<NumericVector<T> > clone () const;
+  virtual UniquePtr<NumericVector<T> > clone () const libmesh_override;
 
   /**
    * Change the dimension of the vector to \p N. The reserved memory for
@@ -156,18 +155,17 @@ public:
    * On \p fast==false, the vector is filled by
    * zeros.
    */
-
-  void init (const numeric_index_type N,
-             const numeric_index_type n_local,
-             const bool         fast=false,
-             const ParallelType type=AUTOMATIC);
+  virtual void init (const numeric_index_type N,
+                     const numeric_index_type n_local,
+                     const bool         fast=false,
+                     const ParallelType type=AUTOMATIC) libmesh_override;
 
   /**
    * call init with n_local = N,
    */
-  void init (const numeric_index_type N,
-             const bool         fast=false,
-             const ParallelType type=AUTOMATIC);
+  virtual void init (const numeric_index_type N,
+                     const bool         fast=false,
+                     const ParallelType type=AUTOMATIC) libmesh_override;
 
   /**
    * Create a vector that holds tha local indices plus those specified
@@ -175,87 +173,75 @@ public:
    */
   virtual void init (const numeric_index_type /*N*/,
                      const numeric_index_type /*n_local*/,
-                     const std::vector<numeric_index_type>& /*ghost*/,
+                     const std::vector<numeric_index_type> & /*ghost*/,
                      const bool /*fast*/ = false,
-                     const ParallelType = AUTOMATIC);
+                     const ParallelType = AUTOMATIC) libmesh_override;
 
   /**
    * Creates a vector that has the same dimension and storage type as
    * \p other, including ghost dofs.
    */
-  virtual void init (const NumericVector<T>& other,
-                     const bool fast = false);
-
-  //   /**
-  //    * Change the dimension to that of the
-  //    * vector \p V. The same applies as for
-  //    * the other \p init function.
-  //    *
-  //    * The elements of \p V are not copied, i.e.
-  //    * this function is the same as calling
-  //    * \p init(V.size(),fast).
-  //    */
-  //   void init (const NumericVector<T>& V,
-  //      const bool fast=false);
+  virtual void init (const NumericVector<T> & other,
+                     const bool fast = false) libmesh_override;
 
   /**
    * \f$U(0-N) = s\f$: fill all components.
    */
-  NumericVector<T> & operator= (const T s);
+  virtual NumericVector<T> & operator= (const T s) libmesh_override;
 
   /**
    *  \f$U = V\f$: copy all components.
    */
-  NumericVector<T> & operator= (const NumericVector<T> &V);
+  virtual NumericVector<T> & operator= (const NumericVector<T> & V) libmesh_override;
 
   /**
    *  \f$U = V\f$: copy all components.
    */
-  PetscVector<T> & operator= (const PetscVector<T> &V);
+  PetscVector<T> & operator= (const PetscVector<T> & V);
 
   /**
    *  \f$U = V\f$: copy all components.
    */
-  NumericVector<T> & operator= (const std::vector<T> &v);
+  virtual NumericVector<T> & operator= (const std::vector<T> & v) libmesh_override;
 
   /**
    * @returns the minimum element in the vector.
    * In case of complex numbers, this returns the minimum
    * Real part.
    */
-  Real min () const;
+  virtual Real min () const libmesh_override;
 
   /**
    * @returns the maximum element in the vector.
    * In case of complex numbers, this returns the maximum
    * Real part.
    */
-  Real max () const;
+  virtual Real max () const libmesh_override;
 
   /**
    * @returns the sum of values in a vector
    */
-  T sum () const;
+  virtual T sum () const libmesh_override;
 
   /**
    * @returns the \f$l_1\f$-norm of the vector, i.e.
    * the sum of the absolute values.
    */
-  Real l1_norm () const;
+  virtual Real l1_norm () const libmesh_override;
 
   /**
    * @returns the \f$l_2\f$-norm of the vector, i.e.
    * the square root of the sum of the
    * squares of the elements.
    */
-  Real l2_norm () const;
+  virtual Real l2_norm () const libmesh_override;
 
   /**
    * @returns the maximum absolute value of the
    * elements of this vector, which is the
    * \f$l_\infty\f$-norm of a vector.
    */
-  Real linfty_norm () const;
+  virtual Real linfty_norm () const libmesh_override;
 
   /**
    * @returns dimension of the vector. This
@@ -264,25 +250,25 @@ public:
    * closer to the C++ standard library's
    * \p std::vector container.
    */
-  numeric_index_type size () const;
+  virtual numeric_index_type size () const libmesh_override;
 
   /**
    * @returns the local size of the vector
    * (index_stop-index_start)
    */
-  numeric_index_type local_size() const;
+  virtual numeric_index_type local_size() const libmesh_override;
 
   /**
    * @returns the index of the first vector element
    * actually stored on this processor
    */
-  numeric_index_type first_local_index() const;
+  virtual numeric_index_type first_local_index() const libmesh_override;
 
   /**
    * @returns the index of the last vector element
    * actually stored on this processor
    */
-  numeric_index_type last_local_index() const;
+  virtual numeric_index_type last_local_index() const libmesh_override;
 
   /**
    * Maps the global index \p i to the corresponding global index. If
@@ -295,7 +281,7 @@ public:
   /**
    * Access components, returns \p U(i).
    */
-  T operator() (const numeric_index_type i) const;
+  virtual T operator() (const numeric_index_type i) const libmesh_override;
 
   /**
    * Access multiple components at once.  \p values will *not* be
@@ -303,61 +289,64 @@ public:
    * method that should be faster (probably much faster) than calling
    * \p operator() individually for each index.
    */
-  virtual void get(const std::vector<numeric_index_type>& index, T* values) const;
+  virtual void get(const std::vector<numeric_index_type> & index,
+                   T * values) const libmesh_override;
 
   /**
    * Addition operator.
    * Fast equivalent to \p U.add(1, V).
    */
-  NumericVector<T> & operator += (const NumericVector<T> &V);
+  virtual NumericVector<T> & operator += (const NumericVector<T> & V) libmesh_override;
 
   /**
    * Subtraction operator.
    * Fast equivalent to \p U.add(-1, V).
    */
-  NumericVector<T> & operator -= (const NumericVector<T> &V);
+  virtual NumericVector<T> & operator -= (const NumericVector<T> & V) libmesh_override;
 
   /**
    * Replace each entry v_i of this vector by its reciprocal, 1/v_i.
    */
-  virtual void reciprocal();
+  virtual void reciprocal() libmesh_override;
 
   /**
    * Replace each entry v_i = real(v_i) + imag(v_i)
    * of this vector by its complex conjugate, real(v_i) - imag(v_i)
    */
-  virtual void conjugate();
+  virtual void conjugate() libmesh_override;
 
   /**
    * v(i) = value
    */
-  void set (const numeric_index_type i, const T value);
+  virtual void set (const numeric_index_type i,
+                    const T value) libmesh_override;
 
   /**
    * v(i) += value
    */
-  void add (const numeric_index_type i, const T value);
+  virtual void add (const numeric_index_type i,
+                    const T value) libmesh_override;
 
   /**
    * \f$U(0-LIBMESH_DIM)+=s\f$.
    * Addition of \p s to all components. Note
    * that \p s is a scalar and not a vector.
    */
-  void add (const T s);
+  virtual void add (const T s) libmesh_override;
 
   /**
    * \f$ U+=V \f$ .
    * Simple vector addition, equal to the
    * \p operator +=.
    */
-  void add (const NumericVector<T>& V);
+  virtual void add (const NumericVector<T> & V) libmesh_override;
 
   /**
    * \f$ U+=a*V \f$ .
    * Simple vector addition, equal to the
    * \p operator +=.
    */
-  void add (const T a, const NumericVector<T>& v);
+  virtual void add (const T a, const NumericVector<T> & v) libmesh_override;
 
   /**
    * We override two NumericVector<T>::add_vector() methods but don't
@@ -369,31 +358,31 @@ public:
    * \f$ U+=v \f$ where v is a pointer and each \p dof_indices[i]
    * specifies where to add value \p v[i]
    */
-  void add_vector (const T* v,
-                   const std::vector<numeric_index_type>& dof_indices);
+  virtual void add_vector (const T * v,
+                           const std::vector<numeric_index_type> & dof_indices) libmesh_override;
 
   /**
    * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
    * and a \p NumericVector \p V to \p this, where \p this=U.
    */
-  void add_vector (const NumericVector<T> &V,
-                   const SparseMatrix<T> &A);
+  virtual void add_vector (const NumericVector<T> & V,
+                           const SparseMatrix<T> & A) libmesh_override;
 
   /**
    * \f$U+=A^T*V\f$, add the product of the transpose
    * of \p SparseMatrix \p A_trans and a \p NumericVector \p V to
    * \p this, where \p this=U.
    */
-  void add_vector_transpose (const NumericVector<T> &V,
-                             const SparseMatrix<T> &A_trans);
+  virtual void add_vector_transpose (const NumericVector<T> & V,
+                                     const SparseMatrix<T> & A_trans) libmesh_override;
 
   /**
    * \f$U+=A^H*V\f$, add the product of the conjugate-transpose
    * of \p SparseMatrix \p A_trans and a \p NumericVector \p V to
    * \p this, where \p this=U.
    */
-  void add_vector_conjugate_transpose (const NumericVector<T> &V,
-                                       const SparseMatrix<T> &A_trans);
+  void add_vector_conjugate_transpose (const NumericVector<T> & V,
+                                       const SparseMatrix<T> & A_trans);
 
   /**
    * We override one NumericVector<T>::insert() method but don't want
@@ -402,68 +391,68 @@ public:
   using NumericVector<T>::insert;
 
   /**
-   * \f$ U=v \f$ where v is a \p T[] or T*
+   * \f$ U=v \f$ where v is a \p T[] or T *
    * and you want to specify WHERE to insert it
    */
-  virtual void insert (const T* v,
-                       const std::vector<numeric_index_type>& dof_indices);
+  virtual void insert (const T * v,
+                       const std::vector<numeric_index_type> & dof_indices) libmesh_override;
 
   /**
    * Scale each element of the
    * vector by the given factor.
    */
-  void scale (const T factor);
+  virtual void scale (const T factor) libmesh_override;
 
   /**
    * Pointwise Division operator. ie divide every entry in this vector by the entry in v
    */
-  virtual NumericVector<T> & operator /= (NumericVector<T> & v);
+  virtual NumericVector<T> & operator /= (NumericVector<T> & v) libmesh_override;
 
   /**
    * v = abs(v)... that is, each entry in v is replaced
    * by its absolute value.
    */
-  virtual void abs();
+  virtual void abs() libmesh_override;
 
   /**
    * Computes the dot product, p = U.V. Use complex-conjugate of V
    * in the complex-valued case.
    */
-  virtual T dot(const NumericVector<T>&) const;
+  virtual T dot(const NumericVector<T> &) const libmesh_override;
 
   /**
    * Computes the dot product, p = U.V. Do not use complex-conjugate of V
    * in the complex-valued case.
    */
-  virtual T indefinite_dot(const NumericVector<T>&) const;
+  T indefinite_dot(const NumericVector<T> &) const;
 
   /**
    * Creates a copy of the global vector in the
    * local vector \p v_local.
    */
-  void localize (std::vector<T>& v_local) const;
+  virtual void localize (std::vector<T> & v_local) const libmesh_override;
 
   /**
    * Same, but fills a \p NumericVector<T> instead of
    * a \p std::vector.
    */
-  void localize (NumericVector<T>& v_local) const;
+  virtual void localize (NumericVector<T> & v_local) const libmesh_override;
 
   /**
    * Creates a local vector \p v_local containing
    * only information relevant to this processor, as
    * defined by the \p send_list.
    */
-  void localize (NumericVector<T>& v_local,
-                 const std::vector<numeric_index_type>& send_list) const;
+  virtual void localize (NumericVector<T> & v_local,
+                         const std::vector<numeric_index_type> & send_list) const libmesh_override;
 
   /**
    * Updates a local vector with selected values from neighboring
    * processors, as defined by \p send_list.
    */
-  void localize (const numeric_index_type first_local_idx,
-                 const numeric_index_type last_local_idx,
-                 const std::vector<numeric_index_type>& send_list);
+  virtual void localize (const numeric_index_type first_local_idx,
+                         const numeric_index_type last_local_idx,
+                         const std::vector<numeric_index_type> & send_list) libmesh_override;
 
   /**
    * Creates a local copy of the global vector in
@@ -471,15 +460,15 @@ public:
    * default the data is sent to processor 0.  This method
    * is useful for outputting data from one processor.
    */
-  void localize_to_one (std::vector<T>& v_local,
-                        const processor_id_type proc_id=0) const;
+  virtual void localize_to_one (std::vector<T> & v_local,
+                                const processor_id_type proc_id=0) const libmesh_override;
 
   /**
    * Computes the pointwise (i.e. component-wise) product of \p vec1
    * and \p vec2 and stores the result in \p *this.
    */
-  virtual void pointwise_mult (const NumericVector<T>& vec1,
-                               const NumericVector<T>& vec2);
+  virtual void pointwise_mult (const NumericVector<T> & vec1,
+                               const NumericVector<T> & vec2) libmesh_override;
 
   /**
    * Print the contents of the vector in Matlab
@@ -487,19 +476,19 @@ public:
    * matrix to the file named \p name.  If \p name
    * is not specified it is dumped to the screen.
    */
-  virtual void print_matlab(const std::string& name = "") const;
+  virtual void print_matlab(const std::string & name = "") const libmesh_override;
 
   /**
    * Creates a "subvector" from this vector using the rows indices
    * of the "rows" array.
    */
-  virtual void create_subvector(NumericVector<T>& subvector,
-                                const std::vector<numeric_index_type>& rows) const;
+  virtual void create_subvector(NumericVector<T> & subvector,
+                                const std::vector<numeric_index_type> & rows) const libmesh_override;
 
   /**
    * Swaps the raw PETSc vector context pointers.
    */
-  virtual void swap (NumericVector<T> &v);
+  virtual void swap (NumericVector<T> & v) libmesh_override;
 
   /**
    * Returns the raw PETSc vector context pointer.  Note this is generally
@@ -507,7 +496,6 @@ public:
    * calling LibMeshVecDestroy()!
    */
   Vec vec () { libmesh_assert (_vec); return _vec; }
-
 
 
 private:
@@ -559,11 +547,11 @@ private:
    * Pointer to the actual Petsc array of the values of the vector.
    * This pointer is only valid if \p _array_is_present is \p true.
    * We're using Petsc's VecGetArrayRead() function, which requires a
-   * constant PetscScalar*, but _get_array and _restore_array are
+   * constant PetscScalar *, but _get_array and _restore_array are
    * const member functions, so _values also needs to be mutable
    * (otherwise it is a "const PetscScalar * const" in that context).
    */
-  mutable const PetscScalar* _values;
+  mutable const PetscScalar * _values;
 
   /**
    * Queries the array (and the local form if the vector is ghosted)
@@ -602,13 +590,13 @@ private:
 
 template <typename T>
 inline
-PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in, const ParallelType ptype) :
+PetscVector<T>::PetscVector (const Parallel::Communicator & comm_in, const ParallelType ptype) :
   NumericVector<T>(comm_in, ptype),
   _array_is_present(false),
   _first(0),
   _last(0),
-  _local_form(NULL),
-  _values(NULL),
+  _local_form(libmesh_nullptr),
+  _values(libmesh_nullptr),
   _global_to_local_map(),
   _destroy_vec_on_exit(true)
 {
@@ -619,13 +607,13 @@ PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in, const Parall
 
 template <typename T>
 inline
-PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in,
+PetscVector<T>::PetscVector (const Parallel::Communicator & comm_in,
                              const numeric_index_type n,
                              const ParallelType ptype) :
   NumericVector<T>(comm_in, ptype),
   _array_is_present(false),
-  _local_form(NULL),
-  _values(NULL),
+  _local_form(libmesh_nullptr),
+  _values(libmesh_nullptr),
   _global_to_local_map(),
   _destroy_vec_on_exit(true)
 {
@@ -636,14 +624,14 @@ PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in,
 
 template <typename T>
 inline
-PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in,
+PetscVector<T>::PetscVector (const Parallel::Communicator & comm_in,
                              const numeric_index_type n,
                              const numeric_index_type n_local,
                              const ParallelType ptype) :
   NumericVector<T>(comm_in, ptype),
   _array_is_present(false),
-  _local_form(NULL),
-  _values(NULL),
+  _local_form(libmesh_nullptr),
+  _values(libmesh_nullptr),
   _global_to_local_map(),
   _destroy_vec_on_exit(true)
 {
@@ -654,15 +642,15 @@ PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in,
 
 template <typename T>
 inline
-PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in,
+PetscVector<T>::PetscVector (const Parallel::Communicator & comm_in,
                              const numeric_index_type n,
                              const numeric_index_type n_local,
-                             const std::vector<numeric_index_type>& ghost,
+                             const std::vector<numeric_index_type> & ghost,
                              const ParallelType ptype) :
   NumericVector<T>(comm_in, ptype),
   _array_is_present(false),
-  _local_form(NULL),
-  _values(NULL),
+  _local_form(libmesh_nullptr),
+  _values(libmesh_nullptr),
   _global_to_local_map(),
   _destroy_vec_on_exit(true)
 {
@@ -676,11 +664,11 @@ PetscVector<T>::PetscVector (const Parallel::Communicator &comm_in,
 template <typename T>
 inline
 PetscVector<T>::PetscVector (Vec v,
-                             const Parallel::Communicator &comm_in) :
+                             const Parallel::Communicator & comm_in) :
   NumericVector<T>(comm_in, AUTOMATIC),
   _array_is_present(false),
-  _local_form(NULL),
-  _values(NULL),
+  _local_form(libmesh_nullptr),
+  _values(libmesh_nullptr),
   _global_to_local_map(),
   _destroy_vec_on_exit(false)
 {
@@ -693,7 +681,7 @@ PetscVector<T>::PetscVector (Vec v,
   PetscErrorCode ierr=0;
   PetscInt petsc_local_size=0;
   ierr = VecGetLocalSize(_vec, &petsc_local_size);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Get the vector type from PETSc.
   // As of Petsc 3.0.0, the VecType #define lost its const-ness, so we
@@ -705,7 +693,7 @@ PetscVector<T>::PetscVector (Vec v,
   const VecType ptype;
 #endif
   ierr = VecGetType(_vec, &ptype);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   if((std::strcmp(ptype,VECSHARED) == 0) || (std::strcmp(ptype,VECMPI) == 0))
     {
@@ -714,7 +702,7 @@ PetscVector<T>::PetscVector (Vec v,
 #else
       ISLocalToGlobalMapping mapping;
       ierr = VecGetLocalToGlobalMapping(_vec, &mapping);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #endif
 
       // If is a sparsely stored vector, set up our new mapping
@@ -727,22 +715,22 @@ PetscVector<T>::PetscVector (Vec v,
 #else
           PetscInt n;
           ierr = ISLocalToGlobalMappingGetSize(mapping, &n);
-          LIBMESH_CHKERRABORT(ierr);
+          LIBMESH_CHKERR(ierr);
           const numeric_index_type ghost_end = static_cast<numeric_index_type>(n);
 #endif
 #if PETSC_RELEASE_LESS_THAN(3,1,1)
-          const PetscInt *indices = mapping->indices;
+          const PetscInt * indices = mapping->indices;
 #else
-          const PetscInt *indices;
+          const PetscInt * indices;
           ierr = ISLocalToGlobalMappingGetIndices(mapping,&indices);
-          LIBMESH_CHKERRABORT(ierr);
+          LIBMESH_CHKERR(ierr);
 #endif
           for(numeric_index_type i=ghost_begin; i<ghost_end; i++)
             _global_to_local_map[indices[i]] = i-my_local_size;
           this->_type = GHOSTED;
 #if !PETSC_RELEASE_LESS_THAN(3,1,1)
           ierr = ISLocalToGlobalMappingRestoreIndices(mapping, &indices);
-          LIBMESH_CHKERRABORT(ierr);
+          LIBMESH_CHKERR(ierr);
 #endif
         }
       else
@@ -811,7 +799,7 @@ void PetscVector<T>::init (const numeric_index_type n,
       libmesh_assert_less_equal (n_local, n);
       ierr = VecCreateMPI (this->comm().get(), petsc_n_local, petsc_n,
                            &_vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #else
       libmesh_assert_equal_to (n_local, n);
       ierr = VecCreateSeq (PETSC_COMM_SELF, petsc_n, &_vec);
@@ -819,7 +807,7 @@ void PetscVector<T>::init (const numeric_index_type n,
 #endif
 
       ierr = VecSetFromOptions (_vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
   else
     libmesh_error_msg("Unsupported type " << this->_type);
@@ -849,7 +837,7 @@ template <typename T>
 inline
 void PetscVector<T>::init (const numeric_index_type n,
                            const numeric_index_type n_local,
-                           const std::vector<numeric_index_type>& ghost,
+                           const std::vector<numeric_index_type> & ghost,
                            const bool fast,
                            const ParallelType libmesh_dbg_var(ptype))
 {
@@ -873,8 +861,8 @@ void PetscVector<T>::init (const numeric_index_type n,
 
   libmesh_assert(sizeof(PetscInt) == sizeof(numeric_index_type));
 
-  PetscInt* petsc_ghost = ghost.empty() ? PETSC_NULL :
-    const_cast<PetscInt*>(reinterpret_cast<const PetscInt*>(&ghost[0]));
+  PetscInt * petsc_ghost = ghost.empty() ? PETSC_NULL :
+    const_cast<PetscInt *>(reinterpret_cast<const PetscInt *>(&ghost[0]));
 
   // Clear initialized vectors
   if (this->initialized())
@@ -893,10 +881,10 @@ void PetscVector<T>::init (const numeric_index_type n,
   ierr = VecCreateGhost (this->comm().get(), petsc_n_local, petsc_n,
                          petsc_n_ghost, petsc_ghost,
                          &_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   ierr = VecSetFromOptions (_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   this->_is_initialized = true;
   this->_is_closed = true;
@@ -909,7 +897,7 @@ void PetscVector<T>::init (const numeric_index_type n,
 
 template <typename T>
 inline
-void PetscVector<T>::init (const NumericVector<T>& other,
+void PetscVector<T>::init (const NumericVector<T> & other,
                            const bool fast)
 {
   parallel_object_only();
@@ -918,7 +906,7 @@ void PetscVector<T>::init (const NumericVector<T>& other,
   if (this->initialized())
     this->clear();
 
-  const PetscVector<T>& v = cast_ref<const PetscVector<T>&>(other);
+  const PetscVector<T> & v = cast_ref<const PetscVector<T> &>(other);
 
   // Other vector should restore array.
   if(v.initialized())
@@ -938,7 +926,7 @@ void PetscVector<T>::init (const NumericVector<T>& other,
 
   // We want to have a valid Vec, even if it's initially of size zero
   PetscErrorCode ierr = VecDuplicate (v._vec, &this->_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   if (fast == false)
     this->zero ();
@@ -957,16 +945,16 @@ void PetscVector<T>::close ()
   PetscErrorCode ierr=0;
 
   ierr = VecAssemblyBegin(_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
   ierr = VecAssemblyEnd(_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   if(this->type() == GHOSTED)
     {
       ierr = VecGhostUpdateBegin(_vec,INSERT_VALUES,SCATTER_FORWARD);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
       ierr = VecGhostUpdateEnd(_vec,INSERT_VALUES,SCATTER_FORWARD);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   this->_is_closed = true;
@@ -988,7 +976,7 @@ void PetscVector<T>::clear ()
       PetscErrorCode ierr=0;
 
       ierr = LibMeshVecDestroy(&_vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   this->_is_closed = this->_is_initialized = false;
@@ -1017,11 +1005,11 @@ void PetscVector<T>::zero ()
 #if PETSC_VERSION_LESS_THAN(2,3,0)
       // 2.2.x & earlier style
       ierr = VecSet (&z, _vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #else
       // 2.3.x & newer
       ierr = VecSet (_vec, z);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #endif
     }
   else
@@ -1030,18 +1018,18 @@ void PetscVector<T>::zero ()
          handling.  */
       Vec loc_vec;
       ierr = VecGhostGetLocalForm (_vec,&loc_vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #if PETSC_VERSION_LESS_THAN(2,3,0)
       // 2.2.x & earlier style
       ierr = VecSet (&z, loc_vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #else
       // 2.3.x & newer
       ierr = VecSet (loc_vec, z);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 #endif
       ierr = VecGhostRestoreLocalForm (_vec,&loc_vec);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 }
 
@@ -1051,7 +1039,7 @@ template <typename T>
 inline
 UniquePtr<NumericVector<T> > PetscVector<T>::zero_clone () const
 {
-  NumericVector<T>* cloned_vector = new PetscVector<T>(this->comm(), this->type());
+  NumericVector<T> * cloned_vector = new PetscVector<T>(this->comm(), this->type());
   cloned_vector->init(*this);
   return UniquePtr<NumericVector<T> >(cloned_vector);
 }
@@ -1062,7 +1050,7 @@ template <typename T>
 inline
 UniquePtr<NumericVector<T> > PetscVector<T>::clone () const
 {
-  NumericVector<T>* cloned_vector = new PetscVector<T>(this->comm(), this->type());
+  NumericVector<T> * cloned_vector = new PetscVector<T>(this->comm(), this->type());
   cloned_vector->init(*this, true);
   *cloned_vector = *this;
   return UniquePtr<NumericVector<T> >(cloned_vector);
@@ -1083,7 +1071,7 @@ numeric_index_type PetscVector<T>::size () const
     return 0;
 
   ierr = VecGetSize(_vec, &petsc_size);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   return static_cast<numeric_index_type>(petsc_size);
 }
@@ -1100,7 +1088,7 @@ numeric_index_type PetscVector<T>::local_size () const
   PetscInt petsc_size=0;
 
   ierr = VecGetLocalSize(_vec, &petsc_size);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   return static_cast<numeric_index_type>(petsc_size);
 }
@@ -1122,7 +1110,7 @@ numeric_index_type PetscVector<T>::first_local_index () const
       PetscErrorCode ierr=0;
       PetscInt petsc_first=0, petsc_last=0;
       ierr = VecGetOwnershipRange (_vec, &petsc_first, &petsc_last);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
       first = static_cast<numeric_index_type>(petsc_first);
     }
 
@@ -1146,7 +1134,7 @@ numeric_index_type PetscVector<T>::last_local_index () const
       PetscErrorCode ierr=0;
       PetscInt petsc_first=0, petsc_last=0;
       ierr = VecGetOwnershipRange (_vec, &petsc_first, &petsc_last);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
       last = static_cast<numeric_index_type>(petsc_last);
     }
 
@@ -1174,7 +1162,7 @@ numeric_index_type PetscVector<T>::map_global_to_local_index (const numeric_inde
       PetscErrorCode ierr=0;
       PetscInt petsc_first=0, petsc_last=0;
       ierr = VecGetOwnershipRange (_vec, &petsc_first, &petsc_last);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
       first = static_cast<numeric_index_type>(petsc_first);
       last = static_cast<numeric_index_type>(petsc_last);
     }
@@ -1237,7 +1225,8 @@ T PetscVector<T>::operator() (const numeric_index_type i) const
 
 template <typename T>
 inline
-void PetscVector<T>::get(const std::vector<numeric_index_type>& index, T* values) const
+void PetscVector<T>::get(const std::vector<numeric_index_type> & index,
+                         T * values) const
 {
   this->_get_array();
 
@@ -1271,7 +1260,7 @@ Real PetscVector<T>::min () const
   PetscReal returnval=0.;
 
   ierr = VecMin (_vec, &index, &returnval);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // this return value is correct: VecMin returns a PetscReal
   return static_cast<Real>(returnval);
@@ -1292,7 +1281,7 @@ Real PetscVector<T>::max() const
   PetscReal returnval=0.;
 
   ierr = VecMax (_vec, &index, &returnval);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // this return value is correct: VecMax returns a PetscReal
   return static_cast<Real>(returnval);
@@ -1302,13 +1291,13 @@ Real PetscVector<T>::max() const
 
 template <typename T>
 inline
-void PetscVector<T>::swap (NumericVector<T> &other)
+void PetscVector<T>::swap (NumericVector<T> & other)
 {
   parallel_object_only();
 
   NumericVector<T>::swap(other);
 
-  PetscVector<T>& v = cast_ref<PetscVector<T>&>(other);
+  PetscVector<T> & v = cast_ref<PetscVector<T> &>(other);
 
   std::swap(_vec, v._vec);
   std::swap(_destroy_vec_on_exit, v._destroy_vec_on_exit);
@@ -1329,9 +1318,9 @@ static_assert(sizeof(PetscInt) == sizeof(numeric_index_type),
 
 
 inline
-PetscInt* numeric_petsc_cast(const numeric_index_type* p)
+PetscInt * numeric_petsc_cast(const numeric_index_type * p)
 {
-  return reinterpret_cast<PetscInt*>(const_cast<numeric_index_type*>(p));
+  return reinterpret_cast<PetscInt *>(const_cast<numeric_index_type *>(p));
 }
 
 } // namespace libMesh

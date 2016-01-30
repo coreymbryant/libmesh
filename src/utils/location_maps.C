@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,7 @@ namespace libMesh
 
 //--------------------------------------------------------------------------
 template <typename T>
-void LocationMap<T>::init(MeshBase& mesh)
+void LocationMap<T>::init(MeshBase & mesh)
 {
   // This function must be run on all processors at once
   // for non-serial meshes
@@ -70,7 +70,7 @@ void LocationMap<T>::init(MeshBase& mesh)
 
   for (; it != end; ++it)
     {
-      Node* node = *it;
+      Node * node = *it;
 
       for (unsigned int i=0; i != LIBMESH_DIM; ++i)
         {
@@ -97,7 +97,7 @@ void LocationMap<T>::init(MeshBase& mesh)
 
 
 template <typename T>
-void LocationMap<T>::insert(T &t)
+void LocationMap<T>::insert(T & t)
 {
   this->_map.insert(std::make_pair(this->key(this->point_of(t)), &t));
 }
@@ -105,7 +105,7 @@ void LocationMap<T>::insert(T &t)
 
 
 template <>
-Point LocationMap<Node>::point_of(const Node& node) const
+Point LocationMap<Node>::point_of(const Node & node) const
 {
   return node;
 }
@@ -113,7 +113,7 @@ Point LocationMap<Node>::point_of(const Node& node) const
 
 
 template <>
-Point LocationMap<Elem>::point_of(const Elem& elem) const
+Point LocationMap<Elem>::point_of(const Elem & elem) const
 {
   return elem.centroid();
 }
@@ -121,8 +121,8 @@ Point LocationMap<Elem>::point_of(const Elem& elem) const
 
 
 template <typename T>
-T* LocationMap<T>::find(const Point& p,
-                        const Real tol)
+T * LocationMap<T>::find(const Point & p,
+                         const Real tol)
 {
   START_LOG("find()","LocationMap");
 
@@ -171,13 +171,13 @@ T* LocationMap<T>::find(const Point& p,
     }
 
   STOP_LOG("find()","LocationMap");
-  return NULL;
+  return libmesh_nullptr;
 }
 
 
 
 template <typename T>
-unsigned int LocationMap<T>::key(const Point& p)
+unsigned int LocationMap<T>::key(const Point & p)
 {
   Real xscaled = 0., yscaled = 0., zscaled = 0.;
 
@@ -212,7 +212,7 @@ unsigned int LocationMap<T>::key(const Point& p)
 
 
 template <>
-void LocationMap<Node>::fill(MeshBase& mesh)
+void LocationMap<Node>::fill(MeshBase & mesh)
 {
   // Populate the nodes map
   MeshBase::node_iterator  it = mesh.nodes_begin(),
@@ -224,7 +224,7 @@ void LocationMap<Node>::fill(MeshBase& mesh)
 
 
 template <>
-void LocationMap<Elem>::fill(MeshBase& mesh)
+void LocationMap<Elem>::fill(MeshBase & mesh)
 {
   // Populate the elem map
   MeshBase::element_iterator       it  = mesh.active_elements_begin(),

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -38,11 +38,11 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // FroIO  members
-void FroIO::write (const std::string& fname)
+void FroIO::write (const std::string & fname)
 {
   // We may need to gather a ParallelMesh to output it, making that
   // const qualifier in our constructor a dirty lie
-  MeshSerializer serialize(const_cast<MeshBase&>(this->mesh()), !_is_parallel_format);
+  MeshSerializer serialize(const_cast<MeshBase &>(this->mesh()), !_is_parallel_format);
 
   if (this->mesh().processor_id() == 0)
     {
@@ -55,7 +55,7 @@ void FroIO::write (const std::string& fname)
         libmesh_file_error(fname.c_str());
 
       // Get a reference to the mesh
-      const MeshBase& the_mesh = MeshOutput<MeshBase>::mesh();
+      const MeshBase & the_mesh = MeshOutput<MeshBase>::mesh();
 
       // Write the header
       out_stream << the_mesh.n_elem()  << " "
@@ -98,7 +98,7 @@ void FroIO::write (const std::string& fname)
 
       // Write BCs.
       {
-        const std::set<boundary_id_type>& bc_ids =
+        const std::set<boundary_id_type> & bc_ids =
           the_mesh.get_boundary_info().get_boundary_ids();
 
         std::vector<dof_id_type>        el;

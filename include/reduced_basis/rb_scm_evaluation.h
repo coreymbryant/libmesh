@@ -28,7 +28,6 @@
 
 // rbOOmit includes
 #include "libmesh/rb_parametrized.h"
-#include "libmesh/rb_theta_expansion.h"
 
 // libMesh includes
 #include "libmesh/parallel_object.h"
@@ -38,6 +37,9 @@
 namespace libMesh
 {
 
+// Forward declarations
+class RBThetaExpansion;
+
 /**
  * This class is part of the rbOOmit framework.
  *
@@ -45,12 +47,9 @@ namespace libMesh
  * to _evaluate_ the Successive Constraint Method for
  * associated with a reduced basis model.
  *
- * @author David J. Knezevic, 2011
+ * \author David J. Knezevic
+ * \date 2011
  */
-
-// ------------------------------------------------------------
-// RBSCMEvaluation class definition
-
 class RBSCMEvaluation : public RBParametrized,
                         public ParallelObject
 {
@@ -59,7 +58,7 @@ public:
   /**
    * Constructor.
    */
-  RBSCMEvaluation (const Parallel::Communicator &comm
+  RBSCMEvaluation (const Parallel::Communicator & comm
                    LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -70,12 +69,12 @@ public:
   /**
    * Set the RBThetaExpansion object.
    */
-  void set_rb_theta_expansion(RBThetaExpansion& rb_theta_expansion_in);
+  void set_rb_theta_expansion(RBThetaExpansion & rb_theta_expansion_in);
 
   /**
    * Get a reference to the rb_theta_expansion.
    */
-  RBThetaExpansion& get_rb_theta_expansion();
+  RBThetaExpansion & get_rb_theta_expansion();
 
   /**
    * Evaluate single SCM lower bound.
@@ -126,7 +125,7 @@ public:
   /**
    * Get entry of C_J.
    */
-  const RBParameters& get_C_J_entry(unsigned int j);
+  const RBParameters & get_C_J_entry(unsigned int j);
 
   /**
    * Get entry of C_J_stability_vector.
@@ -167,7 +166,7 @@ public:
    * Offline stage from the Online stage.
    * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void legacy_write_offline_data_to_files(const std::string& directory_name = "offline_data",
+  virtual void legacy_write_offline_data_to_files(const std::string & directory_name = "offline_data",
                                                   const bool write_binary_data = true);
 
   /**
@@ -175,7 +174,7 @@ public:
    * to initialize the system for Online solves.
    * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void legacy_read_offline_data_from_files(const std::string& directory_name = "offline_data",
+  virtual void legacy_read_offline_data_from_files(const std::string & directory_name = "offline_data",
                                                    const bool read_binary_data = true);
 
   //----------- PUBLIC DATA MEMBERS -----------//
@@ -200,7 +199,7 @@ public:
 
   /**
    * This matrix stores the infimizing vectors
-   * y_1(\mu),...,y_Q_a(\mu), for each \mu in
+   * y_1(\f$ \mu \f$),...,y_Q_a(\f$ \mu \f$), for each \f$ \mu \f$ in
    * C_J, which are used in computing the SCM
    * upper bounds.
    */
@@ -219,7 +218,7 @@ private:
    * This is not an UniquePtr since we may want to share it.
    * (Note: a shared_ptr would be a good option here.)
    */
-  RBThetaExpansion* rb_theta_expansion;
+  RBThetaExpansion * rb_theta_expansion;
 
 };
 

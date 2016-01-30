@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -16,8 +16,25 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-// See the file:
 
-// quadrature_jacobi_1D.C
+#include "libmesh/quadrature_jacobi.h"
 
-// for implementation.
+namespace libMesh
+{
+
+// See the file: quadrature_jacobi_1D.C for implementation of specific
+// element types.
+
+QuadratureType QJacobi::type() const
+{
+  if ((_alpha == 1) && (_beta == 0))
+    return QJACOBI_1_0;
+
+  else if ((_alpha == 2) && (_beta == 0))
+    return QJACOBI_2_0;
+
+  else
+    libmesh_error_msg("Invalid Jacobi quadrature rule: alpha = " << _alpha << ", beta = " << _beta);
+}
+
+}

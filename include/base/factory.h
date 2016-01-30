@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ protected:
   /**
    * Constructor. Takes the name to be mapped.
    */
-  Factory (const std::string& name);
+  Factory (const std::string & name);
 
 public:
 
@@ -58,7 +58,7 @@ public:
   /**
    * Builds an object of type Base identified by name.
    */
-  static UniquePtr<Base> build (const std::string& name);
+  static UniquePtr<Base> build (const std::string & name);
 
   /**
    * Create a Base class.  Force this to be implemented
@@ -70,9 +70,9 @@ public:
 protected:
 
   /**
-   * Map from a name to a Factory<Base>* pointer.
+   * Map from a name to a Factory<Base> * pointer.
    */
-  static std::map<std::string, Factory<Base>*>& factory_map();
+  static std::map<std::string, Factory<Base> *> & factory_map();
 };
 
 
@@ -88,7 +88,7 @@ public:
   /**
    * Constructor.  Takes a name as input.
    */
-  FactoryImp (const std::string& name) : Factory<Base>(name) { }
+  FactoryImp (const std::string & name) : Factory<Base>(name) { }
 
   /**
    * Destructor.  Empty.
@@ -100,8 +100,7 @@ private:
   /**
    * @returns a new object of type Derived.
    */
-  UniquePtr<Base> create ();
-
+  virtual UniquePtr<Base> create () libmesh_override;
 };
 
 
@@ -110,7 +109,7 @@ private:
 // Factory members
 template <class Base>
 inline
-Factory<Base>::Factory (const std::string& name)
+Factory<Base>::Factory (const std::string & name)
 {
   // Make sure we haven't already added this name
   // to the map
@@ -123,7 +122,7 @@ Factory<Base>::Factory (const std::string& name)
 
 template <class Base>
 inline
-UniquePtr<Base> Factory<Base>::build (const std::string& name)
+UniquePtr<Base> Factory<Base>::build (const std::string & name)
 {
   // name not found in the map
   if (!factory_map().count(name))
@@ -132,7 +131,7 @@ UniquePtr<Base> Factory<Base>::build (const std::string& name)
 
       libMesh::err << "valid options are:" << std::endl;
 
-      for (typename std::map<std::string,Factory<Base>*>::const_iterator
+      for (typename std::map<std::string,Factory<Base> *>::const_iterator
              it = factory_map().begin(); it != factory_map().end(); ++it)
         libMesh::err << "  " << it->first << std::endl;
 
@@ -142,7 +141,7 @@ UniquePtr<Base> Factory<Base>::build (const std::string& name)
       return UniquePtr<Base>();
     }
 
-  Factory<Base> *f = factory_map()[name];
+  Factory<Base> * f = factory_map()[name];
   return UniquePtr<Base>(f->create());
 }
 
@@ -150,9 +149,9 @@ UniquePtr<Base> Factory<Base>::build (const std::string& name)
 
 // Note - this cannot be inlined!
 // template <class Base>
-// std::map<std::string, Factory<Base>*>& Factory<Base>::factory_map()
+// std::map<std::string, Factory<Base> *> & Factory<Base>::factory_map()
 // {
-//   static std::map<std::string, Factory<Base>*> _factory_map;
+//   static std::map<std::string, Factory<Base> *> _factory_map;
 
 //   return _factory_map;
 // }

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -36,15 +36,15 @@ namespace libMesh
 double __libmesh_nlopt_objective(unsigned n,
                                  const double * x,
                                  double * gradient,
-                                 void *data)
+                                 void * data)
 {
   START_LOG("objective()", "NloptOptimizationSolver");
 
-  // ctx should be a pointer to the solver (it was passed in as void*)
-  NloptOptimizationSolver<Number>* solver =
-    static_cast<NloptOptimizationSolver<Number>*> (data);
+  // ctx should be a pointer to the solver (it was passed in as void *)
+  NloptOptimizationSolver<Number> * solver =
+    static_cast<NloptOptimizationSolver<Number> *> (data);
 
-  OptimizationSystem &sys = solver->system();
+  OptimizationSystem & sys = solver->system();
 
   // We'll use current_local_solution below, so let's ensure that it's consistent
   // with the vector x that was passed in.
@@ -62,7 +62,7 @@ double __libmesh_nlopt_objective(unsigned n,
   sys.update();
 
   Real objective;
-  if (solver->objective_object != NULL)
+  if (solver->objective_object != libmesh_nullptr)
     {
       objective =
         solver->objective_object->objective(
@@ -76,7 +76,7 @@ double __libmesh_nlopt_objective(unsigned n,
   // If the gradient has been requested, fill it in
   if (gradient)
     {
-      if (solver->gradient_object != NULL)
+      if (solver->gradient_object != libmesh_nullptr)
         {
           solver->gradient_object->gradient(
                                             *(sys.current_local_solution), *(sys.rhs), sys);
@@ -119,11 +119,11 @@ void __libmesh_nlopt_equality_constraints(unsigned m,
 
   libmesh_assert(data);
 
-  // data should be a pointer to the solver (it was passed in as void*)
-  NloptOptimizationSolver<Number>* solver =
-    static_cast<NloptOptimizationSolver<Number>*> (data);
+  // data should be a pointer to the solver (it was passed in as void *)
+  NloptOptimizationSolver<Number> * solver =
+    static_cast<NloptOptimizationSolver<Number> *> (data);
 
-  OptimizationSystem &sys = solver->system();
+  OptimizationSystem & sys = solver->system();
 
   // We'll use current_local_solution below, so let's ensure that it's consistent
   // with the vector x that was passed in.
@@ -210,11 +210,11 @@ void __libmesh_nlopt_inequality_constraints(unsigned m,
 
   libmesh_assert(data);
 
-  // data should be a pointer to the solver (it was passed in as void*)
-  NloptOptimizationSolver<Number>* solver =
-    static_cast<NloptOptimizationSolver<Number>*> (data);
+  // data should be a pointer to the solver (it was passed in as void *)
+  NloptOptimizationSolver<Number> * solver =
+    static_cast<NloptOptimizationSolver<Number> *> (data);
 
-  OptimizationSystem &sys = solver->system();
+  OptimizationSystem & sys = solver->system();
 
   // We'll use current_local_solution below, so let's ensure that it's consistent
   // with the vector x that was passed in.
@@ -294,10 +294,10 @@ void __libmesh_nlopt_inequality_constraints(unsigned m,
 //---------------------------------------------------------------------
 // NloptOptimizationSolver<> methods
 template <typename T>
-NloptOptimizationSolver<T>::NloptOptimizationSolver (OptimizationSystem& system_in)
+NloptOptimizationSolver<T>::NloptOptimizationSolver (OptimizationSystem & system_in)
   :
   OptimizationSolver<T>(system_in),
-  _opt(NULL),
+  _opt(libmesh_nullptr),
   _result(NLOPT_SUCCESS),
   _iteration_count(0),
   _constraints_tolerance(1.e-8)

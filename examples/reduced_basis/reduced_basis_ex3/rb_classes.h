@@ -17,8 +17,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __rb_classes_h__
-#define __rb_classes_h__
+#ifndef RB_CLASSES_H
+#define RB_CLASSES_H
 
 #include "libmesh/transient_rb_construction.h"
 #include "libmesh/fe_base.h"
@@ -49,7 +49,7 @@ public:
   /**
    * Constructor. Just set the theta expansion.
    */
-  SimpleRBEvaluation(const libMesh::Parallel::Communicator& comm)
+  SimpleRBEvaluation(const libMesh::Parallel::Communicator & comm)
     : TransientRBEvaluation(comm)
   {
     set_rb_theta_expansion(cd_rb_theta_expansion);
@@ -74,8 +74,8 @@ class SimpleRBConstruction : public TransientRBConstruction
 {
 public:
 
-  SimpleRBConstruction (EquationSystems& es,
-                        const std::string& name_in,
+  SimpleRBConstruction (EquationSystems & es,
+                        const std::string & name_in,
                         const unsigned int number_in)
     : Parent(es, name_in, number_in),
       dirichlet_bc(UniquePtr<DirichletBoundary>())
@@ -132,12 +132,12 @@ public:
   /**
    * Pre-request all relevant element data.
    */
-  virtual void init_context(FEMContext &c)
+  virtual void init_context(FEMContext & c)
   {
     // For efficiency, we should prerequest all
     // the data we will need to build the
     // linear system before doing an element loop.
-    FEBase* elem_fe = NULL;
+    FEBase * elem_fe = libmesh_nullptr;
     c.get_element_fe(u_var, elem_fe);
 
     elem_fe->get_JxW();

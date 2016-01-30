@@ -41,16 +41,12 @@ class TransientRBThetaExpansion;
  * to perform "online" RB evaluations for
  * Linear Time Invariant (LTI) transient problems.
  *
- * We can handle time controls on the RHS as h(t)*f(x,\mu).
+ * We can handle time controls on the RHS as h(t)*f(x,\f$ \mu \f$).
  * See Martin Grepl's thesis for more details.
  *
- * @author David J. Knezevic, 2011
+ * \author David J. Knezevic
+ * \date 2011
  */
-
-
-// ------------------------------------------------------------
-// TransientRBEvaluation class definition
-
 class TransientRBEvaluation : public RBEvaluation, public RBTemporalDiscretization
 {
 public:
@@ -58,7 +54,7 @@ public:
   /**
    * Constructor.
    */
-  TransientRBEvaluation (const Parallel::Communicator &comm_in
+  TransientRBEvaluation (const Parallel::Communicator & comm_in
                          LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -75,7 +71,7 @@ public:
    * Clear this TransientRBEvaluation object.
    * Override to also clear the M_q representors
    */
-  virtual void clear();
+  virtual void clear() libmesh_override;
 
   /**
    * Resize and clear the data vectors corresponding to the
@@ -85,14 +81,14 @@ public:
    * case.
    */
   virtual void resize_data_structures(const unsigned int Nmax,
-                                      bool resize_error_bound_data=true);
+                                      bool resize_error_bound_data=true) libmesh_override;
 
   /**
    * Perform online solve for current_params
    * with the N basis functions. Overridden
    * to perform a time-dependent solve.
    */
-  virtual Real rb_solve(unsigned int N);
+  virtual Real rb_solve(unsigned int N) libmesh_override;
 
   /**
    * If a solve has already been performed, then we cached some data
@@ -104,7 +100,7 @@ public:
   /**
    * Override to return the L2 norm of RB_solution.
    */
-  virtual Real get_rb_solution_norm();
+  virtual Real get_rb_solution_norm() libmesh_override;
 
   /**
    * Specifies the residual scaling on the numerator to
@@ -118,7 +114,7 @@ public:
    * saved in RB_solution. This function uses the cached time-independent
    * data.
    */
-  virtual Real compute_residual_dual_norm(const unsigned int N);
+  virtual Real compute_residual_dual_norm(const unsigned int N) libmesh_override;
 
   /**
    * Compute the dual norm of the residual for the solution
@@ -141,24 +137,24 @@ public:
    * we may not need the representors any more.
    * Override to clear the M_q representors.
    */
-  virtual void clear_riesz_representors();
+  virtual void clear_riesz_representors() libmesh_override;
 
   /**
    * Write out all the data to text files in order to segregate the
    * Offline stage from the Online stage.
    * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void legacy_write_offline_data_to_files(const std::string& directory_name = "offline_data",
-                                                  const bool write_binary_data=true);
+  virtual void legacy_write_offline_data_to_files(const std::string & directory_name = "offline_data",
+                                                  const bool write_binary_data=true) libmesh_override;
 
   /**
    * Read in the saved Offline reduced basis data
    * to initialize the system for Online solves.
    * Note: This is a legacy method, use RBDataSerialization instead.
    */
-  virtual void legacy_read_offline_data_from_files(const std::string& directory_name = "offline_data",
+  virtual void legacy_read_offline_data_from_files(const std::string & directory_name = "offline_data",
                                                    bool read_error_bound_data=true,
-                                                   const bool read_binary_data=true);
+                                                   const bool read_binary_data=true) libmesh_override;
 
   //----------- PUBLIC DATA MEMBERS -----------//
 
@@ -243,13 +239,12 @@ public:
    * Vector storing the mass matrix representors.
    * These are basis dependent and hence stored here.
    */
-  std::vector< std::vector< NumericVector<Number>* > > M_q_representor;
+  std::vector< std::vector< NumericVector<Number> * > > M_q_representor;
 
   /**
    * Check that the data has been cached in case of using rb_solve_again
    */
   bool _rb_solve_data_cached;
-
 };
 
 }

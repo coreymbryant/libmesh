@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -40,11 +40,9 @@ namespace libMesh
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2006
+ * \author Roy H. Stogner
+ * \date 2006
  */
-
-// ------------------------------------------------------------
-// Solver class definition
 class NewtonSolver : public DiffSolver
 {
 public:
@@ -53,7 +51,7 @@ public:
    * to be solved.
    */
   explicit
-  NewtonSolver (sys_type& system);
+  NewtonSolver (sys_type & system);
 
   /**
    * Destructor.
@@ -66,19 +64,19 @@ public:
    * The initialization function.  This method is used to
    * initialize internal data structures before a simulation begins.
    */
-  virtual void init ();
+  virtual void init () libmesh_override;
 
   /**
    * The reinitialization function.  This method is used after
    * changes in the mesh.
    */
-  virtual void reinit ();
+  virtual void reinit () libmesh_override;
 
   /**
    * This method performs a solve, using an inexact Newton-Krylov
    * method with line search.
    */
-  virtual unsigned int solve ();
+  virtual unsigned int solve () libmesh_override;
 
   /**
    * If this is set to true, the solver is forced to test the residual
@@ -150,9 +148,11 @@ protected:
    * newton_iterate is moved to the end of the quasiNewton step, and
    * the return value is the substep size.
    */
-  Real line_search(Real tol, Real last_residual, Real& current_residual,
-                   NumericVector<Number> &newton_iterate,
-                   const NumericVector<Number> &linear_solution);
+  Real line_search(Real tol,
+                   Real last_residual,
+                   Real & current_residual,
+                   NumericVector<Number> & newton_iterate,
+                   const NumericVector<Number> & linear_solution);
 
   /**
    * This prints output for the convergence criteria based on

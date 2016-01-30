@@ -1,5 +1,5 @@
-#ifndef __eim_classes_h__
-#define __eim_classes_h__
+#ifndef EIM_CLASSES_H
+#define EIM_CLASSES_H
 
 // local includes
 #include "libmesh/rb_eim_construction.h"
@@ -13,7 +13,7 @@ class SimpleEIMEvaluation : public RBEIMEvaluation
 {
 public:
 
-  SimpleEIMEvaluation(const libMesh::Parallel::Communicator& comm)
+  SimpleEIMEvaluation(const libMesh::Parallel::Communicator & comm)
     : RBEIMEvaluation(comm)
   {
     attach_parametrized_function(&g_x);
@@ -35,7 +35,6 @@ public:
   Gx g_x;
   Gy g_y;
   Gz g_z;
-
 };
 
 // A simple subclass of RBEIMConstruction.
@@ -46,8 +45,8 @@ public:
   /**
    * Constructor.
    */
-  SimpleEIMConstruction (EquationSystems& es,
-                         const std::string& name_in,
+  SimpleEIMConstruction (EquationSystems & es,
+                         const std::string & name_in,
                          const unsigned int number_in)
     : Parent(es, name_in, number_in)
   {
@@ -71,13 +70,27 @@ public:
    */
   virtual void init_data()
   {
-    Gx_var = this->add_variable ("x_comp_of_G", libMesh::FIRST);
-    Gy_var = this->add_variable ("y_comp_of_G", libMesh::FIRST);
-    Gz_var = this->add_variable ("z_comp_of_G", libMesh::FIRST);
-
     Parent::init_data();
 
     set_inner_product_assembly(eim_ip);
+  }
+
+  /**
+   * Initialize the implicit system that is used to perform L2 projections.
+   */
+  virtual void init_implicit_system()
+  {
+    this->add_variable ("L2_proj_var", libMesh::FIRST);
+  }
+
+  /**
+   * Initialize the explicit system that is used to store the basis functions.
+   */
+  virtual void init_explicit_system()
+  {
+    Gx_var = get_explicit_system().add_variable ("x_comp_of_G", libMesh::FIRST);
+    Gy_var = get_explicit_system().add_variable ("y_comp_of_G", libMesh::FIRST);
+    Gz_var = get_explicit_system().add_variable ("z_comp_of_G", libMesh::FIRST);
   }
 
   /**
@@ -91,7 +104,6 @@ public:
    * Inner product assembly object
    */
   Ex6EIMInnerProduct eim_ip;
-
 };
 
 #endif

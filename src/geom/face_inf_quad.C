@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 #include "libmesh/face_inf_quad.h"
 #include "libmesh/edge_edge2.h"
 #include "libmesh/edge_inf_edge2.h"
+#include "libmesh/face_inf_quad4.h"
 
 namespace libMesh
 {
@@ -53,33 +54,10 @@ dof_id_type InfQuad::key (const unsigned int s) const
 {
   libmesh_assert_less (s, this->n_sides());
 
-
-  switch (s)
-    {
-    case 0:
-
-      return
-        this->compute_key (this->node(0),
-                           this->node(1));
-
-    case 1:
-
-      return
-        this->compute_key (this->node(1),
-                           this->node(3));
-
-    case 2:
-
-      return
-        this->compute_key (this->node(0),
-                           this->node(2));
-
-    default:
-      libmesh_error_msg("Invalid side s = " << s);
-    }
-
-  libmesh_error_msg("We'll never get here!");
-  return 0;
+  // The order of the node ids does not matter, they are sorted by the
+  // compute_key() function.
+  return this->compute_key(this->node(InfQuad4::side_nodes_map[s][0]),
+                           this->node(InfQuad4::side_nodes_map[s][1]));
 }
 
 
@@ -89,40 +67,30 @@ UniquePtr<Elem> InfQuad::side (const unsigned int i) const
   libmesh_assert_less (i, this->n_sides());
 
   // To be returned wrapped in an UniquePtr
-  Elem* edge = NULL;
+  Elem * edge = libmesh_nullptr;
 
   switch (i)
     {
-    case 0:
+    case 0: // base face
       {
-        // base face
         edge = new Edge2;
-        edge->set_node(0) = this->get_node(0);
-        edge->set_node(1) = this->get_node(1);
         break;
       }
 
-    case 1:
+    case 1: // adjacent to another infinite element
+    case 2: // adjacent to another infinite element
       {
-        // adjacent to another infinite element
         edge = new InfEdge2;
-        edge->set_node(0) = this->get_node(1);
-        edge->set_node(1) = this->get_node(3);
-        break;
-      }
-
-    case 2:
-      {
-        // adjacent to another infinite element
-        edge = new InfEdge2;
-        edge->set_node(0) = this->get_node(0); // be aware of swapped nodes,
-        edge->set_node(1) = this->get_node(2); // compared to conventional side numbering
         break;
       }
 
     default:
       libmesh_error_msg("Invalid side i = " << i);
     }
+
+  // Set the nodes
+  for (unsigned n=0; n<edge->n_nodes(); ++n)
+    edge->set_node(n) = this->get_node(InfQuad4::side_nodes_map[i][n]);
 
   return UniquePtr<Elem>(edge);
 }

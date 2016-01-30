@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ namespace libMesh
  *     0       1
  * \endverbatim
  */
-class Prism6 : public Prism
+class Prism6 libmesh_final : public Prism
 {
 public:
 
@@ -57,74 +57,76 @@ public:
    * Constructor.  By default this element has no parent.
    */
   explicit
-  Prism6  (Elem* p=NULL);
+  Prism6 (Elem * p=libmesh_nullptr) :
+    Prism(Prism6::n_nodes(), p, _nodelinks_data)
+  {}
 
   /**
    * @returns \p PRISM6
    */
-  ElemType     type () const   { return PRISM6; }
+  virtual ElemType type () const libmesh_override { return PRISM6; }
 
   /**
    * @returns 1
    */
-  unsigned int n_sub_elem() const { return 1; }
+  virtual unsigned int n_sub_elem() const libmesh_override { return 1; }
 
   /**
    * @returns true iff the specified (local) node number is a vertex.
    */
-  virtual bool is_vertex(const unsigned int i) const;
+  virtual bool is_vertex(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is an edge.
    */
-  virtual bool is_edge(const unsigned int i) const;
+  virtual bool is_edge(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is a face.
    */
-  virtual bool is_face(const unsigned int i) const;
+  virtual bool is_face(const unsigned int i) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified side
    */
   virtual bool is_node_on_side(const unsigned int n,
-                               const unsigned int s) const;
+                               const unsigned int s) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified edge
    */
   virtual bool is_node_on_edge(const unsigned int n,
-                               const unsigned int e) const;
+                               const unsigned int e) const libmesh_override;
 
   /*
    * @returns true iff the element map is definitely affine within
    * numerical tolerances
    */
-  virtual bool has_affine_map () const;
+  virtual bool has_affine_map () const libmesh_override;
 
   /**
    * @returns FIRST
    */
-  Order default_order() const { return FIRST; }
+  virtual Order default_order() const libmesh_override { return FIRST; }
 
   /**
    * Builds a \p QUAD4 or \p TRI3 built coincident with face i.
    * The \p UniquePtr<Elem> handles the memory aspect.
    */
-  UniquePtr<Elem> build_side (const unsigned int i,
-                              bool proxy) const;
+  virtual UniquePtr<Elem> build_side (const unsigned int i,
+                                      bool proxy) const libmesh_override;
 
   /**
    * Builds a \p EDGE2 or \p INFEDGE2 built coincident with face i.
    * The \p UniquePtr<Elem> handles the memory aspect.
    */
-  UniquePtr<Elem> build_edge (const unsigned int i) const;
+  virtual UniquePtr<Elem> build_edge (const unsigned int i) const libmesh_override;
 
   virtual void connectivity(const unsigned int sc,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const;
+                            std::vector<dof_id_type> & conn) const libmesh_override;
 
   /**
    * This maps the \f$ j^{th} \f$ node of the \f$ i^{th} \f$ side to
@@ -146,14 +148,14 @@ public:
   /**
    * Specialized function for computing the element volume.
    */
-  virtual Real volume () const;
+  virtual Real volume () const libmesh_override;
 
 protected:
 
   /**
    * Data for links to nodes
    */
-  Node* _nodelinks_data[6];
+  Node * _nodelinks_data[6];
 
 
 
@@ -162,9 +164,9 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int i,
-                          const unsigned int j,
-                          const unsigned int k) const
+  virtual float embedding_matrix (const unsigned int i,
+                                  const unsigned int j,
+                                  const unsigned int k) const libmesh_override
   { return _embedding_matrix[i][j][k]; }
 
   /**
@@ -178,17 +180,6 @@ protected:
 #endif // LIBMESH_ENABLE_AMR
 
 };
-
-
-
-// ------------------------------------------------------------
-// Prism6 class member functions
-inline
-Prism6::Prism6(Elem* p) :
-  Prism(Prism6::n_nodes(), p, _nodelinks_data)
-{
-}
-
 
 } // namespace libMesh
 

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@ namespace libMesh
 
 namespace MacroFunctions
 {
-void here(const char* file, int line, const char* date, const char* time)
+void here(const char * file, int line, const char * date, const char * time)
 {
   libMesh::err << "[" << static_cast<std::size_t>(libMesh::global_processor_id()) << "] "
                << file
@@ -45,7 +45,7 @@ void here(const char* file, int line, const char* date, const char* time)
 
 
 
-void stop(const char* file, int line, const char* date, const char* time)
+void stop(const char * file, int line, const char * date, const char * time)
 {
   if (libMesh::global_n_processors() == 1)
     {
@@ -61,7 +61,7 @@ void stop(const char* file, int line, const char* date, const char* time)
 }
 
 
-void report_error(const char* file, int line, const char* date, const char* time)
+void report_error(const char * file, int line, const char * date, const char * time)
 {
   // It is possible to have an error *inside* report_error; e.g. from
   // print_trace.  We don't want to infinitely recurse.

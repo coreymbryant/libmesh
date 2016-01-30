@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -53,9 +53,9 @@ template <typename T> class ShellMatrix;
  * This class provides an interface to the suite of preconditioners available
  * from Trilinos.
  *
- * @author David Andrs, 2011
+ * \author David Andrs
+ * \date 2011
  */
-
 template <typename T>
 class TrilinosPreconditioner :
     public Preconditioner<T>,
@@ -66,7 +66,7 @@ public:
   /**
    *  Constructor. Initializes PetscPreconditioner data structures
    */
-  TrilinosPreconditioner (const libMesh::Parallel::Communicator &comm
+  TrilinosPreconditioner (const libMesh::Parallel::Communicator & comm
                           LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -78,17 +78,17 @@ public:
    * Computes the preconditioned vector "y" based on input "x".
    * Usually by solving Py=x to get the action of P^-1 x.
    */
-  virtual void apply(const NumericVector<T> & x, NumericVector<T> & y);
+  virtual void apply(const NumericVector<T> & x, NumericVector<T> & y) libmesh_override;
 
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear () {}
+  virtual void clear () libmesh_override {}
 
   /**
    * Initialize data structures if not done so already.
    */
-  virtual void init ();
+  virtual void init () libmesh_override;
 
   void set_params(Teuchos::ParameterList & list);
 
@@ -125,15 +125,15 @@ protected:
 
   // Epetra_Operator interface
   virtual int SetUseTranspose(bool UseTranspose);
-  virtual int Apply(const Epetra_MultiVector &X, Epetra_MultiVector &Y) const;
-  virtual int ApplyInverse(const Epetra_MultiVector &r, Epetra_MultiVector &z) const;
+  virtual int Apply(const Epetra_MultiVector & X, Epetra_MultiVector & Y) const;
+  virtual int ApplyInverse(const Epetra_MultiVector & r, Epetra_MultiVector & z) const;
   virtual double NormInf() const;
-  virtual const char *Label() const;
+  virtual const char * Label() const;
   virtual bool UseTranspose() const;
   virtual bool HasNormInf() const;
-  virtual const Epetra_Comm &Comm() const;
-  virtual const Epetra_Map &OperatorDomainMap() const;
-  virtual const Epetra_Map &OperatorRangeMap() const;
+  virtual const Epetra_Comm & Comm() const;
+  virtual const Epetra_Map & OperatorDomainMap() const;
+  virtual const Epetra_Map & OperatorRangeMap() const;
 };
 
 
@@ -142,10 +142,10 @@ protected:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-TrilinosPreconditioner<T>::TrilinosPreconditioner (const libMesh::Parallel::Communicator &comm) :
+TrilinosPreconditioner<T>::TrilinosPreconditioner (const libMesh::Parallel::Communicator & comm) :
   Preconditioner<T>(comm),
-  _prec(NULL),
-  _mat(NULL)
+  _prec(libmesh_nullptr),
+  _mat(libmesh_nullptr)
 {
 }
 

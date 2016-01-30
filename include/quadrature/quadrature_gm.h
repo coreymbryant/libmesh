@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -92,9 +92,10 @@ namespace libMesh
  * Reference LGPL Fortran90 code by John Burkardt can be found here:
  * http://people.scs.fsu.edu/~burkardt/f_src/gm_rules/gm_rules.html
  *
- * @author John W. Peterson, 2008
+ * \author John W. Peterson
+ * \date 2008
  */
-class QGrundmann_Moller : public QBase
+class QGrundmann_Moller libmesh_final : public QBase
 {
 public:
 
@@ -112,13 +113,13 @@ public:
   /**
    * @returns \p QGRUNDMANN_MOLLER
    */
-  QuadratureType type() const { return QGRUNDMANN_MOLLER; }
+  virtual QuadratureType type() const libmesh_override { return QGRUNDMANN_MOLLER; }
 
 
 private:
 
-  void init_1D (const ElemType,
-                unsigned int =0)
+  virtual void init_1D (const ElemType,
+                        unsigned int =0) libmesh_override
   {
     // See about making this non-pure virtual in the base class
     libmesh_not_implemented();
@@ -127,14 +128,14 @@ private:
   /**
    * Initialize a 3D GM rule.  Only makes sense for Tets.
    */
-  void init_3D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+  virtual void init_3D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 
   /**
    * Initialize a 2D GM rule.  Only makes sense for Tris.
    */
-  void init_2D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+  virtual void init_2D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 
   /**
    * This routine is called from init_2D() and init_3D().  It actually
@@ -150,7 +151,7 @@ private:
    */
   void compose_all(unsigned int s, // number to be compositioned
                    unsigned int p, // # of partitions
-                   std::vector<std::vector<unsigned int> >& result);
+                   std::vector<std::vector<unsigned int> > & result);
 };
 
 

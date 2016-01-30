@@ -1,6 +1,6 @@
 
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,14 +35,15 @@ namespace libMesh
 // Forward Declarations
 class Elem;
 
-
-
 /**
  * This class implements useful utility functions for a patch of
  * elements
  *
- * @author Roy H. Stogner, 2007.
- * based on code by Varis Carey, Benjamin S. Kirk, 2004.
+ * \author Varis Carey
+ * \author Benjamin S. Kirk
+ * \date 2004
+ * \author Roy H. Stogner
+ * \date 2007
  */
 class Patch : public std::set<const Elem *>
 {
@@ -110,7 +111,7 @@ public:
    * number of elements meets or exceeds \p target_patch_size, or
    * until the patch has no more local neighbors.
    */
-  void build_around_element(const Elem* elem,
+  void build_around_element(const Elem * elem,
                             const unsigned int target_patch_size = 10,
                             PMF patchtype = &Patch::add_local_face_neighbors);
 
@@ -120,13 +121,13 @@ protected:
    * This function finds all elements which
    * touch the current patch at a face
    */
-  void find_face_neighbors(std::set<const Elem *> &neighbor_set);
+  void find_face_neighbors(std::set<const Elem *> & neighbor_set);
 
   /**
    * This function finds all elements which
    * touch the current patch at any point
    */
-  void find_point_neighbors(std::set<const Elem *> &neighbor_set);
+  void find_point_neighbors(std::set<const Elem *> & neighbor_set);
 
   const processor_id_type _my_procid;
 };

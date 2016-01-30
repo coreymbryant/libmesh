@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -36,16 +36,15 @@ class MeshBase;
 class MeshData;
 
 /**
+ * The LegacyXdrIO class has been replaced by the XdrIO class.
  *
- * @author Benjamin Kirk, John Peterson, 2004.
+ * \author Benjamin Kirk
+ * \author John Peterson
+ * \date 2004
  */
-
-// ------------------------------------------------------------
-// LegacyXdrIO class definition
 class LegacyXdrIO : public MeshInput<MeshBase>,
                     public MeshOutput<MeshBase>
 {
-
 public:
   /**
    * Enumeration flag for the type of software.
@@ -64,7 +63,7 @@ public:
    * files.
    */
   explicit
-  LegacyXdrIO (MeshBase&,       const bool=false);
+  LegacyXdrIO (MeshBase &, const bool=false);
 
   /**
    * Constructor.  Takes a reference to a constant mesh object.
@@ -74,7 +73,7 @@ public:
    * files.
    */
   explicit
-  LegacyXdrIO (const MeshBase&, const bool=false);
+  LegacyXdrIO (const MeshBase &, const bool=false);
 
   /**
    * Destructor.
@@ -84,24 +83,24 @@ public:
   /**
    * This method implements reading a mesh from a specified file.
    */
-  virtual void read (const std::string&);
+  virtual void read (const std::string &) libmesh_override;
 
   /**
    * This method implements reading a mesh in the \p MGF
    * format from a specified file.
    */
-  void read_mgf (const std::string&);
+  void read_mgf (const std::string &);
 
   /**
    * This method implements writing a mesh to a specified file.
    */
-  virtual void write (const std::string&);
+  virtual void write (const std::string &) libmesh_override;
 
   /**
    * This method implements writing a mesh in the \p MGF
    * format from a specified file.
    */
-  void write_mgf (const std::string&);
+  void write_mgf (const std::string &);
 
   /**
    * Read solutions in mgflo's XDR format.
@@ -113,9 +112,9 @@ public:
    * backwards compatiblity with MGF and could be
    * deprecated at any time.
    */
-  void read_mgf_soln (const std::string& name,
-                      std::vector<Number>& soln,
-                      std::vector<std::string>& var_names) const;
+  void read_mgf_soln (const std::string & name,
+                      std::vector<Number> & soln,
+                      std::vector<std::string> & var_names) const;
 
   /**
    * Write solutions in mgflo's XDR format.
@@ -126,9 +125,9 @@ public:
    * backwards compatiblity with MGF and could be
    * deprecated at any time.
    */
-  void write_mgf_soln (const std::string& name,
-                       std::vector<Number>& soln,
-                       std::vector<std::string>& var_names) const;
+  void write_mgf_soln (const std::string & name,
+                       std::vector<Number> & soln,
+                       std::vector<std::string> & var_names) const;
 
   /**
    * Set the flag indicating if we should read/write binary.
@@ -149,7 +148,8 @@ private:
    * mesh file formats.  This method actually
    * expects an ASCII-file.
    */
-  void read_ascii (const std::string&, const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
+  void read_ascii (const std::string &,
+                   const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
 
   /**
    * Read meshes in \p libMesh XDR format.
@@ -157,7 +157,8 @@ private:
    * mesh file formats.  This method
    * expects an XDR-encoded binary file.
    */
-  void read_binary (const std::string&, const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
+  void read_binary (const std::string &,
+                    const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
 
 
 
@@ -170,7 +171,8 @@ private:
    * 1: "MGF " even older style meshes from MGF
    * 2: "LIBM" new type meshes which contain refinement trees.
    */
-  void write_ascii (const std::string&, const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
+  void write_ascii (const std::string &,
+                    const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
 
   /**
    * Write meshes in \p libMesh  XDR format.
@@ -178,35 +180,36 @@ private:
    * meshes in general since they will be
    * hybrid meshes.
    */
-  void write_binary (const std::string&, const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
+  void write_binary (const std::string &,
+                     const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
 
 
   /**
    * Implements reading either a binary \p XDR or ASCII \p XDA mesh.
    */
-  void read_mesh (const std::string&,
+  void read_mesh (const std::string &,
                   const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM,
-                  MeshData* = NULL);
+                  MeshData * = libmesh_nullptr);
 
   /**
    * Implements writing either a binary \p XDR or ASCII \p XDA mesh.
    */
-  void write_mesh (const std::string&,
+  void write_mesh (const std::string &,
                    const LegacyXdrIO::FileFormat = LegacyXdrIO::LIBM);
 
   /**
    * Implements reading either a binary or ASCII MGF solution.
    */
-  void read_soln  (const std::string&,
-                   std::vector<Real>&,
-                   std::vector<std::string>&) const;
+  void read_soln  (const std::string &,
+                   std::vector<Real> &,
+                   std::vector<std::string> &) const;
 
   /**
    * Implements writing either a binary or ASCII MGF solution.
    */
-  void write_soln (const std::string& name,
-                   std::vector<Real>& soln,
-                   std::vector<std::string>&) const;
+  void write_soln (const std::string & name,
+                   std::vector<Real> & soln,
+                   std::vector<std::string> &) const;
 
   //-------------------------------------------------------------
   // local data

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@ namespace libMesh
 
 //--------------------------------------------------------------------------------
 // MeshfreeInterpolation methods
-void MeshfreeInterpolation::print_info (std::ostream& os) const
+void MeshfreeInterpolation::print_info (std::ostream & os) const
 {
   os << "MeshfreeInterpolation"
      << "\n n_source_points()=" << _src_pts.size()
@@ -52,7 +52,7 @@ void MeshfreeInterpolation::print_info (std::ostream& os) const
 
 
 
-std::ostream& operator << (std::ostream& os, const MeshfreeInterpolation& mfi)
+std::ostream & operator << (std::ostream & os, const MeshfreeInterpolation & mfi)
 {
   mfi.print_info(os);
   return os;
@@ -69,9 +69,9 @@ void MeshfreeInterpolation::clear ()
 
 
 
-void MeshfreeInterpolation::add_field_data (const std::vector<std::string> &field_names,
-                                            const std::vector<Point>  &pts,
-                                            const std::vector<Number> &vals)
+void MeshfreeInterpolation::add_field_data (const std::vector<std::string> & field_names,
+                                            const std::vector<Point> & pts,
+                                            const std::vector<Number> & vals)
 {
   libmesh_experimental();
   libmesh_assert_equal_to (field_names.size()*pts.size(), vals.size());
@@ -160,12 +160,12 @@ void InverseDistanceInterpolation<KDDim>::construct_kd_tree ()
   START_LOG ("construct_kd_tree()", "InverseDistanceInterpolation<>");
 
   // Initialize underlying KD tree
-  if (_kd_tree.get() == NULL)
+  if (_kd_tree.get() == libmesh_nullptr)
     _kd_tree.reset (new kd_tree_t (KDDim,
                                    _point_list_adaptor,
                                    nanoflann::KDTreeSingleIndexAdaptorParams(10 /* max leaf */)));
 
-  libmesh_assert (_kd_tree.get() != NULL);
+  libmesh_assert (_kd_tree.get() != libmesh_nullptr);
 
   _kd_tree->buildIndex();
 
@@ -181,7 +181,7 @@ void InverseDistanceInterpolation<KDDim>::clear()
 #ifdef LIBMESH_HAVE_NANOFLANN
   // Delete the KD Tree and start fresh
   if (_kd_tree.get())
-    _kd_tree.reset (NULL);
+    _kd_tree.reset (libmesh_nullptr);
 #endif
 
   // Call  base class clear method
@@ -191,16 +191,16 @@ void InverseDistanceInterpolation<KDDim>::clear()
 
 
 template <unsigned int KDDim>
-void InverseDistanceInterpolation<KDDim>::interpolate_field_data (const std::vector<std::string> &field_names,
-                                                                  const std::vector<Point>  &tgt_pts,
-                                                                  std::vector<Number> &tgt_vals) const
+void InverseDistanceInterpolation<KDDim>::interpolate_field_data (const std::vector<std::string> & field_names,
+                                                                  const std::vector<Point> & tgt_pts,
+                                                                  std::vector<Number> & tgt_vals) const
 {
   libmesh_experimental();
 
   // forcibly initialize, if needed
 #ifdef LIBMESH_HAVE_NANOFLANN
-  if (_kd_tree.get() == NULL)
-    const_cast<InverseDistanceInterpolation<KDDim>*>(this)->construct_kd_tree();
+  if (_kd_tree.get() == libmesh_nullptr)
+    const_cast<InverseDistanceInterpolation<KDDim> *>(this)->construct_kd_tree();
 #endif
 
   START_LOG ("interpolate_field_data()", "InverseDistanceInterpolation<>");
@@ -230,7 +230,7 @@ void InverseDistanceInterpolation<KDDim>::interpolate_field_data (const std::vec
     for (std::vector<Point>::const_iterator tgt_it=tgt_pts.begin();
          tgt_it != tgt_pts.end(); ++tgt_it)
       {
-        const Point &tgt(*tgt_it);
+        const Point & tgt(*tgt_it);
         const Real query_pt[] = { tgt(0), tgt(1), tgt(2) };
 
         _kd_tree->knnSearch(&query_pt[0], num_results, &ret_index[0], &ret_dist_sqr[0]);
@@ -261,9 +261,9 @@ void InverseDistanceInterpolation<KDDim>::interpolate_field_data (const std::vec
 
 template <unsigned int KDDim>
 void InverseDistanceInterpolation<KDDim>::interpolate (const Point               & /* pt */,
-                                                       const std::vector<size_t> &src_indices,
-                                                       const std::vector<Real>   &src_dist_sqr,
-                                                       std::vector<Number>::iterator &out_it) const
+                                                       const std::vector<size_t> & src_indices,
+                                                       const std::vector<Real>   & src_dist_sqr,
+                                                       std::vector<Number>::iterator & out_it) const
 {
   // We explicitly assume that the input source points are sorted from closest to
   // farthests.  assert that assumption in DEBUG mode.

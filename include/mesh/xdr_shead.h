@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -20,18 +20,22 @@
 
 // Local includes
 #include "libmesh/xdr_head.h" // for base class
-#include "libmesh/xdr_soln.h" // for friend
 
 // C++ includes
 
 namespace libMesh
 {
 
+// Forward declarations
+class XdrSOLN;
+
 /**
  * The \p XdrSHEAD class.  This class is responsible for
  * reading/writing \p xdr solution file headers.
  *
- * @author Bill Barth, Robert McLay.
+ * \author Bill Barth
+ * \author Robert McLay
+ * \date 2000
  */
 class XdrSHEAD : public XdrHEAD
 {
@@ -106,24 +110,24 @@ public:
   /**
    * Set the user solution title.
    */
-  void setUserTitle(const char* title)          { delete [] mp_userTitle; mp_userTitle = cpyString(title); }
+  void setUserTitle(const char * title)          { delete [] mp_userTitle; mp_userTitle = cpyString(title); }
 
   /**
    * Get the user solution title.
    */
-  const char* getUserTitle() const              { return mp_userTitle; }
+  const char * getUserTitle() const              { return mp_userTitle; }
 
   /**
    * Set null-terminated list of
    * variable names.
    */
-  void setVarTitle(const char* titles, int len) { delete [] mp_varTitle; mp_varTitle = cpyString(titles, len); }
+  void setVarTitle(const char * titles, int len) { delete [] mp_varTitle; mp_varTitle = cpyString(titles, len); }
 
   /**
    * Get null-terminated list of
    * variable names.
    */
-  const char* getVarTitle() const               { return mp_varTitle; }
+  const char * getVarTitle() const               { return mp_varTitle; }
 
 };
 

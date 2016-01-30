@@ -1,25 +1,30 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-/* nonlinear_neohooke_cc.C Copyright 2012 Robert Weidlich, also LGPL-licensed */
+
+
+// \author Robert Weidlich
+// \date Copyright 2012
 
 #include "nonlinear_neohooke_cc.h"
 
-void NonlinearNeoHookeCurrentConfig::init_for_qp(VectorValue<Gradient> & grad_u, unsigned int qp) {
+void NonlinearNeoHookeCurrentConfig::init_for_qp(VectorValue<Gradient> & grad_u,
+                                                 unsigned int qp)
+{
   this->current_qp = qp;
   F.zero();
   S.zero();
@@ -28,24 +33,24 @@ void NonlinearNeoHookeCurrentConfig::init_for_qp(VectorValue<Gradient> & grad_u,
     RealTensor invF;
     invF.zero();
     for (unsigned int i = 0; i < 3; ++i)
-      for (unsigned int j = 0; j < 3; ++j) {
+      for (unsigned int j = 0; j < 3; ++j)
         invF(i, j) += libmesh_real(grad_u(i)(j));
-      }
+
     F.add(invF.inverse());
 
     libmesh_assert_greater (F.det(), -TOLERANCE);
   }
 
-  if (this->calculate_linearized_stiffness) {
+  if (this->calculate_linearized_stiffness)
     this->calculate_tangent();
-  }
 
   this->calculate_stress();
 }
 
 
 
-void NonlinearNeoHookeCurrentConfig::calculate_tangent() {
+void NonlinearNeoHookeCurrentConfig::calculate_tangent()
+{
   Real mu = E / (2 * (1 + nu));
   Real lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
 
@@ -65,8 +70,8 @@ void NonlinearNeoHookeCurrentConfig::calculate_tangent() {
 }
 
 
-void NonlinearNeoHookeCurrentConfig::calculate_stress() {
-
+void NonlinearNeoHookeCurrentConfig::calculate_stress()
+{
   double mu = E / (2.0 * (1.0 + nu));
   double lambda = E * nu / ((1 + nu) * (1 - 2 * nu));
 
@@ -85,7 +90,9 @@ void NonlinearNeoHookeCurrentConfig::calculate_stress() {
   sigma = 1/detF * tau;
 }
 
-void NonlinearNeoHookeCurrentConfig::get_residual(DenseVector<Real> & residuum, unsigned int & i) {
+void NonlinearNeoHookeCurrentConfig::get_residual(DenseVector<Real> & residuum,
+                                                  unsigned int & i)
+{
   B_L.resize(3, 6);
   DenseVector<Real> sigma_voigt(6);
 
@@ -96,7 +103,9 @@ void NonlinearNeoHookeCurrentConfig::get_residual(DenseVector<Real> & residuum, 
   B_L.vector_mult(residuum, sigma_voigt);
 }
 
-void NonlinearNeoHookeCurrentConfig::tensor_to_voigt(const RealTensor &tensor, DenseVector<Real> &vec) {
+void NonlinearNeoHookeCurrentConfig::tensor_to_voigt(const RealTensor & tensor,
+                                                     DenseVector<Real> & vec)
+{
   vec(0) = tensor(0, 0);
   vec(1) = tensor(1, 1);
   vec(2) = tensor(2, 2);
@@ -106,7 +115,10 @@ void NonlinearNeoHookeCurrentConfig::tensor_to_voigt(const RealTensor &tensor, D
 
 }
 
-void NonlinearNeoHookeCurrentConfig::get_linearized_stiffness(DenseMatrix<Real> & stiffness, unsigned int & i, unsigned int & j) {
+void NonlinearNeoHookeCurrentConfig::get_linearized_stiffness(DenseMatrix<Real> & stiffness,
+                                                              unsigned int & i,
+                                                              unsigned int & j)
+{
   stiffness.resize(3, 3);
 
   double G_IK = (sigma * dphi[i][current_qp]) * dphi[j][current_qp];
@@ -126,10 +138,11 @@ void NonlinearNeoHookeCurrentConfig::get_linearized_stiffness(DenseMatrix<Real> 
   stiffness += B_L;
 }
 
-void NonlinearNeoHookeCurrentConfig::build_b_0_mat(int i, DenseMatrix<Real>& b_0_mat) {
-  for (unsigned int ii = 0; ii < 3; ++ii) {
+void NonlinearNeoHookeCurrentConfig::build_b_0_mat(int i, DenseMatrix<Real> & b_0_mat)
+{
+  for (unsigned int ii = 0; ii < 3; ++ii)
     b_0_mat(ii, ii) = dphi[i][current_qp](ii);
-  }
+
   b_0_mat(0, 3) = dphi[i][current_qp](1);
   b_0_mat(1, 3) = dphi[i][current_qp](0);
   b_0_mat(1, 4) = dphi[i][current_qp](2);

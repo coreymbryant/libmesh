@@ -349,3 +349,330 @@ AC_DEFUN([LIBMESH_TEST_CXX11_TYPE_TRAITS],
 
     AM_CONDITIONAL(HAVE_CXX11_TYPE_TRAITS, test x$have_cxx11_type_traits == xyes)
   ])
+
+
+AC_DEFUN([LIBMESH_TEST_CXX11_INVERSE_HYPERBOLIC_FUNCS],
+  [
+    have_cxx11_inverse_hyperbolic_sine=no
+    have_cxx11_inverse_hyperbolic_cosine=no
+    have_cxx11_inverse_hyperbolic_tangent=no
+
+    have_cxx11_inverse_hyperbolic_sine_complex=no
+    have_cxx11_inverse_hyperbolic_cosine_complex=no
+    have_cxx11_inverse_hyperbolic_tangent_complex=no
+
+    # Only run the test if enablecxx11==yes
+    if (test "x$enablecxx11" = "xyes"); then
+      AC_LANG_PUSH([C++])
+
+      # Test for asinh
+      AC_MSG_CHECKING(for C++11 std::asinh support in <cmath>)
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        @%:@include <cmath>
+      ]], [[
+        double x = std::asinh(1.);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_INVERSE_HYPERBOLIC_SINE, 1, [Flag indicating whether compiler supports std::asinh])
+        have_cxx11_inverse_hyperbolic_sine=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      # Test for acosh
+      AC_MSG_CHECKING(for C++11 std::acosh support in <cmath>)
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        @%:@include <cmath>
+      ]], [[
+        double x = std::acosh(1.);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE, 1, [Flag indicating whether compiler supports std::acosh])
+        have_cxx11_inverse_hyperbolic_cosine=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      # Test for atanh
+      AC_MSG_CHECKING(for C++11 std::atanh support in <cmath>)
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        @%:@include <cmath>
+      ]], [[
+        double x = std::atanh(0.);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT, 1, [Flag indicating whether compiler supports std::atanh])
+        have_cxx11_inverse_hyperbolic_tangent=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+
+      # Test for asinh(complex)
+      AC_MSG_CHECKING(for C++11 std::asinh(complex) support in <complex>)
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        @%:@include <complex>
+      ]], [[
+        std::complex<double> z(0, -2);
+        std::complex<double> x = std::asinh(z);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_INVERSE_HYPERBOLIC_SINE_COMPLEX, 1, [Flag indicating whether compiler supports std::asinh])
+        have_cxx11_inverse_hyperbolic_sine_complex=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      # Test for acosh(complex)
+      AC_MSG_CHECKING(for C++11 std::acosh(complex) support in <complex>)
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        @%:@include <complex>
+      ]], [[
+        std::complex<double> z(0.5, 0);
+        std::complex<double> x = std::acosh(z);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE_COMPLEX, 1, [Flag indicating whether compiler supports std::asinh])
+        have_cxx11_inverse_hyperbolic_cosine_complex=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      # Test for atanh(complex)
+      AC_MSG_CHECKING(for C++11 std::atanh(complex) support in <complex>)
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        @%:@include <complex>
+      ]], [[
+        std::complex<double> z(2, 0);
+        std::complex<double> x = std::atanh(z);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT_COMPLEX, 1, [Flag indicating whether compiler supports std::asinh])
+        have_cxx11_inverse_hyperbolic_tangent_complex=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+
+      AC_LANG_POP([C++])
+    fi
+
+    AM_CONDITIONAL(HAVE_CXX11_INVERSE_HYPERBOLIC_SINE, test x$have_cxx11_inverse_hyperbolic_sine == xyes)
+    AM_CONDITIONAL(HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE, test x$have_cxx11_inverse_hyperbolic_cosine == xyes)
+    AM_CONDITIONAL(HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT, test x$have_cxx11_inverse_hyperbolic_tangent == xyes)
+
+    AM_CONDITIONAL(HAVE_CXX11_INVERSE_HYPERBOLIC_SINE_COMPLEX, test x$have_cxx11_inverse_hyperbolic_sine_complex == xyes)
+    AM_CONDITIONAL(HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE_COMPLEX, test x$have_cxx11_inverse_hyperbolic_cosine_complex == xyes)
+    AM_CONDITIONAL(HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT_COMPLEX, test x$have_cxx11_inverse_hyperbolic_tangent_complex == xyes)
+  ])
+
+
+AC_DEFUN([LIBMESH_TEST_CXX11_DELETED_FUNCTIONS],
+  [
+    have_cxx11_deleted_functions=no
+
+    # Only run the test if enablecxx11==yes
+    if (test "x$enablecxx11" = "xyes"); then
+      AC_MSG_CHECKING(for C++11 deleted functions support)
+      AC_LANG_PUSH([C++])
+
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+      class Foo
+      {
+        Foo(const Foo &) = delete;
+      };
+      ]], [[
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_DELETED_FUNCTIONS, 1, [Flag indicating whether compiler supports f() = delete;])
+        have_cxx11_deleted_functions=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      AC_LANG_POP([C++])
+    fi
+
+    AM_CONDITIONAL(HAVE_CXX11_DELETED_FUNCTIONS, test x$have_cxx11_deleted_functions == xyes)
+  ])
+
+
+AC_DEFUN([LIBMESH_TEST_CXX11_FINAL],
+  [
+    have_cxx11_final=no
+
+    # Only run the test if enablecxx11==yes
+    if (test "x$enablecxx11" = "xyes"); then
+      AC_MSG_CHECKING(for C++11 'final' keyword support)
+      AC_LANG_PUSH([C++])
+
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+      // Test that a function can be declared final.
+      struct A
+      {
+        virtual void foo() final;
+      };
+
+      // Test that a struct can be declared final.
+      struct B final : A
+      {
+      };
+      ]], [[
+      ]])],[
+        have_cxx11_final=yes
+      ],[
+        have_cxx11_final=no
+      ])
+
+      # Confirm that you cannot declare a non-virtual function 'final'.
+      if (test "x$have_cxx11_final" = "xyes"); then
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        struct A
+        {
+          // Error: non-virtual function cannot be final
+          void bar() final;
+        };
+        ]], [[
+        ]])],[
+          # If this code compiles, 'final' is not working correctly.
+          have_cxx11_final=no
+        ],[
+          have_cxx11_final=yes
+        ])
+      fi
+
+      # Confirm that you cannot override a final function.
+      if (test "x$have_cxx11_final" = "xyes"); then
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        struct A
+        {
+          virtual void foo() final;
+        };
+        struct B : A
+        {
+          // Error: foo cannot be overridden as it's final in A
+          void foo();
+        };
+        ]], [[
+        ]])],[
+          # If this code compiles, 'final' is not working correctly.
+          have_cxx11_final=no
+        ],[
+          have_cxx11_final=yes
+        ])
+      fi
+
+      # Confirm that you cannot inherit from a 'final' class.
+      if (test "x$have_cxx11_final" = "xyes"); then
+        AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+        struct A
+        {
+        };
+
+        // struct B is final
+        struct B final : A
+        {
+        };
+
+        // Error: B is final
+        struct C : B
+        {
+        };
+        ]], [[
+        ]])],[
+          # If this code compiles, 'final' is not working correctly.
+          have_cxx11_final=no
+        ],[
+          have_cxx11_final=yes
+        ])
+      fi
+
+      # If the flag is still 'yes' after all the tests, set the #define.
+      if (test "x$have_cxx11_final" = "xyes"); then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_FINAL, 1, [Flag indicating whether compiler supports f() final;])
+      else
+        AC_MSG_RESULT(no)
+      fi
+
+      AC_LANG_POP([C++])
+    fi
+
+    AM_CONDITIONAL(HAVE_CXX11_FINAL, test x$have_cxx11_final == xyes)
+  ])
+
+
+AC_DEFUN([LIBMESH_TEST_CXX11_NULLPTR],
+  [
+    have_cxx11_nullptr=no
+
+    # Only run the test if enablecxx11==yes
+    if (test "x$enablecxx11" = "xyes"); then
+      AC_MSG_CHECKING(for C++11 nullptr support)
+      AC_LANG_PUSH([C++])
+
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+      @%:@include <cstddef>
+      void f(int * pi) {}
+      void f(double * pd) {}
+      void f(std::nullptr_t nullp) {}
+      ]], [[
+      // would be ambiguous without void f(nullptr_t)
+      f(nullptr);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_NULLPTR, 1, [Flag indicating whether compiler supports nullptr])
+        have_cxx11_nullptr=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      AC_LANG_POP([C++])
+    fi
+
+    # Test the nullptr workaround if we don't have the real nullptr
+    if (test "x$have_cxx11_nullptr" != "xyes"); then
+      AC_MSG_CHECKING(for C++03 compatible nullptr workaround)
+      AC_LANG_PUSH([C++])
+
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+      const class my_nullptr_t
+      {
+      public:
+        // convertible to any type of null non-member pointer...
+        template<class T>
+        inline operator T * () const { return 0; }
+
+        // or any type of null member pointer...
+        template<class C, class T>
+        inline operator T C::*() const { return 0; }
+
+      private:
+        // Can't take address of nullptr
+        void operator & () const;
+      } my_nullptr = {};
+
+      void f(int) {}
+      void f(double *) {}
+
+      ]], [[
+      // Test that it works the same way as NULL.
+      int * p = my_nullptr;
+
+      // Test that the compiler can disambiguate the call correctly.
+      f(my_nullptr);
+      ]])],[
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(HAVE_CXX11_NULLPTR_WORKAROUND, 1,
+                  [Flag indicating whether C++03 compatible nullptr workaround works])
+        have_cxx11_nullptr_workaround=yes
+      ],[
+        AC_MSG_RESULT(no)
+      ])
+
+      AC_LANG_POP([C++])
+    fi
+
+    AM_CONDITIONAL(HAVE_CXX11_NULLPTR, test x$have_cxx11_nullptr == xyes)
+    AM_CONDITIONAL(HAVE_CXX11_NULLPTR_WORKAROUND, test x$have_cxx11_nullptr_workaround == xyes)
+  ])

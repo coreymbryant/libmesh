@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,11 +34,11 @@ namespace libMesh
 
 //------------------------------------------------------------------
 // PointLocator methods
-PointLocatorTree::PointLocatorTree (const MeshBase& mesh,
-                                    const PointLocatorBase* master) :
+PointLocatorTree::PointLocatorTree (const MeshBase & mesh,
+                                    const PointLocatorBase * master) :
   PointLocatorBase (mesh,master),
-  _tree            (NULL),
-  _element         (NULL),
+  _tree            (libmesh_nullptr),
+  _element         (libmesh_nullptr),
   _out_of_mesh_mode(false),
   _target_bin_size (200),
   _build_type(Trees::NODES)
@@ -48,12 +48,12 @@ PointLocatorTree::PointLocatorTree (const MeshBase& mesh,
 
 
 
-PointLocatorTree::PointLocatorTree (const MeshBase& mesh,
+PointLocatorTree::PointLocatorTree (const MeshBase & mesh,
                                     const Trees::BuildType build_type,
-                                    const PointLocatorBase* master) :
+                                    const PointLocatorBase * master) :
   PointLocatorBase (mesh,master),
-  _tree            (NULL),
-  _element         (NULL),
+  _tree            (libmesh_nullptr),
+  _element         (libmesh_nullptr),
   _out_of_mesh_mode(false),
   _target_bin_size (200),
   _build_type(build_type)
@@ -73,14 +73,14 @@ PointLocatorTree::~PointLocatorTree ()
 void PointLocatorTree::clear ()
 {
   // only delete the tree when we are the master
-  if (this->_tree != NULL)
+  if (this->_tree != libmesh_nullptr)
     {
-      if (this->_master == NULL)
+      if (this->_master == libmesh_nullptr)
         // we own the tree
         delete this->_tree;
       else
         // someone else owns and therefore deletes the tree
-        this->_tree = NULL;
+        this->_tree = libmesh_nullptr;
     }
 }
 
@@ -117,7 +117,7 @@ void PointLocatorTree::init (Trees::BuildType build_type)
       // initialized before.
       _build_type = build_type;
 
-      if (this->_master == NULL)
+      if (this->_master == libmesh_nullptr)
         {
           START_LOG("init(no master)", "PointLocatorTree");
 
@@ -165,8 +165,8 @@ void PointLocatorTree::init (Trees::BuildType build_type)
           // the master's tree.  But for this we first transform
           // the master in a state for which we are friends.
           // And make sure the master @e has a tree!
-          const PointLocatorTree* my_master =
-            cast_ptr<const PointLocatorTree*>(this->_master);
+          const PointLocatorTree * my_master =
+            cast_ptr<const PointLocatorTree *>(this->_master);
 
           if (my_master->initialized())
             this->_tree = my_master->_tree;
@@ -180,7 +180,7 @@ void PointLocatorTree::init (Trees::BuildType build_type)
       // Suppose the interpolators are used concurrently
       // at different locations in the mesh, then it makes quite
       // sense to have unique start elements.
-      this->_element = NULL;
+      this->_element = libmesh_nullptr;
     }
 
   // ready for take-off
@@ -189,22 +189,23 @@ void PointLocatorTree::init (Trees::BuildType build_type)
 
 
 
-const Elem* PointLocatorTree::operator() (const Point& p, const std::set<subdomain_id_type> *allowed_subdomains) const
+const Elem * PointLocatorTree::operator() (const Point & p,
+                                           const std::set<subdomain_id_type> * allowed_subdomains) const
 {
   libmesh_assert (this->_initialized);
 
   START_LOG("operator()", "PointLocatorTree");
 
   // If we're provided with an allowed_subdomains list and have a cached element, make sure it complies
-  if (allowed_subdomains && this->_element && !allowed_subdomains->count(this->_element->subdomain_id())) this->_element = NULL;
+  if (allowed_subdomains && this->_element && !allowed_subdomains->count(this->_element->subdomain_id())) this->_element = libmesh_nullptr;
 
   // First check the element from last time before asking the tree
-  if (this->_element==NULL || !(this->_element->contains_point(p)))
+  if (this->_element==libmesh_nullptr || !(this->_element->contains_point(p)))
     {
       // ask the tree
       this->_element = this->_tree->find_element (p,allowed_subdomains);
 
-      if (this->_element == NULL)
+      if (this->_element == libmesh_nullptr)
         {
           // No element seems to contain this point. Thus:
           // 1.) If _out_of_mesh_mode == true, we can just return NULL
@@ -213,7 +214,7 @@ const Elem* PointLocatorTree::operator() (const Point& p, const std::set<subdoma
           //     search over all active (possibly local) elements.
           //     The idea here is that, in the case of curved elements,
           //     the bounding box computed in \p TreeNode::insert(const
-          //     Elem*) might be slightly inaccurate and therefore we may
+          //     Elem *) might be slightly inaccurate and therefore we may
           //     have generated a false negative.
           if (_out_of_mesh_mode == false)
             {
@@ -262,10 +263,10 @@ const Elem* PointLocatorTree::operator() (const Point& p, const std::set<subdoma
 
 
 
-const Elem* PointLocatorTree::perform_linear_search(const Point& p,
-                                                    const std::set<subdomain_id_type> *allowed_subdomains,
-                                                    bool use_close_to_point,
-                                                    Real close_to_point_tolerance) const
+const Elem * PointLocatorTree::perform_linear_search(const Point & p,
+                                                     const std::set<subdomain_id_type> * allowed_subdomains,
+                                                     bool use_close_to_point,
+                                                     Real close_to_point_tolerance) const
 {
   START_LOG("perform_linear_search", "PointLocatorTree");
 
@@ -306,7 +307,7 @@ const Elem* PointLocatorTree::perform_linear_search(const Point& p,
     }
 
   STOP_LOG("perform_linear_search", "PointLocatorTree");
-  return NULL;
+  return libmesh_nullptr;
 }
 
 

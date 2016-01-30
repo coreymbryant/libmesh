@@ -358,6 +358,10 @@ AC_DEFUN([DETERMINE_CXX_BRAND],
           if test "x$is_intel_icc" != "x" ; then
             GXX_VERSION_STRING="`($CXX -V 2>&1) | grep 'Version '`"
             case "$GXX_VERSION_STRING" in
+              *16.*)
+                AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 16 >>>)
+                GXX_VERSION=intel_icc_v16.x
+                ;;
               *15.*)
                 AC_MSG_RESULT(<<< C++ compiler is Intel(R) icc 15 >>>)
                 GXX_VERSION=intel_icc_v15.x
@@ -729,6 +733,21 @@ AC_DEFUN([LIBMESH_SET_CXX_FLAGS],
           CPPFLAGS_DBG="$CPPFLAGS_DBG -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC"
         fi
         ;;
+
+      *)
+        ;;
+    esac
+
+
+    # GCC 4.6.3 warns about variadic macros but supports them just
+    # fine, so let's turn off that warning.
+    case "$GXX_VERSION" in
+      gcc4.6 | gcc5)
+        CXXFLAGS_OPT="$CXXFLAGS_OPT -Wno-variadic-macros"
+        CXXFLAGS_DEVEL="$CXXFLAGS_DEVEL -Wno-variadic-macros"
+        CXXFLAGS_DBG="$CXXFLAGS_DBG -Wno-variadic-macros"
+        ;;
+
       *)
         ;;
     esac
@@ -802,7 +821,7 @@ AC_DEFUN([LIBMESH_SET_CXX_FLAGS],
         case "$GXX_VERSION" in
 
           # Intel ICC >= v11.x
-          intel_icc_v11.x | intel_icc_v12.x | intel_icc_v13.x | intel_icc_v14.x | intel_icc_v15.x)
+          intel_icc_v11.x | intel_icc_v12.x | intel_icc_v13.x | intel_icc_v14.x | intel_icc_v15.x | intel_icc_v16.x)
               # Disable some warning messages:
               # #175: 'subscript out of range'
               #       FIN-S application code causes many false
@@ -1104,8 +1123,8 @@ AC_DEFUN([LIBMESH_SET_CXX_FLAGS],
 
       clang)
           CXXFLAGS_OPT="$CXXFLAGS_OPT -O2 -felide-constructors -Qunused-arguments"
-          CXXFLAGS_DEVEL="$CXXFLAGS_DEVEL -O2 -felide-constructors -g -pedantic -W -Wall -Wextra -Wno-long-long -Wunused -Wpointer-arith -Wformat -Wparentheses -Wuninitialized -Qunused-arguments"
-          CXXFLAGS_DBG="$CXXFLAGS_DBG -O0 -felide-constructors -g -pedantic -W -Wall -Wextra -Wno-long-long -Wunused -Wpointer-arith -Wformat -Wparentheses -Qunused-arguments"
+          CXXFLAGS_DEVEL="$CXXFLAGS_DEVEL -O2 -felide-constructors -g -pedantic -W -Wall -Wextra -Wno-long-long -Wunused -Wpointer-arith -Wformat -Wparentheses -Wuninitialized -Qunused-arguments -Woverloaded-virtual"
+          CXXFLAGS_DBG="$CXXFLAGS_DBG -O0 -felide-constructors -g -pedantic -W -Wall -Wextra -Wno-long-long -Wunused -Wpointer-arith -Wformat -Wparentheses -Qunused-arguments -Woverloaded-virtual"
           NODEPRECATEDFLAG="-Wno-deprecated"
 
           CFLAGS_OPT="-O2 -Qunused-arguments"

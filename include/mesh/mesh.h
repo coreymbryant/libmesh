@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -39,14 +39,10 @@ namespace libMesh
 // Forward declarations don't like typedefs...
 // typedef SerialMesh Mesh;
 
-
 /**
  * The \p Mesh class is a thin wrapper, around the \p SerialMesh class
  * by default.
  */
-
-// ------------------------------------------------------------
-// Mesh class definition
 class Mesh : public DefaultMesh
 {
 public:
@@ -57,7 +53,7 @@ public:
    * changed by mesh generation/loading) later.
    */
   explicit
-  Mesh (const Parallel::Communicator &comm_in,
+  Mesh (const Parallel::Communicator & comm_in,
         unsigned char dim=1)
     : DefaultMesh(comm_in,dim) {}
 
@@ -76,7 +72,7 @@ public:
    * Copy-constructor.  This should be able to take a
    * serial or parallel mesh.
    */
-  Mesh (const UnstructuredMesh& other_mesh) : DefaultMesh(other_mesh) {}
+  Mesh (const UnstructuredMesh & other_mesh) : DefaultMesh(other_mesh) {}
 
   /**
    * Destructor.

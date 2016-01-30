@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
 #ifndef LIBMESH_TRILINOS_NOX_NONLINEAR_SOLVER_H
 #define LIBMESH_TRILINOS_NOX_NONLINEAR_SOLVER_H
 
-#ifdef LIBMESH_HAVE_NOX
+#ifdef LIBMESH_TRILINOS_HAVE_NOX
 
 // Local includes
 #include "libmesh/nonlinear_solver.h"
@@ -49,9 +49,9 @@ class Problem_Interface;
  * iterative solvers that is compatible with the \p libMesh
  * \p NonlinearSolver<>
  *
- * @author Chris Newman, 2008
+ * \author Chris Newman
+ * \date 2008
  */
-
 template <typename T>
 class NoxNonlinearSolver : public NonlinearSolver<T>
 {
@@ -65,7 +65,7 @@ public:
    *  Constructor. Initializes Nox data structures
    */
   explicit
-  NoxNonlinearSolver (sys_type& system);
+  NoxNonlinearSolver (sys_type & system);
 
   /**
    * Destructor.
@@ -75,33 +75,35 @@ public:
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Initialize data structures if not done so already.
    */
-  virtual void init (const char* name = NULL);
+  virtual void init (const char * name = libmesh_nullptr) libmesh_override;
 
   /**
    * Call the Nox solver.  It calls the method below, using the
    * same matrix for the system and preconditioner matrices.
    */
-  virtual std::pair<unsigned int, Real> solve (SparseMatrix<T> &,    // System Jacobian Matrix
-                                               NumericVector<T> &,   // Solution vector
-                                               NumericVector<T> &,   // Residual vector
-                                               const double,         // Stopping tolerance
-                                               const unsigned int);  // N. Iterations
+  virtual std::pair<unsigned int, Real>
+  solve (SparseMatrix<T> &,                     // System Jacobian Matrix
+         NumericVector<T> &,                    // Solution vector
+         NumericVector<T> &,                    // Residual vector
+         const double,                          // Stopping tolerance
+         const unsigned int) libmesh_override;  // N. Iterations
   /**
    * Get the total number of linear iterations done in the last solve
    */
-  virtual int get_total_linear_iterations();
+  virtual int get_total_linear_iterations() libmesh_override;
 
   /**
    * If called *during* the solve(), for example by the user-specified
    * residual or Jacobian function, returns the current nonlinear iteration
    * number.  Not currently implemented.
    */
-  virtual unsigned get_current_nonlinear_iteration_number() const { libmesh_not_implemented(); return 0; }
+  virtual unsigned get_current_nonlinear_iteration_number() const libmesh_override
+  { libmesh_not_implemented(); return 0; }
 
 private:
 
@@ -125,10 +127,10 @@ private:
 /*----------------------- functions ----------------------------------*/
 template <typename T>
 inline
-NoxNonlinearSolver<T>::NoxNonlinearSolver (sys_type& system) :
+NoxNonlinearSolver<T>::NoxNonlinearSolver (sys_type & system) :
   NonlinearSolver<T>(system),
-  _solver(NULL),
-  _interface(NULL),
+  _solver(libmesh_nullptr),
+  _interface(libmesh_nullptr),
   _n_linear_iterations(0)
 {
 }
@@ -146,5 +148,5 @@ NoxNonlinearSolver<T>::~NoxNonlinearSolver ()
 } // namespace libMesh
 
 
-#endif // #ifdef LIBMESH_HAVE_NOX
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_NOX
 #endif // LIBMESH_TRILINOS_NOX_NONLINEAR_SOLVER_H

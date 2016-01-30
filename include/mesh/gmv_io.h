@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -37,19 +37,15 @@ namespace libMesh
 // Forward declarations
 class MeshBase;
 
-
-
 /**
  * This class implements writing meshes in the GMV format.
  * For a full description of the GMV format and to obtain the
  * GMV software see
  * <a href="http://laws.lanl.gov/XCM/gmv/GMVHome.html">the GMV home page</a>
  *
- * @author Benjamin S. Kirk, 2004
+ * \author Benjamin S. Kirk
+ * \date 2004
  */
-
-// ------------------------------------------------------------
-// GMVIO class definition
 class GMVIO : public MeshInput<MeshBase>,
               public MeshOutput<MeshBase>
 {
@@ -60,30 +56,30 @@ public:
    * This constructor will only allow us to write the mesh.
    */
   explicit
-  GMVIO (const MeshBase&);
+  GMVIO (const MeshBase &);
 
   /**
    * Constructor.  Takes a writeable reference to a mesh object.
    * This constructor is required to let us read in a mesh.
    */
   explicit
-  GMVIO (MeshBase&);
+  GMVIO (MeshBase &);
 
   /**
    * This method implements writing a mesh to a specified file.
    */
-  virtual void write (const std::string& );
+  virtual void write (const std::string &) libmesh_override;
 
   /**
    * This method implements reading a mesh from a specified file.
    */
-  virtual void read (const std::string& mesh_file);
+  virtual void read (const std::string & mesh_file) libmesh_override;
 
   //   /**
   //    * This method implements reading a mesh from a specified file.
   //    */
-  //   virtual void read (const std::string& mesh_file)
-  //   { this->read_mesh_and_nodal_data(mesh_file, NULL); }
+  //   virtual void read (const std::string & mesh_file)
+  //   { this->read_mesh_and_nodal_data(mesh_file, libmesh_nullptr); }
 
   //   /**
   //    * Extension of the MeshInput::read() routine which
@@ -91,16 +87,16 @@ public:
   //    * tries to read field variables from the GMV file
   //    * into the EquationSystems object.
   //    */
-  //   virtual void read_mesh_and_nodal_data (const std::string& ,
-  //  EquationSystems* es=NULL);
+  //   virtual void read_mesh_and_nodal_data (const std::string & ,
+  //  EquationSystems * es=libmesh_nullptr);
 
   /**
    * This method implements writing a mesh with nodal data to a
    * specified file where the nodal data and variable names are provided.
    */
-  virtual void write_nodal_data (const std::string&,
-                                 const std::vector<Number>&,
-                                 const std::vector<std::string>&);
+  virtual void write_nodal_data (const std::string &,
+                                 const std::vector<Number> &,
+                                 const std::vector<std::string> &) libmesh_override;
 
   /**
    * Flag indicating whether or not to write a binary file.  While binary
@@ -148,10 +144,10 @@ public:
   /**
    * Writes a GMV file with discontinuous data
    */
-  void write_discontinuous_gmv (const std::string& name,
-                                const EquationSystems& es,
+  void write_discontinuous_gmv (const std::string & name,
+                                const EquationSystems & es,
                                 const bool write_partitioning,
-                                const std::set<std::string>* system_names=NULL) const;
+                                const std::set<std::string> * system_names=libmesh_nullptr) const;
 
 
   /**
@@ -160,9 +156,9 @@ public:
    * provided.  This will write an ASCII file.   This is the new implementation
    * (without subcells).
    */
-  void write_ascii_new_impl (const std::string&,
-                             const std::vector<Number>* = NULL,
-                             const std::vector<std::string>* = NULL);
+  void write_ascii_new_impl (const std::string &,
+                             const std::vector<Number> * = libmesh_nullptr,
+                             const std::vector<std::string> * = libmesh_nullptr);
 
   /**
    * Takes a vector of cell-centered data to be plotted.
@@ -175,14 +171,14 @@ public:
    * .) No matter what order you add cell-centered data, it will be
    *    output alphabetically.
    */
-  void add_cell_centered_data (const std::string&       cell_centered_data_name,
-                               const std::vector<Real>* cell_centered_data_vals);
+  void add_cell_centered_data (const std::string &       cell_centered_data_name,
+                               const std::vector<Real> * cell_centered_data_vals);
 
   /**
    * If we read in a nodal solution while reading in a mesh, we can attempt
    * to copy that nodal solution into an EquationSystems object.
    */
-  void copy_nodal_solution(EquationSystems& es);
+  void copy_nodal_solution(EquationSystems & es);
 
 private:
 
@@ -192,25 +188,25 @@ private:
    * provided.  This will write an ASCII file.  This is the old implementation
    * (using subcells) which was the default in libMesh-0.4.3-rc2.
    */
-  void write_ascii_old_impl (const std::string&,
-                             const std::vector<Number>* = NULL,
-                             const std::vector<std::string>* = NULL);
+  void write_ascii_old_impl (const std::string &,
+                             const std::vector<Number> * = libmesh_nullptr,
+                             const std::vector<std::string> * = libmesh_nullptr);
 
   /**
    * This method implements writing a mesh with nodal data to a
    * specified file where the nodal data and variable names are optionally
    * provided.
    */
-  void write_binary (const std::string&,
-                     const std::vector<Number>* = NULL,
-                     const std::vector<std::string>* = NULL);
+  void write_binary (const std::string &,
+                     const std::vector<Number> * = libmesh_nullptr,
+                     const std::vector<std::string> * = libmesh_nullptr);
 
   /**
    * Helper function for writing unsigned ints to an ostream in binary format.
    * Implemented via memcpy as suggested in the standard.
    */
   template <typename T>
-  void to_binary_stream(std::ostream& out,
+  void to_binary_stream(std::ostream & out,
                         const T i);
 
   /**
@@ -250,7 +246,7 @@ private:
    * between the string representing the variable name and a pointer
    * to a vector containing the data.
    */
-  std::map<std::string, const std::vector<Real>* > _cell_centered_data;
+  std::map<std::string, const std::vector<Real> * > _cell_centered_data;
 
   /**
    * Helper functions for reading nodes/cells from a GMV file
@@ -258,7 +254,7 @@ private:
   void _read_nodes();
   unsigned int _next_elem_id;
   void _read_one_cell();
-  ElemType _gmv_elem_to_libmesh_elem(const char* elemname);
+  ElemType _gmv_elem_to_libmesh_elem(const char * elemname);
   void _read_materials();
   void _read_var();
   std::map<std::string, std::vector<Number> > _nodal_data;
@@ -269,7 +265,7 @@ private:
 // ------------------------------------------------------------
 // GMVIO inline members
 inline
-GMVIO::GMVIO (const MeshBase& mesh) :
+GMVIO::GMVIO (const MeshBase & mesh) :
   MeshOutput<MeshBase>    (mesh),
   _binary                 (false),
   _discontinuous          (false),
@@ -282,7 +278,7 @@ GMVIO::GMVIO (const MeshBase& mesh) :
 }
 
 inline
-GMVIO::GMVIO (MeshBase& mesh) :
+GMVIO::GMVIO (MeshBase & mesh) :
   MeshInput<MeshBase> (mesh),
   MeshOutput<MeshBase>(mesh),
   _binary (false),
@@ -345,7 +341,7 @@ bool & GMVIO::p_levels()
 
 
 template <typename T>
-void GMVIO::to_binary_stream(std::ostream& out_str,
+void GMVIO::to_binary_stream(std::ostream & out_str,
                              const T i)
 {
   static char buf[sizeof(T)];

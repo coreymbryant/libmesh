@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -52,9 +52,9 @@ template <typename T> class ShellMatrix;
  * This class provides an interface to the suite of preconditioners available
  * from Petsc.
  *
- * @author Derek Gaston, 2009
+ * \author Derek Gaston
+ * \date 2009
  */
-
 template <typename T>
 class PetscPreconditioner : public Preconditioner<T>
 {
@@ -63,7 +63,7 @@ public:
   /**
    *  Constructor. Initializes PetscPreconditioner data structures
    */
-  PetscPreconditioner (const libMesh::Parallel::Communicator &comm_in
+  PetscPreconditioner (const libMesh::Parallel::Communicator & comm_in
                        LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -75,17 +75,17 @@ public:
    * Computes the preconditioned vector "y" based on input "x".
    * Usually by solving Py=x to get the action of P^-1 x.
    */
-  virtual void apply(const NumericVector<T> & x, NumericVector<T> & y);
+  virtual void apply(const NumericVector<T> & x, NumericVector<T> & y) libmesh_override;
 
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Initialize data structures if not done so already.
    */
-  virtual void init ();
+  virtual void init () libmesh_override;
 
   /**
    * Returns the actual Petsc PC struct.  Useful for more advanced
@@ -120,11 +120,11 @@ private:
    * why set_petsc_preconditioner_type() needs to be static though...
    */
 #if PETSC_VERSION_LESS_THAN(3,0,0)
-  // In Petsc 2.3.3, PCType was #define'd as const char*
-  static void set_petsc_subpreconditioner_type(PCType type, PC& pc);
+  // In Petsc 2.3.3, PCType was #define'd as const char *
+  static void set_petsc_subpreconditioner_type(PCType type, PC & pc);
 #else
-  // In later versions, PCType is #define'd as char*, so we need the const
-  static void set_petsc_subpreconditioner_type(const PCType type, PC& pc);
+  // In later versions, PCType is #define'd as char *, so we need the const
+  static void set_petsc_subpreconditioner_type(const PCType type, PC & pc);
 #endif
 };
 
@@ -134,7 +134,7 @@ private:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-PetscPreconditioner<T>::PetscPreconditioner (const libMesh::Parallel::Communicator &comm_in) :
+PetscPreconditioner<T>::PetscPreconditioner (const libMesh::Parallel::Communicator & comm_in) :
   Preconditioner<T>(comm_in),
   _pc(PETSC_NULL)
 {

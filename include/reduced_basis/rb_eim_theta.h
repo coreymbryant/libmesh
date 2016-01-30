@@ -22,7 +22,6 @@
 
 // rbOOmit includes
 #include "libmesh/rb_theta.h"
-#include "libmesh/rb_eim_evaluation.h"
 
 // C++ includes
 
@@ -30,15 +29,16 @@ namespace libMesh
 {
 
 class RBParameters;
+class RBEIMEvaluation;
 
 /**
  * This class provides functionality required to define an RBTheta
  * object that arises from an "Empirical Interpolation Method" (EIM)
  * approximation.
  *
- * @author David J. Knezevic, 2011
+ * \author David J. Knezevic
+ * \date 2011
  */
-
 class RBEIMTheta : public RBTheta
 {
 public:
@@ -46,26 +46,25 @@ public:
   /**
    * Constructor.
    */
-  RBEIMTheta(RBEIMEvaluation& rb_eim_eval_in, unsigned int index_in);
+  RBEIMTheta(RBEIMEvaluation & rb_eim_eval_in, unsigned int index_in);
 
   /**
    * Evaluate this RBEIMTheta object at the parameter \p mu.
    * This entails solving the RB EIM approximation and picking
    * out the appropriate coefficient.
    */
-  virtual Number evaluate(const RBParameters& mu);
+  virtual Number evaluate(const RBParameters & mu) libmesh_override;
 
   /**
    * The RBEIMEvaluation object that this RBEIMTheta is based on.
    */
-  RBEIMEvaluation& rb_eim_eval;
+  RBEIMEvaluation & rb_eim_eval;
 
   /**
    * The index of the RB_solution vector that we pick out
    * from rb_eim_eval to provide the value of the evaluation.
    */
   unsigned int index;
-
 };
 
 }

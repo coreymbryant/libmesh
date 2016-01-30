@@ -1,6 +1,6 @@
 
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -39,12 +39,9 @@ namespace libMesh
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2012
+ * \author Roy H. Stogner
+ * \date 2012
  */
-
-// ------------------------------------------------------------
-// Finite Element Method Physics class definition
-
 class FEMPhysics : public virtual DifferentiablePhysics
 {
 public:
@@ -76,7 +73,7 @@ public:
    * entirely.
    */
   virtual bool eulerian_residual (bool request_jacobian,
-                                  DiffContext &context);
+                                  DiffContext & context) libmesh_override;
 
   /**
    * Subtracts a mass vector contribution on \p elem from
@@ -93,7 +90,7 @@ public:
    * problems will need to reimplement this themselves.
    */
   virtual bool mass_residual (bool request_jacobian,
-                              DiffContext &);
+                              DiffContext &) libmesh_override;
 };
 
 

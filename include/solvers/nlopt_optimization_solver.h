@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ namespace libMesh
 double __libmesh_nlopt_objective(unsigned n,
                                  const double * x,
                                  double * gradient,
-                                 void *data);
+                                 void * data);
 
 // NLopt callback to set equality constraints.
 void __libmesh_nlopt_equality_constraints(unsigned m,
@@ -48,7 +48,7 @@ void __libmesh_nlopt_equality_constraints(unsigned m,
                                           unsigned n,
                                           const double * x,
                                           double * gradient,
-                                          void* data);
+                                          void * data);
 
 // NLopt callback to set inequality constraints.
 void __libmesh_nlopt_inequality_constraints(unsigned m,
@@ -56,13 +56,15 @@ void __libmesh_nlopt_inequality_constraints(unsigned m,
                                             unsigned n,
                                             const double * x,
                                             double * gradient,
-                                            void* data);
+                                            void * data);
 
 /**
  * This class provides an interface to the NLopt optimization solvers.
  * http://ab-initio.mit.edu/wiki/index.php/NLopt
  *
- * @author David Knezevic and John Peterson, 2015
+ * \author David Knezevic
+ * \author John Peterson
+ * \date 2015
  */
 template <typename T>
 class NloptOptimizationSolver : public OptimizationSolver<T>
@@ -78,7 +80,7 @@ public:
    * Constructor.
    */
   explicit
-  NloptOptimizationSolver (sys_type& system);
+  NloptOptimizationSolver (sys_type & system);
 
   /**
    * Destructor.
@@ -88,12 +90,12 @@ public:
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Initialize data structures if not done so already.
    */
-  virtual void init ();
+  virtual void init () libmesh_override;
 
   /**
    * Returns the raw NLopt object.
@@ -103,20 +105,20 @@ public:
   /**
    * Call the NLopt solver.
    */
-  virtual void solve ();
+  virtual void solve () libmesh_override;
 
   /**
    * Prints a useful message about why the latest optimization solve
    * con(di)verged.
    */
-  virtual void print_converged_reason();
+  virtual void print_converged_reason() libmesh_override;
 
   /**
    * Returns the currently-available (or most recently obtained, if the NLopt object has
    * been destroyed) convergence reason.  Refer to NLopt docs for the meaning of different
    * the value.
    */
-  virtual int get_converged_reason();
+  virtual int get_converged_reason() libmesh_override;
 
   /**
    * Returns a writeable reference to the current iteration count
@@ -152,7 +154,7 @@ private:
   friend double __libmesh_nlopt_objective (unsigned n,
                                            const double * x,
                                            double * gradient,
-                                           void *data);
+                                           void * data);
 
   friend void __libmesh_nlopt_equality_constraints(unsigned m,
                                                    double * result,

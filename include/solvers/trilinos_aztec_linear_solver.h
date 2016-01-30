@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,7 @@
 /**
  * Trilinos include files.
  */
-#ifdef LIBMESH_HAVE_AZTECOO
+#ifdef LIBMESH_TRILINOS_HAVE_AZTECOO
 #include <Epetra_LinearProblem.h>
 #include <AztecOO.h>
 
@@ -44,9 +44,9 @@ namespace libMesh
  * iterative solvers that is compatible with the \p libMesh
  * \p LinearSolver<>
  *
- * @author Benjamin Kirk, 2002-2008
+ * \author Benjamin Kirk
+ * \date 2002-2008
  */
-
 template <typename T>
 class AztecLinearSolver : public LinearSolver<T>
 {
@@ -54,7 +54,7 @@ public:
   /**
    *  Constructor. Initializes Aztec data structures
    */
-  AztecLinearSolver (const libMesh::Parallel::Communicator &comm
+  AztecLinearSolver (const libMesh::Parallel::Communicator & comm
                      LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -65,23 +65,23 @@ public:
   /**
    * Release all memory and clear data structures.
    */
-  void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Initialize data structures if not done so already.
    */
-  void init (const char *name=NULL);
+  virtual void init (const char * name=libmesh_nullptr) libmesh_override;
 
   /**
    * Call the Aztec solver.  It calls the method below, using the
    * same matrix for the system and preconditioner matrices.
    */
-  std::pair<unsigned int, Real>
-  solve (SparseMatrix<T>  &matrix_in,
-         NumericVector<T> &solution_in,
-         NumericVector<T> &rhs_in,
+  virtual std::pair<unsigned int, Real>
+  solve (SparseMatrix<T> & matrix_in,
+         NumericVector<T> & solution_in,
+         NumericVector<T> & rhs_in,
          const double tol,
-         const unsigned int m_its)
+         const unsigned int m_its) libmesh_override
   {
     return this->solve(matrix_in, matrix_in, solution_in, rhs_in, tol, m_its);
   }
@@ -92,23 +92,23 @@ public:
    * that the linear solver will not compute a preconditioner in this
    * case, and will instead premultiply by the matrix you provide.
    */
-  std::pair<unsigned int, Real>
-  solve (SparseMatrix<T>  &matrix,
-         SparseMatrix<T>  &preconditioner,
-         NumericVector<T> &solution,
-         NumericVector<T> &rhs,
+  virtual std::pair<unsigned int, Real>
+  solve (SparseMatrix<T> & matrix,
+         SparseMatrix<T> & preconditioner,
+         NumericVector<T> & solution,
+         NumericVector<T> & rhs,
          const double tol,
-         const unsigned int m_its);
+         const unsigned int m_its) libmesh_override;
 
   /**
    * This function solves a system whose matrix is a shell matrix.
    */
-  std::pair<unsigned int, Real>
-  solve (const ShellMatrix<T>& shell_matrix,
-         NumericVector<T>& solution_in,
-         NumericVector<T>& rhs_in,
+  virtual std::pair<unsigned int, Real>
+  solve (const ShellMatrix<T> & shell_matrix,
+         NumericVector<T> & solution_in,
+         NumericVector<T> & rhs_in,
          const double tol,
-         const unsigned int m_its);
+         const unsigned int m_its) libmesh_override;
 
   /**
    * This function solves a system whose matrix is a shell matrix, but
@@ -116,18 +116,18 @@ public:
    * other preconditioners than JACOBI.
    */
   virtual std::pair<unsigned int, Real>
-  solve (const ShellMatrix<T>& shell_matrix,
-         const SparseMatrix<T>& precond_matrix,
-         NumericVector<T>& solution_in,
-         NumericVector<T>& rhs_in,
+  solve (const ShellMatrix<T> & shell_matrix,
+         const SparseMatrix<T> & precond_matrix,
+         NumericVector<T> & solution_in,
+         NumericVector<T> & rhs_in,
          const double tol,
-         const unsigned int m_its);
+         const unsigned int m_its) libmesh_override;
 
   /**
    * Fills the input vector with the sequence of residual norms
    * from the latest iterative solve.
    */
-  void get_residual_history(std::vector<double>& hist);
+  void get_residual_history(std::vector<double> & hist);
 
   /**
    * Returns just the initial residual for the solve just
@@ -140,7 +140,7 @@ public:
   /**
    * Returns the solver's convergence flag
    */
-  virtual LinearConvergenceReason get_converged_reason() const;
+  virtual LinearConvergenceReason get_converged_reason() const libmesh_override;
 
 private:
 
@@ -165,7 +165,7 @@ private:
 /*----------------------- functions ----------------------------------*/
 template <typename T>
 inline
-AztecLinearSolver<T>::AztecLinearSolver (const libMesh::Parallel::Communicator &comm) :
+AztecLinearSolver<T>::AztecLinearSolver (const libMesh::Parallel::Communicator & comm) :
   LinearSolver<T>(comm)
 {
   if (this->n_processors() == 1)
@@ -187,5 +187,5 @@ AztecLinearSolver<T>::~AztecLinearSolver ()
 
 
 
-#endif // #ifdef LIBMESH_HAVE_AZTECOO
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_AZTECOO
 #endif // LIBMESH_TRILINOS_AZTEC_LINEAR_SOLVER_H

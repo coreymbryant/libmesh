@@ -1,30 +1,39 @@
-/* rbOOmit: An implementation of the Certified Reduced Basis method. */
-/* Copyright (C) 2009, 2010 David J. Knezevic */
-/*     This file is part of rbOOmit. */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* rbOOmit is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* rbOOmit is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+// rbOOmit: An implementation of the Certified Reduced Basis method.
+// Copyright (C) 2009, 2010 David J. Knezevic
+// This file is part of rbOOmit.
+
+
 
 // <h1>Reduced Basis Example 2 - Successive Constraint Method</h1>
-
-// In this example we extend reduced_basis_ex1 to solve a steady convection-diffusion
-// problem on the unit square via the Reduced Basis Method. In this case, we modify the
-// PDE so that it no longer has a parameter-independent coercivity constant. Therefore,
-// in order to obtain an error bound, we need to employ the Successive Constraint
-// Method (SCM) implemented in RBSCMConstruction/RBSCMEvaluation to obtain a
-// parameter-dependent lower bound for the coercivity constant.
-
+// \author David Knezevic
+// \date 2011
+//
+// In this example we extend reduced_basis_ex1 to solve a steady
+// convection-diffusion problem on the unit square via the Reduced
+// Basis Method. In this case, we modify the PDE so that it no longer
+// has a parameter-independent coercivity constant. Therefore, in
+// order to obtain an error bound, we need to employ the Successive
+// Constraint Method (SCM) implemented in
+// RBSCMConstruction/RBSCMEvaluation to obtain a parameter-dependent
+// lower bound for the coercivity constant.
+//
 // The PDE being solved is div(k*grad(u)) + Beta*grad(u) = f
 // k is the diffusion coefficient :
 // - constant in the domain 0<=x<0.5 , its value is given by the first parameter mu[0]
@@ -65,7 +74,7 @@
 using namespace libMesh;
 
 // The main program.
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   // Initialize libMesh.
   LibMeshInit init (argc, argv);
@@ -103,7 +112,7 @@ int main (int argc, char** argv)
   // Read the "online_mode" flag from the command line
   GetPot command_line (argc, argv);
   int online_mode = 0;
-  if ( command_line.search(1, "-online_mode") )
+  if (command_line.search(1, "-online_mode"))
     online_mode = command_line.next(online_mode);
 
   // Build a mesh on the default MPI communicator.
@@ -152,7 +161,7 @@ int main (int argc, char** argv)
 
   // We also need a SCM evaluation object to perform SCM calculations
   RBSCMEvaluation rb_scm_eval(mesh.comm());
-  rb_scm_eval.set_rb_theta_expansion( rb_eval.get_rb_theta_expansion() );
+  rb_scm_eval.set_rb_theta_expansion(rb_eval.get_rb_theta_expansion());
 
   // Tell rb_eval about rb_scm_eval
   rb_eval.rb_scm_eval = &rb_scm_eval;
@@ -161,7 +170,7 @@ int main (int argc, char** argv)
   // SCM evaluation object, rb_scm_eval
   rb_scm_con.set_rb_scm_evaluation(rb_scm_eval);
 
-  if(!online_mode) // Perform the Offline stage of the RB method
+  if (!online_mode) // Perform the Offline stage of the RB method
     {
       // Read in the data that defines this problem from the specified text file
       rb_con.process_parameters_file(parameters_filename);
@@ -197,10 +206,10 @@ int main (int argc, char** argv)
 #endif
 
       // If requested, write out the RB basis functions for visualization purposes
-      if(store_basis_functions)
+      if (store_basis_functions)
         {
           // Write out the basis functions
-          rb_con.get_rb_evaluation().write_out_basis_functions(rb_con,"rb_data");
+          rb_con.get_rb_evaluation().write_out_basis_functions(rb_con, "rb_data");
         }
     }
   else // Perform the Online stage of the RB method
@@ -218,7 +227,7 @@ int main (int argc, char** argv)
 #endif
 
       // Read in online_N and initialize online parameters
-      unsigned int online_N = infile("online_N",1);
+      unsigned int online_N = infile("online_N", 1);
       Real online_mu_0 = infile("online_mu_0", 0.);
       Real online_mu_1 = infile("online_mu_1", 0.);
       Real online_mu_2 = infile("online_mu_2", 0.);
@@ -233,35 +242,35 @@ int main (int argc, char** argv)
       rb_eval.rb_solve(online_N);
 
       // Print out outputs as well as the corresponding output error bounds.
-      std::cout << "output 1, value = " << rb_eval.RB_outputs[0]
-                << ", bound = " << rb_eval.RB_output_error_bounds[0]
-                << std::endl;
-      std::cout << "output 2, value = " << rb_eval.RB_outputs[1]
-                << ", bound = " << rb_eval.RB_output_error_bounds[1]
-                << std::endl;
-      std::cout << "output 3, value = " << rb_eval.RB_outputs[2]
-                << ", bound = " << rb_eval.RB_output_error_bounds[2]
-                << std::endl;
-      std::cout << "output 4, value = " << rb_eval.RB_outputs[3]
-                << ", bound = " << rb_eval.RB_output_error_bounds[3]
-                << std::endl << std::endl;
+      libMesh::out << "output 1, value = " << rb_eval.RB_outputs[0]
+                   << ", bound = " << rb_eval.RB_output_error_bounds[0]
+                   << std::endl;
+      libMesh::out << "output 2, value = " << rb_eval.RB_outputs[1]
+                   << ", bound = " << rb_eval.RB_output_error_bounds[1]
+                   << std::endl;
+      libMesh::out << "output 3, value = " << rb_eval.RB_outputs[2]
+                   << ", bound = " << rb_eval.RB_output_error_bounds[2]
+                   << std::endl;
+      libMesh::out << "output 4, value = " << rb_eval.RB_outputs[3]
+                   << ", bound = " << rb_eval.RB_output_error_bounds[3]
+                   << std::endl << std::endl;
 
-      if(store_basis_functions)
+      if (store_basis_functions)
         {
           // Read in the basis functions
-          rb_eval.read_in_basis_functions(rb_con,"rb_data");
+          rb_eval.read_in_basis_functions(rb_con, "rb_data");
 
           // Plot the solution
           rb_con.load_rb_solution();
 #ifdef LIBMESH_HAVE_EXODUS_API
-          ExodusII_IO(mesh).write_equation_systems ("RB_sol.e",equation_systems);
+          ExodusII_IO(mesh).write_equation_systems ("RB_sol.e", equation_systems);
 #endif
 
           // Plot the first basis function that was generated from the train_reduced_basis
           // call in the Offline stage
           rb_con.load_basis_function(0);
 #ifdef LIBMESH_HAVE_EXODUS_API
-          ExodusII_IO(mesh).write_equation_systems ("bf0.e",equation_systems);
+          ExodusII_IO(mesh).write_equation_systems ("bf0.e", equation_systems);
 #endif
         }
     }

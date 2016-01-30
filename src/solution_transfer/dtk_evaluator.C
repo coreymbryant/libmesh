@@ -1,6 +1,23 @@
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #include "libmesh/dtk_evaluator.h"
 
@@ -8,12 +25,16 @@
 #include "libmesh/fe_interface.h"
 #include "libmesh/fe_compute_data.h"
 #include "libmesh/numeric_vector.h"
+#include "libmesh/equation_systems.h"
+#include "libmesh/system.h"
 
 #include <string>
 
-namespace libMesh {
+namespace libMesh
+{
 
-DTKEvaluator::DTKEvaluator(System & in_sys, std::string var_name):
+DTKEvaluator::DTKEvaluator(System & in_sys,
+                           std::string var_name):
   sys(in_sys),
   current_local_solution(*sys.current_local_solution),
   es(in_sys.get_equation_systems()),
@@ -25,7 +46,8 @@ DTKEvaluator::DTKEvaluator(System & in_sys, std::string var_name):
 {}
 
 DTKEvaluator::FieldContainerType
-DTKEvaluator::evaluate(const Teuchos::ArrayRCP<int>& elements, const Teuchos::ArrayRCP<double>& coords)
+DTKEvaluator::evaluate(const Teuchos::ArrayRCP<int> & elements,
+                       const Teuchos::ArrayRCP<double> & coords)
 {
   unsigned int num_values = elements.size();
 

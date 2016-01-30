@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,6 @@ namespace libMesh
 
 // Forward declarations
 class MeshBase;
-
-
 
 /**
  * This class implements reading meshes in the Matlab PDE toolkit
@@ -79,13 +77,9 @@ class MeshBase;
  * o The e matrix is entirely irrelevant in this code
  * o All of the matrices are row based
  *
- * @author John W. Peterson, 2004
+ * \author John W. Peterson
+ * \date 2004
  */
-
-
-
-// ------------------------------------------------------------
-// MatlabIO class definition
 class MatlabIO : public MeshInput<MeshBase>
 {
 public:
@@ -94,13 +88,13 @@ public:
    * will fill up with elements.
    */
   explicit
-  MatlabIO (MeshBase&);
+  MatlabIO (MeshBase &);
 
   /**
    * Reads in a matlab data file based on the string
    * you pass it.
    */
-  virtual void read (const std::string& name);
+  virtual void read (const std::string & name) libmesh_override;
 
 private:
   /**
@@ -108,14 +102,14 @@ private:
    * is called by the public interface function and implements
    * reading the file.
    */
-  virtual void read_stream (std::istream& in);
+  void read_stream (std::istream & in);
 };
 
 
 // ------------------------------------------------------------
 // MatlabIO inline members
 inline
-MatlabIO::MatlabIO (MeshBase& mesh_in) :
+MatlabIO::MatlabIO (MeshBase & mesh_in) :
   MeshInput<MeshBase>  (mesh_in)
 {}
 

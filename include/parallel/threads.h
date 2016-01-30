@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,10 @@
 #  include "tbb/spin_mutex.h"
 #  include "tbb/recursive_mutex.h"
 #  include "tbb/atomic.h"
+
+#define TBB_VERSION_LESS_THAN(major,minor)                              \
+  ((LIBMESH_DETECTED_TBB_VERSION_MAJOR < (major) ||                     \
+    (LIBMESH_DETECTED_TBB_VERSION_MAJOR == (major) && (LIBMESH_DETECTED_TBB_VERSION_MINOR < (minor)))) ? 1 : 0)
 #endif
 
 // C++ includes
@@ -98,11 +102,11 @@ extern bool in_threads;
 class BoolAcquire {
 public:
   explicit
-  BoolAcquire(bool& b) : _b(b) { libmesh_assert(!_b); _b = true; }
+  BoolAcquire(bool & b) : _b(b) { libmesh_assert(!_b); _b = true; }
 
   ~BoolAcquire() { libmesh_exceptionless_assert(_b); _b = false; }
 private:
-  bool& _b;
+  bool & _b;
 };
 
 
@@ -177,7 +181,7 @@ typedef tbb::split split;
  */
 template <typename Range, typename Body>
 inline
-void parallel_for (const Range &range, const Body &body)
+void parallel_for (const Range & range, const Body & body)
 {
   BoolAcquire b(in_threads);
 
@@ -209,7 +213,7 @@ void parallel_for (const Range &range, const Body &body)
  */
 template <typename Range, typename Body, typename Partitioner>
 inline
-void parallel_for (const Range &range, const Body &body, const Partitioner &partitioner)
+void parallel_for (const Range & range, const Body & body, const Partitioner & partitioner)
 {
   BoolAcquire b(in_threads);
 
@@ -241,7 +245,7 @@ void parallel_for (const Range &range, const Body &body, const Partitioner &part
  */
 template <typename Range, typename Body>
 inline
-void parallel_reduce (const Range &range, Body &body)
+void parallel_reduce (const Range & range, Body & body)
 {
   BoolAcquire b(in_threads);
 
@@ -273,7 +277,7 @@ void parallel_reduce (const Range &range, Body &body)
  */
 template <typename Range, typename Body, typename Partitioner>
 inline
-void parallel_reduce (const Range &range, Body &body, const Partitioner &partitioner)
+void parallel_reduce (const Range & range, Body & body, const Partitioner & partitioner)
 {
   BoolAcquire b(in_threads);
 
@@ -343,13 +347,13 @@ public:
   class scoped_lock
   {
   public:
-    scoped_lock () : smutex(NULL) {}
-    explicit scoped_lock ( spin_mutex& in_smutex ) : smutex(&in_smutex) { smutex->lock(); }
+    scoped_lock () : smutex(libmesh_nullptr) {}
+    explicit scoped_lock ( spin_mutex & in_smutex ) : smutex(&in_smutex) { smutex->lock(); }
 
     ~scoped_lock () { release(); }
 
-    void acquire ( spin_mutex& in_smutex ) { smutex = &in_smutex; smutex->lock(); }
-    void release () { if(smutex) smutex->unlock(); smutex = NULL; }
+    void acquire ( spin_mutex & in_smutex ) { smutex = &in_smutex; smutex->lock(); }
+    void release () { if(smutex) smutex->unlock(); smutex = libmesh_nullptr; }
 
   private:
     spin_mutex * smutex;
@@ -372,13 +376,13 @@ public:
   class scoped_lock
   {
   public:
-    scoped_lock () : smutex(NULL) {}
-    explicit scoped_lock ( spin_mutex& in_smutex ) : smutex(&in_smutex) { smutex->lock(); }
+    scoped_lock () : smutex(libmesh_nullptr) {}
+    explicit scoped_lock ( spin_mutex & in_smutex ) : smutex(&in_smutex) { smutex->lock(); }
 
     ~scoped_lock () { release(); }
 
-    void acquire ( spin_mutex& in_smutex ) { smutex = &in_smutex; smutex->lock(); }
-    void release () { if(smutex) smutex->unlock(); smutex = NULL; }
+    void acquire ( spin_mutex & in_smutex ) { smutex = &in_smutex; smutex->lock(); }
+    void release () { if(smutex) smutex->unlock(); smutex = libmesh_nullptr; }
 
   private:
     spin_mutex * smutex;
@@ -412,13 +416,13 @@ public:
   class scoped_lock
   {
   public:
-    scoped_lock () : rmutex(NULL) {}
-    explicit scoped_lock ( recursive_mutex& in_rmutex ) : rmutex(&in_rmutex) { rmutex->lock(); }
+    scoped_lock () : rmutex(libmesh_nullptr) {}
+    explicit scoped_lock ( recursive_mutex & in_rmutex ) : rmutex(&in_rmutex) { rmutex->lock(); }
 
     ~scoped_lock () { release(); }
 
-    void acquire ( recursive_mutex& in_rmutex ) { rmutex = &in_rmutex; rmutex->lock(); }
-    void release () { if(rmutex) rmutex->unlock(); rmutex = NULL; }
+    void acquire ( recursive_mutex & in_rmutex ) { rmutex = &in_rmutex; rmutex->lock(); }
+    void release () { if(rmutex) rmutex->unlock(); rmutex = libmesh_nullptr; }
 
   private:
     recursive_mutex * rmutex;
@@ -428,15 +432,6 @@ private:
   pthread_mutex_t mutex;
   pthread_mutexattr_t attr;
 };
-
-extern std::map<pthread_t, unsigned int> _pthread_unique_ids;
-extern spin_mutex _pthread_unique_id_mutex;
-
-/**
- * When called by a thread this will return a unique number from 0 to num_pthreads-1
- * Very useful for creating long-lived thread local storage
- */
-unsigned int pthread_unique_id();
 
 template <typename Range>
 unsigned int num_pthreads(Range & range)
@@ -457,14 +452,14 @@ template <typename Range, typename Body>
 void * run_body(void * args)
 {
 
-  RangeBody<Range, Body> * range_body = (RangeBody<Range, Body>*)args;
+  RangeBody<Range, Body> * range_body = (RangeBody<Range, Body> *)args;
 
   Body & body = *range_body->body;
   Range & range = *range_body->range;
 
   body(range);
 
-  return NULL;
+  return libmesh_nullptr;
 }
 
 //-------------------------------------------------------------------
@@ -497,7 +492,7 @@ class split {};
  */
 template <typename Range, typename Body>
 inline
-void parallel_for (const Range &range, const Body &body)
+void parallel_for (const Range & range, const Body & body)
 {
   Threads::BoolAcquire b(Threads::in_threads);
 
@@ -543,15 +538,13 @@ void parallel_for (const Range &range, const Body &body)
   for(unsigned int i=0; i<n_threads; i++)
     {
 #if LIBMESH_HAVE_OPENMP
-      run_body<Range, Body>((void*)&range_bodies[i]);
-#else // Just use Pthreads
-      spin_mutex::scoped_lock lock(_pthread_unique_id_mutex);
-      pthread_create(&threads[i], NULL, &run_body<Range, Body>, (void*)&range_bodies[i]);
-      _pthread_unique_ids[threads[i]] = i;
+      run_body<Range, Body>((void *)&range_bodies[i]);
+#elif LIBMESH_HAVE_PTHREAD
+      pthread_create(&threads[i], libmesh_nullptr, &run_body<Range, Body>, (void *)&range_bodies[i]);
 #endif
     }
 
-#if !LIBMESH_HAVE_OPENMP
+#if LIBMESH_HAVE_PTHREAD
   // Wait for them to finish
 
   // The use of 'int' instead of unsigned for the iteration variable
@@ -561,11 +554,7 @@ void parallel_for (const Range &range, const Body &body)
   // behavior and optimization.
   // http://blog.llvm.org/2011/05/what-every-c-programmer-should-know.html
   for (int i=0; i<static_cast<int>(n_threads); i++)
-    {
-      pthread_join(threads[i], NULL);
-      spin_mutex::scoped_lock lock(_pthread_unique_id_mutex);
-      _pthread_unique_ids.erase(threads[i]);
-    }
+      pthread_join(threads[i], libmesh_nullptr);
 #endif
 
   // Clean up
@@ -585,7 +574,7 @@ void parallel_for (const Range &range, const Body &body)
  */
 template <typename Range, typename Body, typename Partitioner>
 inline
-void parallel_for (const Range &range, const Body &body, const Partitioner &)
+void parallel_for (const Range & range, const Body & body, const Partitioner &)
 {
   parallel_for(range, body);
 }
@@ -597,7 +586,7 @@ void parallel_for (const Range &range, const Body &body, const Partitioner &)
  */
 template <typename Range, typename Body>
 inline
-void parallel_reduce (const Range &range, Body &body)
+void parallel_reduce (const Range & range, Body & body)
 {
   Threads::BoolAcquire b(Threads::in_threads);
 
@@ -656,22 +645,16 @@ void parallel_reduce (const Range &range, Body &body)
   for (int i=0; i<static_cast<int>(n_threads); i++)
     {
 #if LIBMESH_HAVE_OPENMP
-      run_body<Range, Body>((void*)&range_bodies[i]);
-#else // Just use Pthreads
-      spin_mutex::scoped_lock lock(_pthread_unique_id_mutex);
-      pthread_create(&threads[i], NULL, &run_body<Range, Body>, (void*)&range_bodies[i]);
-      _pthread_unique_ids[threads[i]] = i;
+      run_body<Range, Body>((void *)&range_bodies[i]);
+#elif LIBMESH_HAVE_PTHREAD
+      pthread_create(&threads[i], libmesh_nullptr, &run_body<Range, Body>, (void *)&range_bodies[i]);
 #endif
     }
 
-#if !LIBMESH_HAVE_OPENMP
+#if LIBMESH_HAVE_PTHREAD
   // Wait for them to finish
   for(unsigned int i=0; i<n_threads; i++)
-    {
-      pthread_join(threads[i], NULL);
-      spin_mutex::scoped_lock lock(_pthread_unique_id_mutex);
-      _pthread_unique_ids.erase(threads[i]);
-    }
+      pthread_join(threads[i], libmesh_nullptr);
 #endif
 
   // Join them all down to the original Body
@@ -697,7 +680,7 @@ void parallel_reduce (const Range &range, Body &body)
  */
 template <typename Range, typename Body, typename Partitioner>
 inline
-void parallel_reduce (const Range &range, Body &body, const Partitioner &)
+void parallel_reduce (const Range & range, Body & body, const Partitioner &)
 {
   parallel_reduce(range, body);
 }
@@ -722,7 +705,7 @@ public:
     return val;
   }
 
-  atomic<T>& operator=( const atomic<T>& value )
+  atomic<T> & operator=( const atomic<T> & value )
   {
     spin_mutex::scoped_lock lock(smutex);
     val = value;
@@ -806,7 +789,7 @@ class split {};
  */
 template <typename Range, typename Body>
 inline
-void parallel_for (const Range &range, const Body &body)
+void parallel_for (const Range & range, const Body & body)
 {
   BoolAcquire b(in_threads);
   body(range);
@@ -819,7 +802,7 @@ void parallel_for (const Range &range, const Body &body)
  */
 template <typename Range, typename Body, typename Partitioner>
 inline
-void parallel_for (const Range &range, const Body &body, const Partitioner &)
+void parallel_for (const Range & range, const Body & body, const Partitioner &)
 {
   BoolAcquire b(in_threads);
   body(range);
@@ -832,7 +815,7 @@ void parallel_for (const Range &range, const Body &body, const Partitioner &)
  */
 template <typename Range, typename Body>
 inline
-void parallel_reduce (const Range &range, Body &body)
+void parallel_reduce (const Range & range, Body & body)
 {
   BoolAcquire b(in_threads);
   body(range);
@@ -845,7 +828,7 @@ void parallel_reduce (const Range &range, Body &body)
  */
 template <typename Range, typename Body, typename Partitioner>
 inline
-void parallel_reduce (const Range &range, Body &body, const Partitioner &)
+void parallel_reduce (const Range & range, Body & body, const Partitioner &)
 {
   BoolAcquire b(in_threads);
   body(range);
@@ -867,8 +850,8 @@ public:
   {
   public:
     scoped_lock () {}
-    explicit scoped_lock ( spin_mutex&  ) {}
-    void acquire ( spin_mutex& ) {}
+    explicit scoped_lock ( spin_mutex &  ) {}
+    void acquire ( spin_mutex & ) {}
     void release () {}
   };
 };
@@ -887,8 +870,8 @@ public:
   {
   public:
     scoped_lock () {}
-    explicit scoped_lock ( recursive_mutex&  ) {}
-    void acquire ( recursive_mutex& ) {}
+    explicit scoped_lock ( recursive_mutex &  ) {}
+    void acquire ( recursive_mutex & ) {}
     void release () {}
   };
 };
@@ -903,7 +886,7 @@ class atomic
 {
 public:
   atomic () : _val(0) {}
-  operator T& () { return _val; }
+  operator T & () { return _val; }
 private:
   T _val;
 };
@@ -961,7 +944,7 @@ public:
    * the copy constructor to specifically omit the \p _objs
    * vector.
    */
-  BlockedRange (const BlockedRange<T> &r):
+  BlockedRange (const BlockedRange<T> & r):
     _end(r._end),
     _begin(r._begin),
     _grainsize(r._grainsize)
@@ -972,7 +955,7 @@ public:
    * of the range is left in place, the second
    * half of the range is placed in *this.
    */
-  BlockedRange (BlockedRange<T> &r, Threads::split ) :
+  BlockedRange (BlockedRange<T> & r, Threads::split ) :
     _end(r._end),
     _begin(r._begin),
     _grainsize(r._grainsize)
@@ -1014,7 +997,7 @@ public:
   /**
    * Set the grain size.
    */
-  void grainsize (const unsigned int &gs) {_grainsize = gs;}
+  void grainsize (const unsigned int & gs) {_grainsize = gs;}
 
   /**
    * \return the size of the range.

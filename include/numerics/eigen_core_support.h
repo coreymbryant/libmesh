@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,14 @@
 // #  undef  MatType
 // #endif
 
+// Eigen uses deprecated std::binder1st/2nd classes, which GCC warns about.
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 // Eigen includes
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
 
 // #ifdef libMeshSaveMatType
 // #  define libMeshSaveMatType MatType

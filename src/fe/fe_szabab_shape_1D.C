@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ template <>
 Real FE<1,SZABAB>::shape(const ElemType,
                          const Order libmesh_dbg_var(order),
                          const unsigned int i,
-                         const Point& p)
+                         const Point & p)
 {
   const Real xi  = p(0);
   const Real xi2 = xi*xi;
@@ -79,10 +79,10 @@ Real FE<1,SZABAB>::shape(const ElemType,
 
 
 template <>
-Real FE<1,SZABAB>::shape(const Elem* elem,
+Real FE<1,SZABAB>::shape(const Elem * elem,
                          const Order order,
                          const unsigned int i,
-                         const Point& p)
+                         const Point & p)
 {
   libmesh_assert(elem);
 
@@ -96,7 +96,7 @@ Real FE<1,SZABAB>::shape_deriv(const ElemType,
                                const Order libmesh_dbg_var(order),
                                const unsigned int i,
                                const unsigned int libmesh_dbg_var(j),
-                               const Point& p)
+                               const Point & p)
 {
   // only d()/dxi in 1D!
   libmesh_assert_equal_to (j, 0);
@@ -141,11 +141,11 @@ Real FE<1,SZABAB>::shape_deriv(const ElemType,
 
 
 template <>
-Real FE<1,SZABAB>::shape_deriv(const Elem* elem,
+Real FE<1,SZABAB>::shape_deriv(const Elem * elem,
                                const Order order,
                                const unsigned int i,
                                const unsigned int j,
-                               const Point& p)
+                               const Point & p)
 {
   libmesh_assert(elem);
 
@@ -160,7 +160,7 @@ Real FE<1,SZABAB>::shape_second_deriv(const ElemType,
                                       const Order,
                                       const unsigned int,
                                       const unsigned int,
-                                      const Point&)
+                                      const Point &)
 {
   static bool warning_given = false;
 
@@ -176,11 +176,11 @@ Real FE<1,SZABAB>::shape_second_deriv(const ElemType,
 
 
 template <>
-Real FE<1,SZABAB>::shape_second_deriv(const Elem*,
+Real FE<1,SZABAB>::shape_second_deriv(const Elem *,
                                       const Order,
                                       const unsigned int,
                                       const unsigned int,
-                                      const Point&)
+                                      const Point &)
 {
   static bool warning_given = false;
 

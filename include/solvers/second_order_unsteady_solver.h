@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,8 @@ namespace libMesh
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Paul T. Bauman 2015
+ * \author Paul T. Bauman
+ * \date 2015
  */
 class SecondOrderUnsteadySolver : public UnsteadySolver
 {
@@ -42,40 +43,40 @@ public:
    * to be solved.
    */
   explicit
-  SecondOrderUnsteadySolver (sys_type& s);
+  SecondOrderUnsteadySolver (sys_type & s);
 
   /**
    * Destructor.
    */
   virtual ~SecondOrderUnsteadySolver ();
 
-  virtual unsigned int time_order() const
+  virtual unsigned int time_order() const libmesh_override
   { return 2; }
 
   /**
    * The initialization function.  This method is used to
    * initialize internal data structures before a simulation begins.
    */
-  virtual void init ();
+  virtual void init () libmesh_override;
 
   /**
    * The data initialization function.  This method is used to
    * initialize internal data structures after the underlying System
    * has been initialized
    */
-  virtual void init_data ();
+  virtual void init_data () libmesh_override;
 
   /**
    * The reinitialization function.  This method is used to
    * resize internal data vectors after a mesh change.
    */
-  virtual void reinit ();
+  virtual void reinit () libmesh_override;
 
   /**
    * This method retrieves all the stored solutions at the current
    * system.time
    */
-  virtual void retrieve_timestep ();
+  virtual void retrieve_timestep () libmesh_override;
 
   /**
    * Specify non-zero initial velocity. Should be called before solve().
@@ -83,7 +84,8 @@ public:
    * A gradient g is only required/used for projecting onto finite element spaces
    * with continuous derivatives.
    */
-  void project_initial_rate( FunctionBase<Number> *f, FunctionBase<Gradient> *g = NULL );
+  void project_initial_rate(FunctionBase<Number> * f,
+                            FunctionBase<Gradient> * g = libmesh_nullptr);
 
   /**
    * @returns the solution rate at the previous time step, \f$\dot{u}_n\f$,
@@ -108,7 +110,6 @@ protected:
    * Serial vector of previous time step accleration \f$ \ddot{u}_n \f$
    */
   UniquePtr<NumericVector<Number> > _old_local_solution_accel;
-
 };
 
 } // end namespace libMesh

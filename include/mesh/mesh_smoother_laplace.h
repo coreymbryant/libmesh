@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -45,10 +45,6 @@ namespace libMesh
  * \author John W. Peterson
  * \date 2002-2007
  */
-
-
-// ------------------------------------------------------------
-// LaplaceMeshSmoother class definition
 class LaplaceMeshSmoother : public MeshSmoother
 {
 public:
@@ -57,7 +53,7 @@ public:
    * in the protected data section of the class.
    */
   explicit
-  LaplaceMeshSmoother(UnstructuredMesh& mesh);
+  LaplaceMeshSmoother(UnstructuredMesh & mesh);
 
   /**
    * Destructor.
@@ -70,7 +66,7 @@ public:
    * function in this class which takes an int, using
    * a default value of 1.
    */
-  virtual void smooth() { this->smooth(1); }
+  virtual void smooth() libmesh_override { this->smooth(1); }
 
   /**
    * The actual smoothing function, gets called whenever
@@ -92,7 +88,7 @@ public:
    * Mainly for debugging, this function will print
    * out the connectivity graph which has been created.
    */
-  void print_graph(std::ostream& out = libMesh::out) const;
+  void print_graph(std::ostream & out = libMesh::out) const;
 
 private:
   /**

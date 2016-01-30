@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,43 +33,43 @@ namespace libMesh {
 
 PeriodicBoundaries::~PeriodicBoundaries()
 {
-  for (std::map<boundary_id_type, PeriodicBoundaryBase*>::iterator it = begin(); it != end(); ++it)
+  for (std::map<boundary_id_type, PeriodicBoundaryBase *>::iterator it = begin(); it != end(); ++it)
     delete it->second;
 }
 
 
 
-PeriodicBoundaryBase* PeriodicBoundaries::boundary(boundary_id_type id)
+PeriodicBoundaryBase * PeriodicBoundaries::boundary(boundary_id_type id)
 {
   iterator i = this->find(id);
   if (i == this->end())
-    return NULL;
+    return libmesh_nullptr;
   return i->second;
 }
 
 
 
-const PeriodicBoundaryBase* PeriodicBoundaries::boundary(boundary_id_type id) const
+const PeriodicBoundaryBase * PeriodicBoundaries::boundary(boundary_id_type id) const
 {
   const_iterator i = this->find(id);
   if (i == this->end())
-    return NULL;
+    return libmesh_nullptr;
   return i->second;
 }
 
 
 
 
-const Elem *PeriodicBoundaries::neighbor(boundary_id_type boundary_id,
-                                         const PointLocatorBase& point_locator,
-                                         const Elem* e,
-                                         unsigned int side) const
+const Elem * PeriodicBoundaries::neighbor(boundary_id_type boundary_id,
+                                          const PointLocatorBase & point_locator,
+                                          const Elem * e,
+                                          unsigned int side) const
 {
   // Find a point on that side (and only that side)
 
   Point p = e->build_side(side)->centroid();
 
-  const PeriodicBoundaryBase *b = this->boundary(boundary_id);
+  const PeriodicBoundaryBase * b = this->boundary(boundary_id);
   libmesh_assert (b);
   p = b->get_corresponding_pos(p);
 

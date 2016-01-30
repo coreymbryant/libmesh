@@ -30,14 +30,15 @@
 #include "libmesh/xdr_cxx.h"
 #include "libmesh/libmesh_logging.h"
 #include "libmesh/serial_mesh.h"
+#include "libmesh/elem.h"
 
 namespace libMesh
 {
 
-RBEIMEvaluation::RBEIMEvaluation(const libMesh::Parallel::Communicator &comm_in)
+RBEIMEvaluation::RBEIMEvaluation(const libMesh::Parallel::Communicator & comm_in)
   :
   RBEvaluation(comm_in),
-  extra_interpolation_point_elem(NULL),
+  extra_interpolation_point_elem(libmesh_nullptr),
   _previous_N(0),
   _previous_error_bound(-1),
   _interpolation_points_mesh(comm_in)
@@ -90,7 +91,7 @@ void RBEIMEvaluation::resize_data_structures(const unsigned int Nmax,
   extra_interpolation_matrix_row.resize(Nmax);
 }
 
-void RBEIMEvaluation::attach_parametrized_function(RBParametrizedFunction* pf)
+void RBEIMEvaluation::attach_parametrized_function(RBParametrizedFunction * pf)
 {
   _parametrized_functions.push_back(pf);
 }
@@ -101,14 +102,14 @@ unsigned int RBEIMEvaluation::get_n_parametrized_functions() const
     (_parametrized_functions.size());
 }
 
-SerialMesh& RBEIMEvaluation::get_interpolation_points_mesh()
+SerialMesh & RBEIMEvaluation::get_interpolation_points_mesh()
 {
   return _interpolation_points_mesh;
 }
 
 Number RBEIMEvaluation::evaluate_parametrized_function(unsigned int var_index,
-                                                       const Point& p,
-                                                       const Elem& elem)
+                                                       const Point & p,
+                                                       const Elem & elem)
 {
   if(var_index >= get_n_parametrized_functions())
     libmesh_error_msg("Error: We must have var_index < get_n_parametrized_functions() in evaluate_parametrized_function.");
@@ -199,7 +200,7 @@ Real RBEIMEvaluation::rb_solve(unsigned int N)
 
 }
 
-void RBEIMEvaluation::rb_solve(DenseVector<Number>& EIM_rhs)
+void RBEIMEvaluation::rb_solve(DenseVector<Number> & EIM_rhs)
 {
   START_LOG("rb_solve()", "RBEIMEvaluation");
 
@@ -228,7 +229,7 @@ void RBEIMEvaluation::initialize_eim_theta_objects()
     }
 }
 
-std::vector<RBTheta*> RBEIMEvaluation::get_eim_theta_objects()
+std::vector<RBTheta *> RBEIMEvaluation::get_eim_theta_objects()
 {
   return _rb_eim_theta_objects;
 }
@@ -238,7 +239,7 @@ UniquePtr<RBTheta> RBEIMEvaluation::build_eim_theta(unsigned int index)
   return UniquePtr<RBTheta>( new RBEIMTheta(*this, index) );
 }
 
-void RBEIMEvaluation::legacy_write_offline_data_to_files(const std::string& directory_name,
+void RBEIMEvaluation::legacy_write_offline_data_to_files(const std::string & directory_name,
                                                          const bool read_binary_data)
 {
   START_LOG("legacy_write_offline_data_to_files()", "RBEIMEvaluation");
@@ -341,8 +342,7 @@ void RBEIMEvaluation::legacy_write_offline_data_to_files(const std::string& dire
   STOP_LOG("legacy_write_offline_data_to_files()", "RBEIMEvaluation");
 }
 
-void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
-(const std::string& directory_name)
+void RBEIMEvaluation::legacy_write_out_interpolation_points_elem(const std::string & directory_name)
 {
   _interpolation_points_mesh.clear();
 
@@ -354,7 +354,7 @@ void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
   unsigned int new_node_id = 0;
   for(unsigned int i=0; i<(interpolation_points_elem.size()+1); i++)
     {
-      Elem* old_elem = NULL;
+      Elem * old_elem = libmesh_nullptr;
       if(i < interpolation_points_elem.size())
         {
           old_elem = interpolation_points_elem[i];
@@ -366,7 +366,7 @@ void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
 
       for(unsigned int n=0; n<old_elem->n_nodes(); n++)
         {
-          Node* node_ptr = old_elem->get_node(n);
+          Node * node_ptr = old_elem->get_node(n);
           dof_id_type old_node_id = node_ptr->id();
 
           // Check if this node has already been added. This
@@ -390,7 +390,7 @@ void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
   dof_id_type new_elem_id = 0;
   for(unsigned int i=0; i<interpolation_elem_ids.size(); i++)
     {
-      Elem* old_elem = NULL;
+      Elem * old_elem = libmesh_nullptr;
       if(i < interpolation_points_elem.size())
         {
           old_elem = interpolation_points_elem[i];
@@ -406,7 +406,7 @@ void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
       std::map<dof_id_type,dof_id_type>::iterator id_it = elem_id_map.find(old_elem_id);
       if(id_it == elem_id_map.end())
         {
-          Elem* new_elem = Elem::build(old_elem->type(), /*parent*/ NULL).release();
+          Elem * new_elem = Elem::build(old_elem->type(), /*parent*/ libmesh_nullptr).release();
           new_elem->subdomain_id() = old_elem->subdomain_id();
 
           // Assign all the nodes
@@ -457,7 +457,7 @@ void RBEIMEvaluation::legacy_write_out_interpolation_points_elem
     }
 }
 
-void RBEIMEvaluation::legacy_read_offline_data_from_files(const std::string& directory_name,
+void RBEIMEvaluation::legacy_read_offline_data_from_files(const std::string & directory_name,
                                                           bool read_error_bound_data,
                                                           const bool read_binary_data)
 {
@@ -592,8 +592,7 @@ void RBEIMEvaluation::legacy_read_offline_data_from_files(const std::string& dir
   STOP_LOG("legacy_read_offline_data_from_files()", "RBEIMEvaluation");
 }
 
-void RBEIMEvaluation::legacy_read_in_interpolation_points_elem
-(const std::string& directory_name)
+void RBEIMEvaluation::legacy_read_in_interpolation_points_elem(const std::string & directory_name)
 {
   _interpolation_points_mesh.read(directory_name + "/interpolation_points_mesh.xda");
 

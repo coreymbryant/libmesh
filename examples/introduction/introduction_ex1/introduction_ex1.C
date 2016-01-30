@@ -1,21 +1,25 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
 
 // <h1>Introduction Example 1 - Creation of a Mesh Object</h1>
+// \author Benjamin S. Kirk
+// \date 2003
 //
 // This is the first example program.  It simply demonstrates
 // how to create a mesh object.  A mesh is read from file,
@@ -32,7 +36,7 @@
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   // Initialize the library.  This is necessary because the library
   // may depend on a number of other libraries (i.e. MPI and PETSc)
@@ -67,7 +71,7 @@ int main (int argc, char** argv)
   std::string input_filename = argv[3];
 #ifndef LIBMESH_HAVE_XDR
   libmesh_example_requires(input_filename.rfind(".xdr") >=
-                         input_filename.size(), "XDR support");
+                           input_filename.size(), "XDR support");
 #endif
 
   // Read the input mesh.
@@ -84,7 +88,7 @@ int main (int argc, char** argv)
       std::string output_filename = argv[5];
 #ifndef LIBMESH_HAVE_XDR
       libmesh_example_requires(output_filename.rfind(".xdr") >=
-                             output_filename.size(), "XDR support");
+                               output_filename.size(), "XDR support");
 #endif
 
       mesh.write (argv[5]);

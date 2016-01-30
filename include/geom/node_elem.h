@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -45,144 +45,147 @@ public:
    * Constructor.  By default this element has no parent.
    */
   explicit
-  NodeElem (Elem* p=NULL) :
+  NodeElem (Elem * p=libmesh_nullptr) :
     Elem(NodeElem::n_nodes(), NodeElem::n_sides(), p, _elemlinks_data,
          _nodelinks_data)
   {
     // Make sure the interior parent isn't undefined
     if (LIBMESH_DIM > 0)
-      this->set_interior_parent(NULL);
+      this->set_interior_parent(libmesh_nullptr);
   }
 
   /**
    * @returns the \p Point associated with local \p Node \p i,
    * in master element rather than physical coordinates.
    */
-  Point master_point (const unsigned int i) const
+  virtual Point master_point (const unsigned int i) const libmesh_override
   {
     libmesh_assert_equal_to (i, 0);
     return Point(0,0,0);
   }
 
-
   /**
    * @returns 0, the dimensionality of the object.
    */
-  unsigned int dim () const { return 0; }
+  virtual unsigned int dim () const libmesh_override { return 0; }
 
   /**
    * @returns 1.
    */
-  unsigned int n_nodes() const { return 1; }
+  virtual unsigned int n_nodes() const libmesh_override { return 1; }
 
   /**
    * @returns 0
    */
-  unsigned int n_sides() const { return 0; }
+  virtual unsigned int n_sides() const libmesh_override { return 0; }
 
   /**
    * @returns 1.  Every NodeElem is a vertex
    */
-  unsigned int n_vertices() const { return 1; }
+  virtual unsigned int n_vertices() const libmesh_override { return 1; }
 
   /**
    * @returns 0.
    */
-  unsigned int n_edges() const { return 0; }
+  virtual unsigned int n_edges() const libmesh_override { return 0; }
 
   /**
    * @returns 0.
    */
-  unsigned int n_faces() const { return 0; }
+  virtual unsigned int n_faces() const libmesh_override { return 0; }
 
   /**
    * @returns 1
    */
-  unsigned int n_children() const { return 1; }
+  virtual unsigned int n_children() const libmesh_override { return 1; }
+
+  /**
+   * Don't hide Elem::key() defined in the base class.
+   */
+  using Elem::key;
 
   /**
    * @returns an id associated with the \p s side of this element.
    * This should never be important for NodeElems
    */
-  dof_id_type key (const unsigned int) const
+  virtual dof_id_type key (const unsigned int) const libmesh_override
   { return 0; }
 
   /**
    * The \p Elem::side() member makes no sense for nodes.
    */
-  UniquePtr<Elem> side (const unsigned int) const
+  virtual UniquePtr<Elem> side (const unsigned int) const libmesh_override
   { libmesh_not_implemented(); return UniquePtr<Elem>(); }
 
   /**
    * The \p Elem::build_side() member makes no sense for nodes.
    */
-  UniquePtr<Elem> build_side (const unsigned int, bool) const
+  virtual UniquePtr<Elem> build_side (const unsigned int, bool) const libmesh_override
   { libmesh_not_implemented(); return UniquePtr<Elem>(); }
 
   /**
    * The \p Elem::build_edge() member makes no sense for nodes.
    */
-  UniquePtr<Elem> build_edge (const unsigned int) const
+  virtual UniquePtr<Elem> build_edge (const unsigned int) const libmesh_override
   { libmesh_not_implemented(); return UniquePtr<Elem>(); }
 
   /**
    * @returns 1
    */
-  unsigned int n_sub_elem() const { return 1; }
+  virtual unsigned int n_sub_elem() const libmesh_override { return 1; }
 
   /**
    * @returns true iff the specified (local) node number is a vertex.
    */
-  virtual bool is_vertex(const unsigned int) const { return true; }
+  virtual bool is_vertex(const unsigned int) const libmesh_override { return true; }
 
   /**
    * NodeElem objects don't have faces or sides
    */
-  virtual bool is_edge(const unsigned int) const { return false; }
-
-  virtual bool is_face(const unsigned int) const { return false; }
+  virtual bool is_edge(const unsigned int) const libmesh_override { return false; }
+  virtual bool is_face(const unsigned int) const libmesh_override { return false; }
 
   virtual bool is_child_on_side(const unsigned int,
-                                const unsigned int) const
+                                const unsigned int) const libmesh_override
   { libmesh_not_implemented(); return false; }
 
   virtual bool is_node_on_side(const unsigned int,
-                               const unsigned int) const
+                               const unsigned int) const libmesh_override
   { libmesh_not_implemented(); return false; }
 
   virtual bool is_node_on_edge(const unsigned int,
-                               const unsigned int) const
+                               const unsigned int) const libmesh_override
   { libmesh_not_implemented(); return false; }
 
   virtual bool is_edge_on_side(const unsigned int,
-                               const unsigned int) const
+                               const unsigned int) const libmesh_override
   { libmesh_not_implemented(); return false; }
 
   /*
    * @returns true iff the element map is definitely affine within
    * numerical tolerances
    */
-  virtual bool has_affine_map () const { return true; }
+  virtual bool has_affine_map () const libmesh_override { return true; }
 
   /**
    * @returns true iff the Lagrange shape functions on this element
    * are linear
    */
-  virtual bool is_linear () const { return true; }
+  virtual bool is_linear () const libmesh_override { return true; }
 
   /**
    * @returns \p NODEELEM
    */
-  ElemType type()  const { return NODEELEM; }
+  virtual ElemType type() const libmesh_override { return NODEELEM; }
 
   /**
    * @returns FIRST
    */
-  Order default_order() const { return FIRST; }
+  virtual Order default_order() const libmesh_override { return FIRST; }
 
   virtual void connectivity(const unsigned int sc,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const;
+                            std::vector<dof_id_type> & conn) const libmesh_override;
 
 
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
@@ -190,7 +193,7 @@ public:
   /**
    * @returns \p false.
    */
-  bool infinite () const { return false; }
+  virtual bool infinite () const libmesh_override { return false; }
 
 #endif
 
@@ -200,12 +203,12 @@ protected:
   /**
    * Data for links to parent/neighbor/interior_parent elements.
    */
-  Elem* _elemlinks_data[1+(LIBMESH_DIM>0)];
+  Elem * _elemlinks_data[1+(LIBMESH_DIM>0)];
 
   /**
    * Data for links to nodes
    */
-  Node* _nodelinks_data[1];
+  Node * _nodelinks_data[1];
 
 
 #ifdef LIBMESH_ENABLE_AMR
@@ -213,9 +216,9 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int i,
-                          const unsigned int j,
-                          const unsigned int k) const
+  virtual float embedding_matrix (const unsigned int i,
+                                  const unsigned int j,
+                                  const unsigned int k) const libmesh_override
   { return _embedding_matrix[i][j][k]; }
 
   /**
@@ -236,13 +239,6 @@ protected:
 #endif // LIBMESH_ENABLE_AMR
 
 };
-
-
-
-
-
-// ------------------------------------------------------------
-// NodeElem class member functions
 
 } // namespace libMesh
 

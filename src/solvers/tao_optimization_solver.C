@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate objective function at x
   PetscErrorCode
-  __libmesh_tao_objective (Tao /*tao*/, Vec x, PetscReal* objective, void *ctx)
+  __libmesh_tao_objective (Tao /*tao*/, Vec x, PetscReal * objective, void * ctx)
   {
     START_LOG("objective()", "TaoOptimizationSolver");
 
@@ -56,15 +56,15 @@ extern "C"
     libmesh_assert(objective);
     libmesh_assert(ctx);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -76,7 +76,7 @@ extern "C"
     // Swap back
     X.swap(X_sys);
 
-    if (solver->objective_object != NULL)
+    if (solver->objective_object != libmesh_nullptr)
       (*objective) = solver->objective_object->objective(*(sys.current_local_solution), sys);
     else
       libmesh_error_msg("Objective function not defined in __libmesh_tao_objective");
@@ -91,7 +91,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the gradient at x
   PetscErrorCode
-  __libmesh_tao_gradient(Tao /*tao*/, Vec x, Vec g, void *ctx)
+  __libmesh_tao_gradient(Tao /*tao*/, Vec x, Vec g, void * ctx)
   {
     START_LOG("gradient()", "TaoOptimizationSolver");
 
@@ -101,15 +101,15 @@ extern "C"
     libmesh_assert(g);
     libmesh_assert(ctx);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -128,7 +128,7 @@ extern "C"
     // Clear the gradient prior to assembly
     gradient.zero();
 
-    if (solver->gradient_object != NULL)
+    if (solver->gradient_object != libmesh_nullptr)
       solver->gradient_object->gradient(*(sys.current_local_solution), gradient, sys);
     else
       libmesh_error_msg("Gradient function not defined in __libmesh_tao_gradient");
@@ -143,7 +143,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the Hessian at x
   PetscErrorCode
-  __libmesh_tao_hessian(Tao /*tao*/, Vec x, Mat h, Mat pc, void *ctx)
+  __libmesh_tao_hessian(Tao /*tao*/, Vec x, Mat h, Mat pc, void * ctx)
   {
     START_LOG("hessian()", "TaoOptimizationSolver");
 
@@ -154,15 +154,15 @@ extern "C"
     libmesh_assert(pc);
     libmesh_assert(ctx);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -180,7 +180,7 @@ extern "C"
     PC.attach_dof_map(sys.get_dof_map());
     hessian.attach_dof_map(sys.get_dof_map());
 
-    if (solver->hessian_object != NULL)
+    if (solver->hessian_object != libmesh_nullptr)
       {
         // Following PetscNonlinearSolver by passing in PC. It's not clear
         // why we pass in PC and not hessian though?
@@ -201,7 +201,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the equality constraints at x
   PetscErrorCode
-  __libmesh_tao_equality_constraints(Tao /*tao*/, Vec x, Vec ce, void *ctx)
+  __libmesh_tao_equality_constraints(Tao /*tao*/, Vec x, Vec ce, void * ctx)
   {
     START_LOG("equality_constraints()", "TaoOptimizationSolver");
 
@@ -211,15 +211,15 @@ extern "C"
     libmesh_assert(ce);
     libmesh_assert(ctx);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -238,7 +238,7 @@ extern "C"
     // Clear the gradient prior to assembly
     eq_constraints.zero();
 
-    if (solver->equality_constraints_object != NULL)
+    if (solver->equality_constraints_object != libmesh_nullptr)
       solver->equality_constraints_object->equality_constraints(*(sys.current_local_solution), eq_constraints, sys);
     else
       libmesh_error_msg("Constraints function not defined in __libmesh_tao_equality_constraints");
@@ -254,7 +254,7 @@ extern "C"
   // This function is called by Tao to evaluate the Jacobian of the
   // equality constraints at x
   PetscErrorCode
-  __libmesh_tao_equality_constraints_jacobian(Tao /*tao*/, Vec x, Mat J, Mat Jpre, void *ctx)
+  __libmesh_tao_equality_constraints_jacobian(Tao /*tao*/, Vec x, Mat J, Mat Jpre, void * ctx)
   {
     START_LOG("equality_constraints_jacobian()", "TaoOptimizationSolver");
 
@@ -264,15 +264,15 @@ extern "C"
     libmesh_assert(J);
     libmesh_assert(Jpre);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -288,7 +288,7 @@ extern "C"
     PetscMatrix<Number> J_petsc(J, sys.comm());
     PetscMatrix<Number> Jpre_petsc(Jpre, sys.comm());
 
-    if (solver->equality_constraints_jacobian_object != NULL)
+    if (solver->equality_constraints_jacobian_object != libmesh_nullptr)
       solver->equality_constraints_jacobian_object->equality_constraints_jacobian(*(sys.current_local_solution), J_petsc, sys);
     else
       libmesh_error_msg("Constraints function not defined in __libmesh_tao_equality_constraints_jacobian");
@@ -304,7 +304,7 @@ extern "C"
   //---------------------------------------------------------------
   // This function is called by Tao to evaluate the inequality constraints at x
   PetscErrorCode
-  __libmesh_tao_inequality_constraints(Tao /*tao*/, Vec x, Vec cineq, void *ctx)
+  __libmesh_tao_inequality_constraints(Tao /*tao*/, Vec x, Vec cineq, void * ctx)
   {
     START_LOG("inequality_constraints()", "TaoOptimizationSolver");
 
@@ -314,15 +314,15 @@ extern "C"
     libmesh_assert(cineq);
     libmesh_assert(ctx);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -341,7 +341,7 @@ extern "C"
     // Clear the gradient prior to assembly
     ineq_constraints.zero();
 
-    if (solver->inequality_constraints_object != NULL)
+    if (solver->inequality_constraints_object != libmesh_nullptr)
       solver->inequality_constraints_object->inequality_constraints(*(sys.current_local_solution), ineq_constraints, sys);
     else
       libmesh_error_msg("Constraints function not defined in __libmesh_tao_inequality_constraints");
@@ -357,7 +357,7 @@ extern "C"
   // This function is called by Tao to evaluate the Jacobian of the
   // equality constraints at x
   PetscErrorCode
-  __libmesh_tao_inequality_constraints_jacobian(Tao /*tao*/, Vec x, Mat J, Mat Jpre, void *ctx)
+  __libmesh_tao_inequality_constraints_jacobian(Tao /*tao*/, Vec x, Mat J, Mat Jpre, void * ctx)
   {
     START_LOG("inequality_constraints_jacobian()", "TaoOptimizationSolver");
 
@@ -367,15 +367,15 @@ extern "C"
     libmesh_assert(J);
     libmesh_assert(Jpre);
 
-    // ctx should be a pointer to the solver (it was passed in as void*)
-    TaoOptimizationSolver<Number>* solver =
-      static_cast<TaoOptimizationSolver<Number>*> (ctx);
+    // ctx should be a pointer to the solver (it was passed in as void *)
+    TaoOptimizationSolver<Number> * solver =
+      static_cast<TaoOptimizationSolver<Number> *> (ctx);
 
-    OptimizationSystem &sys = solver->system();
+    OptimizationSystem & sys = solver->system();
 
     // We'll use current_local_solution below, so let's ensure that it's consistent
     // with the vector x that was passed in.
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(sys.solution.get());
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(sys.solution.get());
     PetscVector<Number> X(x, sys.comm());
 
     // Perform a swap so that sys.solution points to X
@@ -391,7 +391,7 @@ extern "C"
     PetscMatrix<Number> J_petsc(J, sys.comm());
     PetscMatrix<Number> Jpre_petsc(Jpre, sys.comm());
 
-    if (solver->inequality_constraints_jacobian_object != NULL)
+    if (solver->inequality_constraints_jacobian_object != libmesh_nullptr)
       solver->inequality_constraints_jacobian_object->inequality_constraints_jacobian(*(sys.current_local_solution), J_petsc, sys);
     else
       libmesh_error_msg("Constraints function not defined in __libmesh_tao_inequality_constraints_jacobian");
@@ -412,10 +412,10 @@ extern "C"
 //---------------------------------------------------------------------
 // TaoOptimizationSolver<> methods
 template <typename T>
-TaoOptimizationSolver<T>::TaoOptimizationSolver (OptimizationSystem& system_in)
+TaoOptimizationSolver<T>::TaoOptimizationSolver (OptimizationSystem & system_in)
   :
   OptimizationSolver<T>(system_in),
-  _reason(TAO_CONVERGED_FATOL/*==0*/) // Arbitrary initial value...
+  _reason(TAO_CONVERGED_USER) // Arbitrary initial value...
 {
 }
 
@@ -439,7 +439,7 @@ void TaoOptimizationSolver<T>::clear ()
       PetscErrorCode ierr=0;
 
       ierr = TaoDestroy(&_tao);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 }
 
@@ -456,7 +456,7 @@ void TaoOptimizationSolver<T>::init ()
       PetscErrorCode ierr=0;
 
       ierr = TaoCreate(this->comm().get(),&_tao);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 }
 
@@ -469,15 +469,15 @@ void TaoOptimizationSolver<T>::solve ()
 
   this->system().solution->zero();
 
-  PetscMatrix<T>* hessian  = cast_ptr<PetscMatrix<T>*>(this->system().matrix);
-  // PetscVector<T>* gradient = cast_ptr<PetscVector<T>*>(this->system().rhs);
-  PetscVector<T>* x         = cast_ptr<PetscVector<T>*>(this->system().solution.get());
-  PetscVector<T>* ceq       = cast_ptr<PetscVector<T>*>(this->system().C_eq.get());
-  PetscMatrix<T>* ceq_jac   = cast_ptr<PetscMatrix<T>*>(this->system().C_eq_jac.get());
-  PetscVector<T>* cineq     = cast_ptr<PetscVector<T>*>(this->system().C_ineq.get());
-  PetscMatrix<T>* cineq_jac = cast_ptr<PetscMatrix<T>*>(this->system().C_ineq_jac.get());
-  PetscVector<T>* lb        = cast_ptr<PetscVector<T>*>(&this->system().get_vector("lower_bounds"));
-  PetscVector<T>* ub        = cast_ptr<PetscVector<T>*>(&this->system().get_vector("upper_bounds"));
+  PetscMatrix<T> * hessian  = cast_ptr<PetscMatrix<T> *>(this->system().matrix);
+  // PetscVector<T> * gradient = cast_ptr<PetscVector<T> *>(this->system().rhs);
+  PetscVector<T> * x         = cast_ptr<PetscVector<T> *>(this->system().solution.get());
+  PetscVector<T> * ceq       = cast_ptr<PetscVector<T> *>(this->system().C_eq.get());
+  PetscMatrix<T> * ceq_jac   = cast_ptr<PetscMatrix<T> *>(this->system().C_eq_jac.get());
+  PetscVector<T> * cineq     = cast_ptr<PetscVector<T> *>(this->system().C_ineq.get());
+  PetscMatrix<T> * cineq_jac = cast_ptr<PetscMatrix<T> *>(this->system().C_ineq_jac.get());
+  PetscVector<T> * lb        = cast_ptr<PetscVector<T> *>(&this->system().get_vector("lower_bounds"));
+  PetscVector<T> * ub        = cast_ptr<PetscVector<T> *>(&this->system().get_vector("upper_bounds"));
 
   // Set the starting guess to zero.
   x->zero();
@@ -490,7 +490,7 @@ void TaoOptimizationSolver<T>::solve ()
   // call TaoSetFromOptions twice (both before and after setting
   // custom options programatically)
   ierr = TaoSetFromOptions(_tao);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Set convergence tolerances
   // f(X) - f(X*) (estimated)            <= fatol
@@ -500,45 +500,48 @@ void TaoOptimizationSolver<T>::solve ()
   // ||g(X)|| / ||g(X0)||                <= gttol
   // Command line equivalents: -tao_fatol, -tao_frtol, -tao_gatol, -tao_grtol, -tao_gttol
   ierr = TaoSetTolerances(_tao,
+#if PETSC_RELEASE_LESS_THAN(3,6,4)
+                          // Releases up to 3.6.3 had fatol and frtol, after that they were removed.
                           /*fatol=*/PETSC_DEFAULT,
-                          /*frtol=*/this->objective_function_relative_tolerance,
+                          /*frtol=*/PETSC_DEFAULT,
+#endif
                           /*gatol=*/PETSC_DEFAULT,
-                          /*grtol=*/PETSC_DEFAULT,
+                          /*grtol=*/this->objective_function_relative_tolerance,
                           /*gttol=*/PETSC_DEFAULT);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Set the max-allowed number of objective function evaluations
   // Command line equivalent: -tao_max_funcs
   ierr = TaoSetMaximumFunctionEvaluations(_tao, this->max_objective_function_evaluations);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Set the max-allowed number of optimization iterations.
   // Command line equivalent: -tao_max_it
   // Not implemented for now as it seems fairly similar to
   // ierr = TaoSetMaximumIterations(_tao, 4);
-  // LIBMESH_CHKERRABORT(ierr);
+  // LIBMESH_CHKERR(ierr);
 
   // Set solution vec and an initial guess
   ierr = TaoSetInitialVector(_tao, x->vec());
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // We have to have an objective function
   libmesh_assert( this->objective_object );
 
   // Set routines for objective, gradient, hessian evaluation
   ierr = TaoSetObjectiveRoutine(_tao, __libmesh_tao_objective, this);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   if ( this->gradient_object )
     {
       ierr = TaoSetGradientRoutine(_tao, __libmesh_tao_gradient, this);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   if ( this->hessian_object )
     {
       ierr = TaoSetHessianRoutine(_tao, hessian->mat(), hessian->mat(), __libmesh_tao_hessian, this);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   if ( this->lower_and_upper_bounds_object )
@@ -549,13 +552,13 @@ void TaoOptimizationSolver<T>::solve ()
       ierr = TaoSetVariableBounds(_tao,
                                   lb->vec(),
                                   ub->vec());
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   if ( this->equality_constraints_object )
     {
       ierr = TaoSetEqualityConstraintsRoutine(_tao, ceq->vec(), __libmesh_tao_equality_constraints, this);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   if ( this->equality_constraints_jacobian_object )
@@ -565,14 +568,14 @@ void TaoOptimizationSolver<T>::solve ()
                                            ceq_jac->mat(),
                                            __libmesh_tao_equality_constraints_jacobian,
                                            this);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   // Optionally set inequality constraints
   if ( this->inequality_constraints_object )
     {
       ierr = TaoSetInequalityConstraintsRoutine(_tao, cineq->vec(), __libmesh_tao_inequality_constraints, this);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   // Optionally set inequality constraints Jacobian
@@ -583,20 +586,20 @@ void TaoOptimizationSolver<T>::solve ()
                                              cineq_jac->mat(),
                                              __libmesh_tao_inequality_constraints_jacobian,
                                              this);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   // Check for Tao command line options
   ierr = TaoSetFromOptions(_tao);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Perform the optimization
   ierr = TaoSolve(_tao);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Store the convergence/divergence reason
   ierr = TaoGetConvergedReason(_tao, &_reason);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   STOP_LOG("solve()", "TaoOptimizationSolver");
 }
@@ -607,10 +610,10 @@ void TaoOptimizationSolver<T>::get_dual_variables()
 {
   START_LOG("get_dual_variables()", "TaoOptimizationSolver");
 
-  PetscVector<T>* lambda_eq_petsc =
-    cast_ptr<PetscVector<T>*>(this->system().lambda_eq.get());
-  PetscVector<T>* lambda_ineq_petsc =
-    cast_ptr<PetscVector<T>*>(this->system().lambda_ineq.get());
+  PetscVector<T> * lambda_eq_petsc =
+    cast_ptr<PetscVector<T> *>(this->system().lambda_eq.get());
+  PetscVector<T> * lambda_ineq_petsc =
+    cast_ptr<PetscVector<T> *>(this->system().lambda_ineq.get());
 
   Vec lambda_eq_petsc_vec = lambda_eq_petsc->vec();
   Vec lambda_ineq_petsc_vec = lambda_ineq_petsc->vec();
@@ -619,7 +622,7 @@ void TaoOptimizationSolver<T>::get_dual_variables()
   ierr = TaoGetDualVariables(_tao,
                              &lambda_eq_petsc_vec,
                              &lambda_ineq_petsc_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   STOP_LOG("get_dual_variables()", "TaoOptimizationSolver");
 }
@@ -642,7 +645,7 @@ int TaoOptimizationSolver<T>::get_converged_reason()
   if (this->initialized())
     {
       ierr = TaoGetConvergedReason(_tao, &_reason);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 
   return static_cast<int>(_reason);

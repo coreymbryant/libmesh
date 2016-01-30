@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -43,14 +43,14 @@ namespace libMesh
 template <typename T>
 void PetscPreconditioner<T>::apply(const NumericVector<T> & x, NumericVector<T> & y)
 {
-  PetscVector<T> & x_pvec = cast_ref<PetscVector<T>&>(const_cast<NumericVector<T>&>(x));
-  PetscVector<T> & y_pvec = cast_ref<PetscVector<T>&>(const_cast<NumericVector<T>&>(y));
+  PetscVector<T> & x_pvec = cast_ref<PetscVector<T> &>(const_cast<NumericVector<T> &>(x));
+  PetscVector<T> & y_pvec = cast_ref<PetscVector<T> &>(const_cast<NumericVector<T> &>(y));
 
   Vec x_vec = x_pvec.vec();
   Vec y_vec = y_pvec.vec();
 
   int ierr = PCApply(_pc,x_vec,y_vec);
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 }
 
 
@@ -69,13 +69,13 @@ void PetscPreconditioner<T>::init ()
       if (_pc)
         {
           int ierr = LibMeshPCDestroy(&_pc);
-          LIBMESH_CHKERRABORT(ierr);
+          LIBMESH_CHKERR(ierr);
         }
 
       int ierr = PCCreate(this->comm().get(),&_pc);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
 
-      PetscMatrix<T> * pmatrix = cast_ptr<PetscMatrix<T>*, SparseMatrix<T> >(this->_matrix);
+      PetscMatrix<T> * pmatrix = cast_ptr<PetscMatrix<T> *, SparseMatrix<T> >(this->_matrix);
 
       _mat = pmatrix->mat();
     }
@@ -85,7 +85,7 @@ void PetscPreconditioner<T>::init ()
 #else
   int ierr = PCSetOperators(_pc,_mat,_mat);
 #endif
-  LIBMESH_CHKERRABORT(ierr);
+  LIBMESH_CHKERR(ierr);
 
   // Set the PCType.  Note: this used to be done *before* the call to
   // PCSetOperators(), and only when !_is_initialized, but
@@ -107,7 +107,7 @@ void PetscPreconditioner<T>::clear()
   if (_pc)
     {
       int ierr = LibMeshPCDestroy(&_pc);
-      LIBMESH_CHKERRABORT(ierr);
+      LIBMESH_CHKERR(ierr);
     }
 }
 
@@ -121,7 +121,7 @@ void PetscPreconditioner<T>::set_petsc_preconditioner_type (const Preconditioner
 
   // get the communicator from the PETSc object
   Parallel::communicator comm;
-  PetscObjectGetComm((PetscObject)pc, &comm);
+  PetscObjectGetComm((PetscObject)pc, & comm);
   Parallel::Communicator communicator(comm);
 
   switch (preconditioner_type)
@@ -258,9 +258,9 @@ void PetscPreconditioner<T>::set_petsc_preconditioner_type (const Preconditioner
 
 template <typename T>
 #if PETSC_VERSION_LESS_THAN(3,0,0)
-void PetscPreconditioner<T>::set_petsc_subpreconditioner_type(PCType type, PC& pc)
+void PetscPreconditioner<T>::set_petsc_subpreconditioner_type(PCType type, PC & pc)
 #else
-  void PetscPreconditioner<T>::set_petsc_subpreconditioner_type(const PCType type, PC& pc)
+  void PetscPreconditioner<T>::set_petsc_subpreconditioner_type(const PCType type, PC & pc)
 #endif
 {
   // For catching PETSc error return codes
@@ -268,7 +268,7 @@ void PetscPreconditioner<T>::set_petsc_subpreconditioner_type(PCType type, PC& p
 
   // get the communicator from the PETSc object
   Parallel::communicator comm;
-  PetscObjectGetComm((PetscObject)pc, &comm);
+  PetscObjectGetComm((PetscObject)pc, & comm);
   Parallel::Communicator communicator(comm);
 
   // All docs say must call KSPSetUp or PCSetUp before calling PCBJacobiGetSubKSP.
@@ -282,7 +282,7 @@ void PetscPreconditioner<T>::set_petsc_subpreconditioner_type(PCType type, PC& p
   CHKERRABORT(comm,ierr);
 
   // To store array of local KSP contexts on this processor
-  KSP* subksps;
+  KSP * subksps;
 
   // the number of blocks on this processor
   PetscInt n_local;

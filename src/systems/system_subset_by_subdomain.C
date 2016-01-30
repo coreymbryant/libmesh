@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
 #include "libmesh/system.h"
 #include "libmesh/dof_map.h"
 #include "libmesh/parallel.h"
+#include "libmesh/elem.h"
 
 namespace libMesh
 {
@@ -41,14 +42,14 @@ SystemSubsetBySubdomain::SubdomainSelection::
 }
 
 SystemSubsetBySubdomain::SubdomainSelectionByList::
-SubdomainSelectionByList (const std::set<subdomain_id_type>& list):
+SubdomainSelectionByList (const std::set<subdomain_id_type> & list):
   _list(list)
 {
 }
 
 bool
 SystemSubsetBySubdomain::SubdomainSelectionByList::
-operator()(const subdomain_id_type& subdomain_id)const
+operator()(const subdomain_id_type & subdomain_id)const
 {
   return _list.find(subdomain_id)!=_list.end();
 }
@@ -57,9 +58,9 @@ operator()(const subdomain_id_type& subdomain_id)const
 // SystemSubsetBySubdomain implementation
 
 SystemSubsetBySubdomain::
-SystemSubsetBySubdomain (const System& system,
-                         const SubdomainSelection& subdomain_selection,
-                         const std::set<unsigned int>* const var_nums):
+SystemSubsetBySubdomain (const System & system,
+                         const SubdomainSelection & subdomain_selection,
+                         const std::set<unsigned int> * const var_nums):
   SystemSubset(system),
   ParallelObject(system),
   _var_nums(),
@@ -70,9 +71,9 @@ SystemSubsetBySubdomain (const System& system,
 }
 
 SystemSubsetBySubdomain::
-SystemSubsetBySubdomain (const System& system,
-                         const std::set<subdomain_id_type>& subdomain_ids,
-                         const std::set<unsigned int>* const var_nums):
+SystemSubsetBySubdomain (const System & system,
+                         const std::set<subdomain_id_type> & subdomain_ids,
+                         const std::set<unsigned int> * const var_nums):
   SystemSubset(system),
   ParallelObject(system),
   _var_nums(),
@@ -87,34 +88,31 @@ SystemSubsetBySubdomain::
 {
 }
 
-const std::vector<unsigned int>&
-SystemSubsetBySubdomain::
-dof_ids(void)const
+const std::vector<unsigned int> &
+SystemSubsetBySubdomain::dof_ids() const
 {
   return _dof_ids;
 }
 
 void
 SystemSubsetBySubdomain::
-set_var_nums (const std::set<unsigned int>* const var_nums)
+set_var_nums (const std::set<unsigned int> * const var_nums)
 {
   _var_nums.clear();
-  if(var_nums!=NULL)
-    {
-      _var_nums = *var_nums;
-    }
+
+  if (var_nums != libmesh_nullptr)
+    _var_nums = *var_nums;
+
   else
     {
-      for(unsigned int i=0; i<_system.n_vars(); i++)
-        {
-          _var_nums.insert(i);
-        }
+      for (unsigned int i=0; i<_system.n_vars(); i++)
+        _var_nums.insert(i);
     }
 }
 
 void
 SystemSubsetBySubdomain::
-init (const SubdomainSelection& subdomain_selection)
+init (const SubdomainSelection & subdomain_selection)
 {
   _dof_ids.clear();
 
@@ -123,12 +121,12 @@ init (const SubdomainSelection& subdomain_selection)
   const DofMap & dof_map = _system.get_dof_map();
   std::vector<dof_id_type> dof_indices;
 
-  const MeshBase& mesh = _system.get_mesh();
+  const MeshBase & mesh = _system.get_mesh();
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
   for ( ; el != end_el; ++el)
     {
-      const Elem* elem = *el;
+      const Elem * elem = *el;
       if(subdomain_selection(elem->subdomain_id()))
         {
           std::set<unsigned int>::const_iterator it = _var_nums.begin();
@@ -195,7 +193,7 @@ init (const SubdomainSelection& subdomain_selection)
 
 void
 SystemSubsetBySubdomain::
-init (const std::set<subdomain_id_type>& subdomain_ids)
+init (const std::set<subdomain_id_type> & subdomain_ids)
 {
   SubdomainSelectionByList selection(subdomain_ids);
   this->init(selection);

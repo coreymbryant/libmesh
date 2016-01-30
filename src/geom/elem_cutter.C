@@ -56,8 +56,8 @@ ElemCutter::~ElemCutter()
 
 
 
-bool ElemCutter::is_inside (const Elem &elem,
-                            const std::vector<Real> &vertex_distance_func) const
+bool ElemCutter::is_inside (const Elem & elem,
+                            const std::vector<Real> & vertex_distance_func) const
 {
   libmesh_assert_equal_to (elem.n_vertices(), vertex_distance_func.size());
 
@@ -71,8 +71,8 @@ bool ElemCutter::is_inside (const Elem &elem,
 
 
 
-bool ElemCutter::is_outside (const Elem &elem,
-                             const std::vector<Real> &vertex_distance_func) const
+bool ElemCutter::is_outside (const Elem & elem,
+                             const std::vector<Real> & vertex_distance_func) const
 {
   libmesh_assert_equal_to (elem.n_vertices(), vertex_distance_func.size());
 
@@ -86,8 +86,8 @@ bool ElemCutter::is_outside (const Elem &elem,
 
 
 
-bool ElemCutter::is_cut (const Elem &elem,
-                         const std::vector<Real> &vertex_distance_func) const
+bool ElemCutter::is_cut (const Elem & elem,
+                         const std::vector<Real> & vertex_distance_func) const
 {
   libmesh_assert_equal_to (elem.n_vertices(), vertex_distance_func.size());
 
@@ -108,8 +108,8 @@ bool ElemCutter::is_cut (const Elem &elem,
 
 
 
-void ElemCutter::operator()(const Elem &elem,
-                            const std::vector<Real> &vertex_distance_func)
+void ElemCutter::operator()(const Elem & elem,
+                            const std::vector<Real> & vertex_distance_func)
 
 {
   libmesh_assert_equal_to (vertex_distance_func.size(), elem.n_vertices());
@@ -123,7 +123,7 @@ void ElemCutter::operator()(const Elem &elem,
     if (this->is_outside(elem, vertex_distance_func))
       {
         //std::cout << "element completely outside\n";
-        _outside_elem.push_back(&elem);
+        _outside_elem.push_back(& elem);
         return;
       }
 
@@ -153,8 +153,8 @@ void ElemCutter::operator()(const Elem &elem,
 
 
 
-void ElemCutter::find_intersection_points(const Elem &elem,
-                                          const std::vector<Real> &vertex_distance_func)
+void ElemCutter::find_intersection_points(const Elem & elem,
+                                          const std::vector<Real> & vertex_distance_func)
 {
   _intersection_pts.clear();
 
@@ -193,7 +193,7 @@ void ElemCutter::find_intersection_points(const Elem &elem,
           if ( (d_star > endpoint_tol) &&
                (d_star < (1.-endpoint_tol)) )
             {
-              const Point x_star = (edge->point(0)*(1.-d_star) +
+              const Point x_star = (edge->point(0)*(1-d_star) +
                                     edge->point(1)*d_star);
 
               std::cout << "adding cut point (d_star, x_star) = "
@@ -216,8 +216,8 @@ void ElemCutter::cut_1D (const Elem & /*elem*/,
 
 
 
-void ElemCutter::cut_2D (const Elem &elem,
-                         const std::vector<Real> &vertex_distance_func)
+void ElemCutter::cut_2D (const Elem & elem,
+                         const std::vector<Real> & vertex_distance_func)
 {
 #ifndef LIBMESH_HAVE_TRIANGLE
 
@@ -231,8 +231,8 @@ void ElemCutter::cut_2D (const Elem &elem,
 
   std::cout << "Inside cut face element!\n";
 
-  libmesh_assert (_inside_mesh_2D.get()  != NULL);
-  libmesh_assert (_outside_mesh_2D.get() != NULL);
+  libmesh_assert (_inside_mesh_2D.get()  != libmesh_nullptr);
+  libmesh_assert (_outside_mesh_2D.get() != libmesh_nullptr);
 
   _inside_mesh_2D->clear();
   _outside_mesh_2D->clear();
@@ -305,8 +305,8 @@ void ElemCutter::cut_2D (const Elem &elem,
 
 
 
-void ElemCutter::cut_3D (const Elem &elem,
-                         const std::vector<Real> &vertex_distance_func)
+void ElemCutter::cut_3D (const Elem & elem,
+                         const std::vector<Real> & vertex_distance_func)
 {
 #ifndef LIBMESH_HAVE_TETGEN
 
@@ -320,8 +320,8 @@ void ElemCutter::cut_3D (const Elem &elem,
 
   std::cout << "Inside cut cell element!\n";
 
-  libmesh_assert (_inside_mesh_3D.get()  != NULL);
-  libmesh_assert (_outside_mesh_3D.get() != NULL);
+  libmesh_assert (_inside_mesh_3D.get()  != libmesh_nullptr);
+  libmesh_assert (_outside_mesh_3D.get() != libmesh_nullptr);
 
   _inside_mesh_3D->clear();
   _outside_mesh_3D->clear();

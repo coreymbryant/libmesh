@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,10 @@ namespace libMesh
  * The \p TetGenWrapper provides an interface for basic
  * access to TetGen data structures and methods.
  *
- * @author, Steffen Petersen, 2004
- * Refactoring, John W. Peterson, 2011
+ * \author Steffen Petersen
+ * \date 2004
+ * \author John W. Peterson
+ * \date 2011
  */
 class TetGenWrapper
 {
@@ -84,7 +86,7 @@ public:
    * -v Prints the version information.
    * -h Help: A brief instruction for using TetGen.
    */
-  void set_switches(const std::string& s);
+  void set_switches(const std::string & s);
 
   /**
    * Method starts triangulization.
@@ -149,7 +151,7 @@ public:
   /**
    * Method returns coordinates of point i in TetGen output.
    */
-  void get_output_node(unsigned i, REAL& x, REAL& y, REAL& z);
+  void get_output_node(unsigned i, REAL & x, REAL & y, REAL & z);
 
   /**
    * Method returns index of jth node from element i in TetGen output.
@@ -221,7 +223,7 @@ public:
   /**
    * TetGen output structure.
    */
-  tetgenio*  tetgen_output;
+  tetgenio *  tetgen_output;
 
   /**
    * TetGen mesh structure (from the TetGen library).

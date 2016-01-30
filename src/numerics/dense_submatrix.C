@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ namespace libMesh
 // // ------------------------------------------------------------
 // // Dense Matrix member functions
 template<typename T>
-void DenseSubMatrix<T>::left_multiply (const DenseMatrixBase<T>& M2)
+void DenseSubMatrix<T>::left_multiply (const DenseMatrixBase<T> & M2)
 {
   // (*this) <- M2 * M3
   // Where:
@@ -46,7 +46,7 @@ void DenseSubMatrix<T>::left_multiply (const DenseMatrixBase<T>& M2)
 
 
 template<typename T>
-void DenseSubMatrix<T>::right_multiply (const DenseMatrixBase<T>& M3)
+void DenseSubMatrix<T>::right_multiply (const DenseMatrixBase<T> & M3)
 {
   // (*this) <- M2 * M3
   // Where:

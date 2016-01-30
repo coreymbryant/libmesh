@@ -1,4 +1,4 @@
-// Ignore unused parameter warnings coming from cppuint headers
+// Ignore unused parameter warnings coming from cppunit headers
 #include <libmesh/ignore_warnings.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestCase.h>
@@ -86,15 +86,20 @@ public:
     sys->update();
 
     c.reset(new FEMContext(*sys));
+    s.reset(new FEMContext(*sys));
     if (elem && elem->processor_id() == TestCommWorld->rank())
       {
         c->pre_fe_reinit(*sys, elem);
         c->elem_fe_reinit();
+        s->pre_fe_reinit(*sys, elem);
+        s->side = 3;
+        s->side_fe_reinit();
       }
   }
 
   void tearDown() {
     c.reset();
+    s.reset();
     es.reset();
     mesh.reset();
   }
@@ -104,6 +109,9 @@ public:
   CPPUNIT_TEST(testValues);
   CPPUNIT_TEST(testGradients);
   CPPUNIT_TEST(testHessians);
+  CPPUNIT_TEST(testInlineGetter);
+  CPPUNIT_TEST(testInlineSetter);
+  CPPUNIT_TEST(testNormals);
 
   CPPUNIT_TEST_SUITE_END();
 
@@ -112,7 +120,7 @@ private:
   UniquePtr<UnstructuredMesh> mesh;
   UniquePtr<EquationSystems> es;
   System * sys;
-  UniquePtr<FEMContext> c;
+  UniquePtr<FEMContext> c, s;
 
   void testValues()
   {
@@ -174,6 +182,90 @@ private:
 
         CPPUNIT_ASSERT_DOUBLES_EQUAL
           (libmesh_real(xz(*c,Point(0.25,0.4,0.75))), 0.1875, TOLERANCE*TOLERANCE);
+      }
+  }
+
+  void testInlineGetter()
+  {
+    if (c->has_elem() &&
+        c->get_elem().processor_id() == TestCommWorld->rank())
+      {
+        ParsedFEMFunction<Number> ax2(*sys, "a:=4.5;a*x2");
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(ax2(*c,Point(0.25,0.25,0.25))), 2.25, TOLERANCE*TOLERANCE);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(ax2.get_inline_value("a")), 4.5, TOLERANCE*TOLERANCE);
+
+        ParsedFEMFunction<Number> cxy8
+          (*sys, "a := 4 ; b := a/2+1; c:=b-a+3.5; c*x2*y4");
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(cxy8(*c,Point(0.5,0.5,0.5))), 5.0, TOLERANCE*TOLERANCE);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(cxy8.get_inline_value("b")), 3.0, TOLERANCE*TOLERANCE);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(cxy8.get_inline_value("c")), 2.5, TOLERANCE*TOLERANCE);
+      }
+  }
+
+  void testInlineSetter()
+  {
+    if (c->has_elem() &&
+        c->get_elem().processor_id() == TestCommWorld->rank())
+      {
+        ParsedFEMFunction<Number> ax2(*sys, "a:=4.5;a*x2");
+        ax2.set_inline_value("a", 2.5);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(ax2(*c,Point(0.25,0.25,0.25))), 1.25, TOLERANCE*TOLERANCE);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(ax2.get_inline_value("a")), 2.5, TOLERANCE*TOLERANCE);
+
+        ParsedFEMFunction<Number> cxy8
+          (*sys, "a := 4 ; b := a/2+1; c:=b-a+3.5; c*x2*y4");
+
+        cxy8.set_inline_value("a", 2);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(cxy8(*c,Point(0.5,0.5,0.5))), 7.0, TOLERANCE*TOLERANCE);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(cxy8.get_inline_value("b")), 2.0, TOLERANCE*TOLERANCE);
+
+        CPPUNIT_ASSERT_DOUBLES_EQUAL
+          (libmesh_real(cxy8.get_inline_value("c")), 3.5, TOLERANCE*TOLERANCE);
+
+      }
+  }
+
+  void testNormals()
+  {
+    if (s->has_elem() &&
+        s->get_elem().processor_id() == TestCommWorld->rank())
+      {
+        ParsedFEMFunction<Number> nx(*sys, "n_x");
+
+        ParsedFEMFunction<Number> ny(*sys, "n_y");
+
+        ParsedFEMFunction<Number> nz(*sys, "n_z");
+
+        const std::vector<Point> & xyz = s->get_side_fe(0)->get_xyz();
+
+        // On side 3 of a hex the normal direction is +y
+        for (unsigned int qp=0; qp != xyz.size(); ++qp)
+          {
+            CPPUNIT_ASSERT_DOUBLES_EQUAL
+              (libmesh_real(nx(*s,xyz[qp])), 0.0, TOLERANCE*TOLERANCE);
+            CPPUNIT_ASSERT_DOUBLES_EQUAL
+              (libmesh_real(ny(*s,xyz[qp])), 1.0, TOLERANCE*TOLERANCE);
+            CPPUNIT_ASSERT_DOUBLES_EQUAL
+              (libmesh_real(nz(*s,xyz[qp])), 0.0, TOLERANCE*TOLERANCE);
+          }
       }
   }
 

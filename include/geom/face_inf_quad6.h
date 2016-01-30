@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -59,75 +59,89 @@ public:
    * Constructor.  By default this element has no parent.
    */
   explicit
-  InfQuad6 (Elem* p=NULL):
+  InfQuad6 (Elem * p=libmesh_nullptr):
     InfQuad(InfQuad6::n_nodes(), p, _nodelinks_data) {}
 
   /**
    * @returns 6
    */
-  unsigned int n_nodes() const { return 6; }
+  virtual unsigned int n_nodes() const libmesh_override { return 6; }
 
   /**
    * @returns \p INFQUAD6
    */
-  ElemType type () const { return INFQUAD6; }
+  virtual ElemType type () const libmesh_override { return INFQUAD6; }
 
   /**
    * @returns 2
    */
-  unsigned int n_sub_elem() const { return 2; }
+  virtual unsigned int n_sub_elem() const libmesh_override { return 2; }
 
   /**
    * @returns true iff the specified (local) node number is a vertex.
    */
-  virtual bool is_vertex(const unsigned int i) const;
+  virtual bool is_vertex(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is an edge.
    */
-  virtual bool is_edge(const unsigned int i) const;
+  virtual bool is_edge(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is a face.
    */
-  virtual bool is_face(const unsigned int i) const;
+  virtual bool is_face(const unsigned int i) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified side
    */
   virtual bool is_node_on_side(const unsigned int n,
-                               const unsigned int s) const;
+                               const unsigned int s) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified edge (== is_node_on_side in 2D)
    */
   virtual bool is_node_on_edge(const unsigned int n,
-                               const unsigned int e) const
+                               const unsigned int e) const libmesh_override
   { return this->is_node_on_side(n,e); }
-
 
   /**
    * @returns \p SECOND
    */
-  Order default_order() const { return SECOND; }
+  virtual Order default_order() const libmesh_override { return SECOND; }
+
+  /**
+   * Don't hide Elem::key() defined in the base class.
+   */
+  using Elem::key;
+
+  /**
+   * @returns an id associated with the \p s side of this element.
+   * The id is not necessarily unique, but should be close.  This is
+   * particularly useful in the \p MeshBase::find_neighbors() routine.
+   *
+   * We override this function to return a key for the Edge3 side
+   * which is consistent which Edge3::key().
+   */
+  virtual dof_id_type key (const unsigned int s) const libmesh_override;
 
   /**
    * Creates and returns an \p Edge3 for the base (0) side, and an \p InfEdge2 for
    * the sides 1, 2.
    */
-  UniquePtr<Elem> build_side (const unsigned int i,
-                              bool proxy) const;
+  virtual UniquePtr<Elem> build_side (const unsigned int i,
+                                      bool proxy) const libmesh_override;
 
   virtual void connectivity(const unsigned int sf,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const;
+                            std::vector<dof_id_type> & conn) const libmesh_override;
 
   /**
    * @returns 2 for all \p n
    */
-  unsigned int n_second_order_adjacent_vertices (const unsigned int) const
+  virtual unsigned int n_second_order_adjacent_vertices (const unsigned int) const libmesh_override
   { return 2; }
 
   /**
@@ -135,8 +149,8 @@ public:
    * that defines the \f$ n^{th} \f$ second-order node.
    * Note that \p n is counted as depicted above, \f$ 4 \le n < 6 \f$.
    */
-  unsigned short int second_order_adjacent_vertex (const unsigned int n,
-                                                   const unsigned int v) const;
+  virtual unsigned short int second_order_adjacent_vertex (const unsigned int n,
+                                                           const unsigned int v) const libmesh_override;
 
   /**
    * @returns the child number \p c and element-local index \p v of the
@@ -148,7 +162,7 @@ public:
    * \p this->get_node(n)==this->child(c)->get_node(v)
    */
   virtual std::pair<unsigned short int, unsigned short int>
-  second_order_child_vertex (const unsigned int n) const;
+  second_order_child_vertex (const unsigned int n) const libmesh_override;
 
   /**
    * This maps the \f$ j^{th} \f$ node of the \f$ i^{th} \f$ side to
@@ -163,7 +177,7 @@ protected:
   /**
    * Data for links to nodes
    */
-  Node* _nodelinks_data[6];
+  Node * _nodelinks_data[6];
 
 
 
@@ -172,9 +186,9 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int i,
-                          const unsigned int j,
-                          const unsigned int k) const
+  virtual float embedding_matrix (const unsigned int i,
+                                  const unsigned int j,
+                                  const unsigned int k) const libmesh_override
   { return _embedding_matrix[i][j][k]; }
 
   /**
@@ -194,7 +208,6 @@ private:
    * of mid-side (or second-order) nodes
    */
   static const unsigned short int _second_order_adjacent_vertices[2][2];
-
 };
 
 

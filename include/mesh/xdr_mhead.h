@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,6 @@
 
 // Local includes
 #include "libmesh/xdr_head.h" // for base class
-#include "libmesh/xdr_mesh.h" // for friend
 #include "libmesh/enum_elem_type.h" // for ElemType
 
 // C++ includes
@@ -29,12 +28,18 @@
 namespace libMesh
 {
 
+// Forward declarations
+class XdrMESH;
+
 /**
  * The \p XdrMHEAD class.
  * This class is responsible
  * for reading/writing \p xdr mesh file headers.
  *
- * @author Bill Barth, Robert McLay.  Modified: John W. Peterson
+ * \author Bill Barth
+ * \author Robert McLay
+ * \author John W. Peterson
+ * \date 2000
  */
 class XdrMHEAD : public XdrHEAD
 {
@@ -91,17 +96,17 @@ public:
   void set_n_blocks(const unsigned int nb) { this->_n_blocks = nb; }
 
   /**
-   * Element block types are defined in elem_type.h.
+   * Element block types are defined in enum_elem_type.h.
    * They may be for example TRI3, TRI6, QUAD4, etc.
    *
    * @return A writeable reference to the vector of element block types.
    */
-  void get_block_elt_types(std::vector<ElemType>& bet) const { bet = block_elt_types; }
+  void get_block_elt_types(std::vector<ElemType> & bet) const { bet = block_elt_types; }
 
   /**
    * Set the vector of element block types
    */
-  void set_block_elt_types(const std::vector<ElemType>& bet) { block_elt_types = bet; }
+  void set_block_elt_types(const std::vector<ElemType> & bet) { block_elt_types = bet; }
 
   /**
    * The size of each element block is
@@ -110,12 +115,12 @@ public:
    *
    * @return The vector of block sizes
    */
-  void get_num_elem_each_block(std::vector<unsigned int>& neeb) const { neeb = num_elem_each_block; }
+  void get_num_elem_each_block(std::vector<unsigned int> & neeb) const { neeb = num_elem_each_block; }
 
   /**
    * Set the vector of block sizes
    */
-  void set_num_elem_each_block(const std::vector<unsigned int>& neeb) { num_elem_each_block = neeb; }
+  void set_num_elem_each_block(const std::vector<unsigned int> & neeb) { num_elem_each_block = neeb; }
 
 
 private:
@@ -139,7 +144,7 @@ private:
    * Note: The element type uniquely
    * defines the number of nodes for
    * that element.
-   * @see elem_type.h for more
+   * @see enum_elem_type.h for more
    */
   std::vector<ElemType> block_elt_types;
 

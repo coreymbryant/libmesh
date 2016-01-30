@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -43,18 +43,18 @@ namespace libMesh
 extern "C"
 {
   PetscErrorCode __libmesh_petsc_snes_monitor (SNES, PetscInt its, PetscReal fnorm, void *);
-  PetscErrorCode __libmesh_petsc_snes_residual (SNES, Vec x, Vec r, void *ctx);
+  PetscErrorCode __libmesh_petsc_snes_residual (SNES, Vec x, Vec r, void * ctx);
 #if PETSC_RELEASE_LESS_THAN(3,5,0)
-  PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx);
+  PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat * jac, Mat * pc, MatStructure * msflag, void * ctx);
 #else
-  PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat jac, Mat pc, void *ctx);
+  PetscErrorCode __libmesh_petsc_snes_jacobian (SNES, Vec x, Mat jac, Mat pc, void * ctx);
 #endif
 
   PetscErrorCode __libmesh_petsc_snes_postcheck(
 #if PETSC_VERSION_LESS_THAN(3,3,0)
-                                                SNES, Vec x, Vec y, Vec w, void *context, PetscBool *changed_y, PetscBool *changed_w
+                                                SNES, Vec x, Vec y, Vec w, void * context, PetscBool * changed_y, PetscBool * changed_w
 #else
-                                                SNESLineSearch, Vec x, Vec y, Vec w, PetscBool *changed_y, PetscBool *changed_w, void *context
+                                                SNESLineSearch, Vec x, Vec y, Vec w, PetscBool * changed_y, PetscBool * changed_w, void * context
 #endif
                                                 );
 }
@@ -64,9 +64,9 @@ extern "C"
  * iterative solvers that is compatible with the \p libMesh
  * \p NonlinearSolver<>
  *
- * @author Benjamin Kirk, 2002-2007
+ * \author Benjamin Kirk
+ * \date 2002-2007
  */
-
 template <typename T>
 class PetscNonlinearSolver : public NonlinearSolver<T>
 {
@@ -80,7 +80,7 @@ public:
    *  Constructor. Initializes Petsc data structures
    */
   explicit
-  PetscNonlinearSolver (sys_type& system);
+  PetscNonlinearSolver (sys_type & system);
 
   /**
    * Destructor.
@@ -90,13 +90,13 @@ public:
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Initialize data structures if not done so already.
    * May assign a name to the solver in some implementations
    */
-  virtual void init (const char* name = NULL);
+  virtual void init (const char * name = libmesh_nullptr) libmesh_override;
 
   /**
    * Returns the raw PETSc snes context pointer.
@@ -107,17 +107,18 @@ public:
    * Call the Petsc solver.  It calls the method below, using the
    * same matrix for the system and preconditioner matrices.
    */
-  virtual std::pair<unsigned int, Real> solve (SparseMatrix<T>&,    // System Jacobian Matrix
-                                               NumericVector<T>&,   // Solution vector
-                                               NumericVector<T>&,   // Residual vector
-                                               const double,        // Stopping tolerance
-                                               const unsigned int); // N. Iterations
+  virtual std::pair<unsigned int, Real>
+  solve (SparseMatrix<T> &,                     // System Jacobian Matrix
+         NumericVector<T> &,                    // Solution vector
+         NumericVector<T> &,                    // Residual vector
+         const double,                         // Stopping tolerance
+         const unsigned int) libmesh_override; // N. Iterations
 
   /**
    * Prints a useful message about why the latest nonlinear solve
    * con(di)verged.
    */
-  virtual void print_converged_reason();
+  virtual void print_converged_reason() libmesh_override;
 
   /**
    * Returns the currently-available (or most recently obtained, if the SNES object has
@@ -129,14 +130,15 @@ public:
   /**
    * Get the total number of linear iterations done in the last solve
    */
-  virtual int get_total_linear_iterations();
+  virtual int get_total_linear_iterations() libmesh_override;
 
   /**
    * If called *during* the solve(), for example by the user-specified
    * residual or Jacobian function, returns the current nonlinear iteration
    * number.
    */
-  virtual unsigned get_current_nonlinear_iteration_number() const { return _current_nonlinear_iteration_number; }
+  virtual unsigned get_current_nonlinear_iteration_number() const libmesh_override
+  { return _current_nonlinear_iteration_number; }
 
   /**
    * Set if the residual should be zeroed out in the callback
@@ -194,16 +196,16 @@ protected:
   bool _default_monitor;
 
 #if !PETSC_VERSION_LESS_THAN(3,3,0)
-  void build_mat_null_space(NonlinearImplicitSystem::ComputeVectorSubspace* computeSubspaceObject,
-                            void (*)(std::vector<NumericVector<Number>*>&, sys_type&),
-                            MatNullSpace*);
+  void build_mat_null_space(NonlinearImplicitSystem::ComputeVectorSubspace * computeSubspaceObject,
+                            void (*)(std::vector<NumericVector<Number> *> &, sys_type &),
+                            MatNullSpace *);
 #endif
 private:
-  friend PetscErrorCode __libmesh_petsc_snes_residual (SNES snes, Vec x, Vec r, void *ctx);
+  friend PetscErrorCode __libmesh_petsc_snes_residual (SNES snes, Vec x, Vec r, void * ctx);
 #if PETSC_RELEASE_LESS_THAN(3,5,0)
-  friend PetscErrorCode __libmesh_petsc_snes_jacobian (SNES snes, Vec x, Mat *jac, Mat *pc, MatStructure *msflag, void *ctx);
+  friend PetscErrorCode __libmesh_petsc_snes_jacobian (SNES snes, Vec x, Mat * jac, Mat * pc, MatStructure * msflag, void * ctx);
 #else
-  friend PetscErrorCode __libmesh_petsc_snes_jacobian (SNES snes, Vec x, Mat jac, Mat pc, void *ctx);
+  friend PetscErrorCode __libmesh_petsc_snes_jacobian (SNES snes, Vec x, Mat jac, Mat pc, void * ctx);
 #endif
 };
 

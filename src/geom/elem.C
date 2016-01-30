@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -214,9 +214,9 @@ const unsigned int Elem::type_to_n_edges_map [] =
 // ------------------------------------------------------------
 // Elem class member funcions
 UniquePtr<Elem> Elem::build(const ElemType type,
-                            Elem* p)
+                            Elem * p)
 {
-  Elem* elem = NULL;
+  Elem * elem = libmesh_nullptr;
 
   switch (type)
     {
@@ -399,7 +399,7 @@ UniquePtr<Elem> Elem::build(const ElemType type,
 
 
 
-const Elem* Elem::reference_elem () const
+const Elem * Elem::reference_elem () const
 {
   return &(ReferenceElem::get(this->type()));
 }
@@ -463,101 +463,46 @@ Real Elem::length(const unsigned int n1,
 
 
 
-bool Elem::operator == (const Elem& rhs) const
+dof_id_type Elem::key () const
 {
+  std::vector<dof_id_type> node_ids(this->n_nodes());
 
-  // Cast rhs to an Elem*
-  //    const Elem* rhs_elem = dynamic_cast<const Elem*>(&rhs);
-  const Elem* rhs_elem = &rhs;
+  for (unsigned n=0; n<this->n_nodes(); n++)
+    node_ids[n] = this->node(n);
 
-  // If we cannot cast to an Elem*, rhs must be a Node
-  //    if(rhs_elem == static_cast<const Elem*>(NULL))
-  //        return false;
+  // Always sort, so that different local node numberings hash to the
+  // same value.
+  std::sort (node_ids.begin(), node_ids.end());
 
-  //   libmesh_assert (n_nodes());
-  //   libmesh_assert (rhs.n_nodes());
-
-  //   // Elements can only be equal if they
-  //   // contain the same number of nodes.
-  //   if (this->n_nodes() == rhs.n_nodes())
-  //     {
-  //       // Create a set that contains our global
-  //       // node numbers and those of our neighbor.
-  //       // If the set is the same size as the number
-  //       // of nodes in both elements then they must
-  //       // be connected to the same nodes.
-  //       std::set<unsigned int> nodes_set;
-
-  //       for (unsigned int n=0; n<this->n_nodes(); n++)
-  //         {
-  //           nodes_set.insert(this->node(n));
-  //           nodes_set.insert(rhs.node(n));
-  //         }
-
-  //       // If this passes the elements are connected
-  //       // to the same global nodes
-  //       if (nodes_set.size() == this->n_nodes())
-  //         return true;
-  //     }
-
-  //   // If we get here it is because the elements either
-  //   // do not have the same number of nodes or they are
-  //   // connected to different nodes.  Either way they
-  //   // are not the same element
-  //   return false;
-
-  // Useful typedefs
-  typedef std::vector<dof_id_type>::iterator iterator;
+  return Utility::hashword(node_ids);
+}
 
 
-  // Elements can only be equal if they
-  // contain the same number of nodes.
-  // However, we will only test the vertices,
-  // which is sufficient & cheaper
-  if (this->n_nodes() == rhs_elem->n_nodes())
+
+bool Elem::operator == (const Elem & rhs) const
+{
+  // If the elements aren't the same type, they aren't equal
+  if (this->type() != rhs.type())
+    return false;
+
+  // Make two sorted vectors of global node ids and compare them for
+  // equality.
+  std::vector<dof_id_type>
+    this_ids(this->n_nodes()),
+    rhs_ids(rhs.n_nodes());
+
+  for (unsigned n=0; n<this->n_nodes(); n++)
     {
-      // The number of nodes in the element
-      const unsigned int nn = this->n_nodes();
-
-      // Create a vector that contains our global
-      // node numbers and those of our neighbor.
-      // If the sorted, unique vector is the same size
-      // as the number of nodes in both elements then
-      // they must be connected to the same nodes.
-      //
-      // The vector will be no larger than 2*n_nodes(),
-      // so we might as well reserve the space.
-      std::vector<dof_id_type> common_nodes;
-      common_nodes.reserve (2*nn);
-
-      // Add the global indices of the nodes
-      for (unsigned int n=0; n<nn; n++)
-        {
-          common_nodes.push_back (this->node(n));
-          common_nodes.push_back (rhs_elem->node(n));
-        }
-
-      // Sort the vector and find out how long
-      // the sorted vector is.
-      std::sort (common_nodes.begin(), common_nodes.end());
-
-      iterator new_end = std::unique (common_nodes.begin(),
-                                      common_nodes.end());
-
-      const int new_size = cast_int<int>
-        (std::distance (common_nodes.begin(), new_end));
-
-      // If this passes the elements are connected
-      // to the same global vertex nodes
-      if (new_size == static_cast<int>(nn))
-        return true;
+      this_ids[n] = this->node(n);
+      rhs_ids[n] = rhs.node(n);
     }
 
-  // If we get here it is because the elements either
-  // do not have the same number of nodes or they are
-  // connected to different nodes.  Either way they
-  // are not the same element
-  return false;
+  // Sort the vectors to rule out different local node numberings.
+  std::sort(this_ids.begin(), this_ids.end());
+  std::sort(rhs_ids.begin(), rhs_ids.end());
+
+  // If the node ids match, the elements are equal!
+  return this_ids == rhs_ids;
 }
 
 
@@ -568,12 +513,12 @@ bool Elem::is_semilocal(const processor_id_type my_pid) const
 
   this->find_point_neighbors(point_neighbors);
 
-  std::set<const Elem*>::const_iterator       it  = point_neighbors.begin();
-  const std::set<const Elem*>::const_iterator end = point_neighbors.end();
+  std::set<const Elem *>::const_iterator       it  = point_neighbors.begin();
+  const std::set<const Elem *>::const_iterator end = point_neighbors.end();
 
   for (; it != end; ++it)
     {
-      const Elem* elem = *it;
+      const Elem * elem = *it;
       if (elem->processor_id() == my_pid)
         return true;
     }
@@ -583,7 +528,7 @@ bool Elem::is_semilocal(const processor_id_type my_pid) const
 
 
 
-bool Elem::contains_vertex_of(const Elem *e) const
+bool Elem::contains_vertex_of(const Elem * e) const
 {
   // Our vertices are the first numbered nodes
   for (unsigned int n = 0; n != e->n_vertices(); ++n)
@@ -594,7 +539,7 @@ bool Elem::contains_vertex_of(const Elem *e) const
 
 
 
-bool Elem::contains_edge_of(const Elem *e) const
+bool Elem::contains_edge_of(const Elem * e) const
 {
   unsigned int num_contained_edges = 0;
 
@@ -615,8 +560,8 @@ bool Elem::contains_edge_of(const Elem *e) const
 
 
 
-void Elem::find_point_neighbors(const Point &p,
-                                std::set<const Elem *> &neighbor_set) const
+void Elem::find_point_neighbors(const Point & p,
+                                std::set<const Elem *> & neighbor_set) const
 {
   libmesh_assert(this->contains_point(p));
   libmesh_assert(this->active());
@@ -631,16 +576,16 @@ void Elem::find_point_neighbors(const Point &p,
     {
       // Loop over all the elements in the patch that haven't already
       // been tested
-      std::set<const Elem*>::const_iterator       it  = untested_set.begin();
-      const std::set<const Elem*>::const_iterator end = untested_set.end();
+      std::set<const Elem *>::const_iterator       it  = untested_set.begin();
+      const std::set<const Elem *>::const_iterator end = untested_set.end();
 
       for (; it != end; ++it)
         {
-          const Elem* elem = *it;
+          const Elem * elem = *it;
 
           for (unsigned int s=0; s<elem->n_sides(); s++)
             {
-              const Elem* current_neighbor = elem->neighbor(s);
+              const Elem * current_neighbor = elem->neighbor(s);
               if (current_neighbor &&
                   current_neighbor != remote_elem)    // we have a real neighbor on this side
                 {
@@ -660,18 +605,18 @@ void Elem::find_point_neighbors(const Point &p,
                   else                                 // ... the neighbor is *not* active,
                     {                                  // ... so add *all* neighboring
                                                        // active children that touch p
-                      std::vector<const Elem*> active_neighbor_children;
+                      std::vector<const Elem *> active_neighbor_children;
 
                       current_neighbor->active_family_tree_by_neighbor
                         (active_neighbor_children, elem);
 
-                      std::vector<const Elem*>::const_iterator
+                      std::vector<const Elem *>::const_iterator
                         child_it = active_neighbor_children.begin();
-                      const std::vector<const Elem*>::const_iterator
+                      const std::vector<const Elem *>::const_iterator
                         child_end = active_neighbor_children.end();
                       for (; child_it != child_end; ++child_it)
                         {
-                          const Elem *current_child = *child_it;
+                          const Elem * current_child = *child_it;
                           if (current_child->contains_point(p))
                             {
                               // Make sure we'll test it
@@ -693,14 +638,14 @@ void Elem::find_point_neighbors(const Point &p,
 
 
 
-void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set) const
+void Elem::find_point_neighbors(std::set<const Elem *> & neighbor_set) const
 {
   this->find_point_neighbors(neighbor_set, this);
 }
 
 
 
-void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set,
+void Elem::find_point_neighbors(std::set<const Elem *> & neighbor_set,
                                 const Elem * start_elem) const
 {
   libmesh_assert(start_elem);
@@ -718,16 +663,16 @@ void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set,
     {
       // Loop over all the elements in the patch that haven't already
       // been tested
-      std::set<const Elem*>::const_iterator       it  = untested_set.begin();
-      const std::set<const Elem*>::const_iterator end = untested_set.end();
+      std::set<const Elem *>::const_iterator       it  = untested_set.begin();
+      const std::set<const Elem *>::const_iterator end = untested_set.end();
 
       for (; it != end; ++it)
         {
-          const Elem* elem = *it;
+          const Elem * elem = *it;
 
           for (unsigned int s=0; s<elem->n_sides(); s++)
             {
-              const Elem* current_neighbor = elem->neighbor(s);
+              const Elem * current_neighbor = elem->neighbor(s);
               if (current_neighbor &&
                   current_neighbor != remote_elem)    // we have a real neighbor on this side
                 {
@@ -748,18 +693,18 @@ void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set,
                   else                                 // ... the neighbor is *not* active,
                     {                                  // ... so add *all* neighboring
                                                        // active children
-                      std::vector<const Elem*> active_neighbor_children;
+                      std::vector<const Elem *> active_neighbor_children;
 
                       current_neighbor->active_family_tree_by_neighbor
                         (active_neighbor_children, elem);
 
-                      std::vector<const Elem*>::const_iterator
+                      std::vector<const Elem *>::const_iterator
                         child_it = active_neighbor_children.begin();
-                      const std::vector<const Elem*>::const_iterator
+                      const std::vector<const Elem *>::const_iterator
                         child_end = active_neighbor_children.end();
                       for (; child_it != child_end; ++child_it)
                         {
-                          const Elem *current_child = *child_it;
+                          const Elem * current_child = *child_it;
                           if (this->contains_vertex_of(current_child) ||
                               (current_child)->contains_vertex_of(this))
                             {
@@ -782,9 +727,9 @@ void Elem::find_point_neighbors(std::set<const Elem *> &neighbor_set,
 
 
 
-void Elem::find_edge_neighbors(const Point& p1,
-                               const Point& p2,
-                               std::set<const Elem *> &neighbor_set) const
+void Elem::find_edge_neighbors(const Point & p1,
+                               const Point & p2,
+                               std::set<const Elem *> & neighbor_set) const
 {
   // Simple but perhaps suboptimal code: find elements containing the
   // first point, then winnow this set down by removing elements which
@@ -793,13 +738,13 @@ void Elem::find_edge_neighbors(const Point& p1,
   libmesh_assert(this->contains_point(p2));
   this->find_point_neighbors(p1, neighbor_set);
 
-  std::set<const Elem*>::iterator        it = neighbor_set.begin();
-  const std::set<const Elem*>::iterator end = neighbor_set.end();
+  std::set<const Elem *>::iterator        it = neighbor_set.begin();
+  const std::set<const Elem *>::iterator end = neighbor_set.end();
 
   while(it != end) {
-    std::set<const Elem*>::iterator current = it++;
+    std::set<const Elem *>::iterator current = it++;
 
-    const Elem* elem = *current;
+    const Elem * elem = *current;
     // This won't invalidate iterator it, because it is already
     // pointing to the next element
     if (!elem->contains_point(p2))
@@ -809,7 +754,7 @@ void Elem::find_edge_neighbors(const Point& p1,
 
 
 
-void Elem::find_edge_neighbors(std::set<const Elem *> &neighbor_set) const
+void Elem::find_edge_neighbors(std::set<const Elem *> & neighbor_set) const
 {
   neighbor_set.clear();
   neighbor_set.insert(this);
@@ -821,16 +766,16 @@ void Elem::find_edge_neighbors(std::set<const Elem *> &neighbor_set) const
     {
       // Loop over all the elements in the patch that haven't already
       // been tested
-      std::set<const Elem*>::const_iterator       it  = untested_set.begin();
-      const std::set<const Elem*>::const_iterator end = untested_set.end();
+      std::set<const Elem *>::const_iterator       it  = untested_set.begin();
+      const std::set<const Elem *>::const_iterator end = untested_set.end();
 
       for (; it != end; ++it)
         {
-          const Elem* elem = *it;
+          const Elem * elem = *it;
 
           for (unsigned int s=0; s<elem->n_sides(); s++)
             {
-              const Elem* current_neighbor = elem->neighbor(s);
+              const Elem * current_neighbor = elem->neighbor(s);
               if (current_neighbor &&
                   current_neighbor != remote_elem)    // we have a real neighbor on this side
                 {
@@ -851,18 +796,18 @@ void Elem::find_edge_neighbors(std::set<const Elem *> &neighbor_set) const
                   else                                 // ... the neighbor is *not* active,
                     {                                  // ... so add *all* neighboring
                                                        // active children
-                      std::vector<const Elem*> active_neighbor_children;
+                      std::vector<const Elem *> active_neighbor_children;
 
                       current_neighbor->active_family_tree_by_neighbor
                         (active_neighbor_children, elem);
 
-                      std::vector<const Elem*>::const_iterator
+                      std::vector<const Elem *>::const_iterator
                         child_it = active_neighbor_children.begin();
-                      const std::vector<const Elem*>::const_iterator
+                      const std::vector<const Elem *>::const_iterator
                         child_end = active_neighbor_children.end();
                       for (; child_it != child_end; ++child_it)
                         {
-                          const Elem *current_child = *child_it;
+                          const Elem * current_child = *child_it;
                           if (this->contains_edge_of(*child_it) ||
                               (*child_it)->contains_edge_of(this))
                             {
@@ -884,7 +829,7 @@ void Elem::find_edge_neighbors(std::set<const Elem *> &neighbor_set) const
 }
 
 
-void Elem::find_interior_neighbors(std::set<const Elem *> &neighbor_set) const
+void Elem::find_interior_neighbors(std::set<const Elem *> & neighbor_set) const
 {
   neighbor_set.clear();
 
@@ -892,7 +837,7 @@ void Elem::find_interior_neighbors(std::set<const Elem *> &neighbor_set) const
       !this->interior_parent())
     return;
 
-  const Elem *ip = this->interior_parent();
+  const Elem * ip = this->interior_parent();
   libmesh_assert (ip->contains_vertex_of(this) ||
                   this->contains_vertex_of(ip));
 
@@ -903,7 +848,7 @@ void Elem::find_interior_neighbors(std::set<const Elem *> &neighbor_set) const
     {                   // ip->child(c) is only good with AMR.
       for (unsigned int c = 0; c != ip->n_children(); ++c)
         {
-          const Elem *child = ip->child(c);
+          const Elem * child = ip->child(c);
           if (child->contains_vertex_of(this) ||
               this->contains_vertex_of(child))
             {
@@ -925,20 +870,20 @@ void Elem::find_interior_neighbors(std::set<const Elem *> &neighbor_set) const
   // it doesn't contain all our vertices.  If it has a higher
   // refinement level then we can discard it iff we don't contain at
   // least dim()+1 of its vertices
-  std::set<const Elem*>::iterator        it = neighbor_set.begin();
-  const std::set<const Elem*>::iterator end = neighbor_set.end();
+  std::set<const Elem *>::iterator        it = neighbor_set.begin();
+  const std::set<const Elem *>::iterator end = neighbor_set.end();
 
   while(it != end)
     {
-      std::set<const Elem*>::iterator current = it++;
-      const Elem* elem = *current;
+      std::set<const Elem *>::iterator current = it++;
+      const Elem * elem = *current;
 
       // This won't invalidate iterator it, because it is already
       // pointing to the next element
       if (elem->level() > this->level())
         {
           unsigned int vertices_contained = 0;
-          for (unsigned int p=1; p < elem->n_nodes(); ++p)
+          for (unsigned int p=0; p < elem->n_nodes(); ++p)
             if (this->contains_point(elem->point(p)))
               vertices_contained++;
 
@@ -950,19 +895,21 @@ void Elem::find_interior_neighbors(std::set<const Elem *> &neighbor_set) const
         }
       else
         {
-          for (unsigned int p=1; p < this->n_nodes(); ++p)
-            if (!elem->contains_point(this->point(p)))
-              {
-                neighbor_set.erase(current);
-                break;
-              }
+          for (unsigned int p=0; p < this->n_nodes(); ++p)
+            {
+              if (!elem->contains_point(this->point(p)))
+                {
+                  neighbor_set.erase(current);
+                  break;
+                }
+            }
         }
     }
 }
 
 
 
-const Elem* Elem::interior_parent () const
+const Elem * Elem::interior_parent () const
 {
   // interior parents make no sense for full-dimensional elements.
   libmesh_assert_less (this->dim(), LIBMESH_DIM);
@@ -975,7 +922,7 @@ const Elem* Elem::interior_parent () const
 
   // We store the interior_parent pointer after both the parent
   // neighbor and neighbor pointers
-  Elem *interior_p = _elemlinks[1+this->n_sides()];
+  Elem * interior_p = _elemlinks[1+this->n_sides()];
 
   // If we have an interior_parent, we USED TO assume it was a
   // one-higher-dimensional interior element, but we now allow e.g.
@@ -997,11 +944,11 @@ const Elem* Elem::interior_parent () const
 
 
 
-Elem* Elem::interior_parent ()
+Elem * Elem::interior_parent ()
 {
   // See the const version for comments
   libmesh_assert_less (this->dim(), LIBMESH_DIM);
-  Elem *interior_p = _elemlinks[1+this->n_sides()];
+  Elem * interior_p = _elemlinks[1+this->n_sides()];
 
   libmesh_assert (!interior_p ||
                   (interior_p == remote_elem) ||
@@ -1014,7 +961,7 @@ Elem* Elem::interior_parent ()
 
 
 
-void Elem::set_interior_parent (Elem *p)
+void Elem::set_interior_parent (Elem * p)
 {
   // interior parents make no sense for full-dimensional elements.
   libmesh_assert_less (this->dim(), LIBMESH_DIM);
@@ -1036,15 +983,15 @@ void Elem::set_interior_parent (Elem *p)
 
 #ifdef LIBMESH_ENABLE_PERIODIC
 
-Elem* Elem::topological_neighbor (const unsigned int i,
-                                  MeshBase & mesh,
-                                  const PointLocatorBase& point_locator,
-                                  const PeriodicBoundaries * pb)
+Elem * Elem::topological_neighbor (const unsigned int i,
+                                   MeshBase & mesh,
+                                   const PointLocatorBase & point_locator,
+                                   const PeriodicBoundaries * pb)
 {
   libmesh_assert_less (i, this->n_neighbors());
 
   Elem * neighbor_i = this->neighbor(i);
-  if (neighbor_i != NULL)
+  if (neighbor_i != libmesh_nullptr)
     return neighbor_i;
 
   if (pb)
@@ -1052,10 +999,9 @@ Elem* Elem::topological_neighbor (const unsigned int i,
       // Since the neighbor is NULL it must be on a boundary. We need
       // see if this is a periodic boundary in which case it will have a
       // topological neighbor
-
-      std::vector<boundary_id_type> boundary_ids =
-        mesh.get_boundary_info().boundary_ids(this, cast_int<unsigned short>(i));
-      for (std::vector<boundary_id_type>::iterator j = boundary_ids.begin(); j != boundary_ids.end(); ++j)
+      std::vector<boundary_id_type> bc_ids;
+      mesh.get_boundary_info().boundary_ids(this, cast_int<unsigned short>(i), bc_ids);
+      for (std::vector<boundary_id_type>::iterator j = bc_ids.begin(); j != bc_ids.end(); ++j)
         if (pb->boundary(*j))
           {
             // Since the point locator inside of periodic boundaries
@@ -1070,20 +1016,20 @@ Elem* Elem::topological_neighbor (const unsigned int i,
           }
     }
 
-  return NULL;
+  return libmesh_nullptr;
 }
 
 
 
-const Elem* Elem::topological_neighbor (const unsigned int i,
-                                        const MeshBase & mesh,
-                                        const PointLocatorBase& point_locator,
-                                        const PeriodicBoundaries * pb) const
+const Elem * Elem::topological_neighbor (const unsigned int i,
+                                         const MeshBase & mesh,
+                                         const PointLocatorBase & point_locator,
+                                         const PeriodicBoundaries * pb) const
 {
   libmesh_assert_less (i, this->n_neighbors());
 
   const Elem * neighbor_i = this->neighbor(i);
-  if (neighbor_i != NULL)
+  if (neighbor_i != libmesh_nullptr)
     return neighbor_i;
 
   if (pb)
@@ -1091,10 +1037,9 @@ const Elem* Elem::topological_neighbor (const unsigned int i,
       // Since the neighbor is NULL it must be on a boundary. We need
       // see if this is a periodic boundary in which case it will have a
       // topological neighbor
-
-      std::vector<boundary_id_type> boundary_ids =
-        mesh.get_boundary_info().boundary_ids(this, cast_int<unsigned short>(i));
-      for (std::vector<boundary_id_type>::iterator j = boundary_ids.begin(); j != boundary_ids.end(); ++j)
+      std::vector<boundary_id_type> bc_ids;
+      mesh.get_boundary_info().boundary_ids(this, cast_int<unsigned short>(i), bc_ids);
+      for (std::vector<boundary_id_type>::iterator j = bc_ids.begin(); j != bc_ids.end(); ++j)
         if (pb->boundary(*j))
           {
             // Since the point locator inside of periodic boundaries
@@ -1109,13 +1054,13 @@ const Elem* Elem::topological_neighbor (const unsigned int i,
           }
     }
 
-  return NULL;
+  return libmesh_nullptr;
 }
 
 
-bool Elem::has_topological_neighbor (const Elem* elem,
+bool Elem::has_topological_neighbor (const Elem * elem,
                                      const MeshBase & mesh,
-                                     const PointLocatorBase& point_locator,
+                                     const PointLocatorBase & point_locator,
                                      PeriodicBoundaries * pb) const
 {
   // First see if this is a normal "interior" neighbor
@@ -1150,7 +1095,7 @@ void Elem::libmesh_assert_valid_neighbors() const
 {
   for (unsigned int s=0; s<this->n_neighbors(); s++)
     {
-      const Elem *neigh = this->neighbor(s);
+      const Elem * neigh = this->neighbor(s);
 
       // Any element might have a remote neighbor; checking
       // to make sure that's not inaccurate is tough.
@@ -1162,7 +1107,7 @@ void Elem::libmesh_assert_valid_neighbors() const
           // Only subactive elements have subactive neighbors
           libmesh_assert (this->subactive() || !neigh->subactive());
 
-          const Elem *elem = this;
+          const Elem * elem = this;
 
           // If we're subactive but our neighbor isn't, its
           // return neighbor link will be to our first active
@@ -1189,7 +1134,7 @@ void Elem::libmesh_assert_valid_neighbors() const
                 }
               else
                 {
-                  Elem *nn = neigh->neighbor(rev);
+                  Elem * nn = neigh->neighbor(rev);
                   libmesh_assert(nn);
 
                   for (; elem != nn; elem = elem->parent())
@@ -1202,7 +1147,7 @@ void Elem::libmesh_assert_valid_neighbors() const
       // direction.
       else if (!this->subactive())
         {
-          const Elem *my_parent = this->parent();
+          const Elem * my_parent = this->parent();
           if (my_parent &&
               // A parent with a different dimension isn't really one of
               // our ancestors, it means we're on a boundary mesh and this
@@ -1220,7 +1165,7 @@ void Elem::libmesh_assert_valid_neighbors() const
 
 void Elem::make_links_to_me_local(unsigned int n)
 {
-  Elem *neigh = this->neighbor(n);
+  Elem * neigh = this->neighbor(n);
 
   // Don't bother calling this function unless it's necessary
   libmesh_assert(neigh);
@@ -1266,7 +1211,7 @@ void Elem::make_links_to_me_local(unsigned int n)
   libmesh_assert_less (nn, neigh->n_sides());
 
   // Find any elements that ought to point to elem
-  std::vector<const Elem*> neigh_family;
+  std::vector<const Elem *> neigh_family;
 #ifdef LIBMESH_ENABLE_AMR
   if (this->active())
     neigh->family_tree_by_side(neigh_family, nn);
@@ -1277,7 +1222,7 @@ void Elem::make_links_to_me_local(unsigned int n)
   // And point them to elem
   for (unsigned int i = 0; i != neigh_family.size(); ++i)
     {
-      Elem* neigh_family_member = const_cast<Elem*>(neigh_family[i]);
+      Elem * neigh_family_member = const_cast<Elem *>(neigh_family[i]);
 
       // Ideally, the neighbor link ought to either be correct
       // already or ought to be to remote_elem.
@@ -1292,7 +1237,7 @@ void Elem::make_links_to_me_local(unsigned int n)
                        neigh_family_member->neighbor(nn)->is_ancestor_of(this))) ||
                      (neigh_family_member->neighbor(nn) == remote_elem) ||
                      ((this->refinement_flag() == JUST_REFINED) &&
-                      (this->parent() != NULL) &&
+                      (this->parent() != libmesh_nullptr) &&
                       (neigh_family_member->neighbor(nn) == this->parent())));
 #else
       libmesh_assert((neigh_family_member->neighbor(nn) == this) ||
@@ -1313,7 +1258,7 @@ void Elem::make_links_to_me_remote()
   if (this->has_children())
     for (unsigned int c = 0; c != this->n_children(); ++c)
       {
-        Elem *current_child = this->child(c);
+        Elem * current_child = this->child(c);
         libmesh_assert_equal_to (current_child, remote_elem);
       }
 #endif
@@ -1323,7 +1268,7 @@ void Elem::make_links_to_me_remote()
     {
       for (unsigned int s = 0; s != this->n_sides(); ++s)
         {
-          Elem *neigh = this->neighbor(s);
+          Elem * neigh = this->neighbor(s);
           if (neigh && neigh != remote_elem && !neigh->subactive())
             {
               // My neighbor should never be more refined than me; my real
@@ -1336,7 +1281,7 @@ void Elem::make_links_to_me_remote()
 #ifdef LIBMESH_ENABLE_AMR
                   // My neighbor may have descendants which also consider me a
                   // neighbor
-                  std::vector<const Elem*> family;
+                  std::vector<const Elem *> family;
                   neigh->family_tree_by_neighbor (family, this);
 
                   // FIXME - There's a lot of ugly const_casts here; we
@@ -1344,20 +1289,20 @@ void Elem::make_links_to_me_remote()
                   // non-const versions of the family_tree methods
                   for (unsigned int i=0; i != family.size(); ++i)
                     {
-                      Elem *n = const_cast<Elem*>(family[i]);
+                      Elem * n = const_cast<Elem *>(family[i]);
                       libmesh_assert (n);
                       if (n == remote_elem)
                         continue;
                       unsigned int my_s = n->which_neighbor_am_i(this);
                       libmesh_assert_less (my_s, n->n_neighbors());
                       libmesh_assert_equal_to (n->neighbor(my_s), this);
-                      n->set_neighbor(my_s, const_cast<RemoteElem*>(remote_elem));
+                      n->set_neighbor(my_s, const_cast<RemoteElem *>(remote_elem));
                     }
 #else
                   unsigned int my_s = neigh->which_neighbor_am_i(this);
                   libmesh_assert_less (my_s, neigh->n_neighbors());
                   libmesh_assert_equal_to (neigh->neighbor(my_s), this);
-                  neigh->set_neighbor(my_s, const_cast<RemoteElem*>(remote_elem));
+                  neigh->set_neighbor(my_s, const_cast<RemoteElem *>(remote_elem));
 #endif
                 }
 #ifdef LIBMESH_ENABLE_AMR
@@ -1372,7 +1317,7 @@ void Elem::make_links_to_me_remote()
 
                   // My neighbor must have some ancestor of mine as a
                   // neighbor
-                  Elem *my_ancestor = this->parent();
+                  Elem * my_ancestor = this->parent();
                   libmesh_assert(my_ancestor);
                   while (!neigh->has_neighbor(my_ancestor))
                     {
@@ -1382,7 +1327,7 @@ void Elem::make_links_to_me_remote()
 
                   // My neighbor may have descendants which consider me a
                   // neighbor
-                  std::vector<const Elem*> family;
+                  std::vector<const Elem *> family;
                   neigh->family_tree_by_subneighbor (family, my_ancestor, this);
 
                   // FIXME - There's a lot of ugly const_casts here; we
@@ -1390,14 +1335,14 @@ void Elem::make_links_to_me_remote()
                   // non-const versions of the family_tree methods
                   for (unsigned int i=0; i != family.size(); ++i)
                     {
-                      Elem *n = const_cast<Elem*>(family[i]);
+                      Elem * n = const_cast<Elem *>(family[i]);
                       libmesh_assert (n);
                       if (n == remote_elem)
                         continue;
                       unsigned int my_s = n->which_neighbor_am_i(this);
                       libmesh_assert_less (my_s, n->n_neighbors());
                       libmesh_assert_equal_to (n->neighbor(my_s), this);
-                      n->set_neighbor(my_s, const_cast<RemoteElem*>(remote_elem));
+                      n->set_neighbor(my_s, const_cast<RemoteElem *>(remote_elem));
                     }
                 }
 #endif
@@ -1407,7 +1352,7 @@ void Elem::make_links_to_me_remote()
 
 #ifdef LIBMESH_ENABLE_AMR
   // Remotify parent's child link
-  Elem *my_parent = this->parent();
+  Elem * my_parent = this->parent();
   if (my_parent &&
       // As long as it's not already remote
       my_parent != remote_elem &&
@@ -1416,14 +1361,14 @@ void Elem::make_links_to_me_remote()
     {
       unsigned int me = my_parent->which_child_am_i(this);
       libmesh_assert_equal_to (my_parent->child(me), this);
-      my_parent->set_child(me, const_cast<RemoteElem*>(remote_elem));
+      my_parent->set_child(me, const_cast<RemoteElem *>(remote_elem));
     }
 #endif
 }
 
 
 
-void Elem::write_connectivity (std::ostream& out_stream,
+void Elem::write_connectivity (std::ostream & out_stream,
                                const IOPackage iop) const
 {
   libmesh_assert (out_stream.good());
@@ -1497,17 +1442,17 @@ bool Elem::ancestor() const
 {
 #ifdef LIBMESH_ENABLE_AMR
 
-// Use a fast, ParallelMesh-safe definition
+  // Use a fast, ParallelMesh-safe definition
   const bool is_ancestor =
     !this->active() && !this->subactive();
 
-// But check for inconsistencies if we have time
+  // But check for inconsistencies if we have time
 #ifdef DEBUG
   if (!is_ancestor && this->has_children())
     {
       for (unsigned int c=0; c != this->n_children(); ++c)
         {
-          const Elem* kid = this->child(c);
+          const Elem * kid = this->child(c);
           if (kid != remote_elem)
             {
               libmesh_assert(!kid->active());
@@ -1528,19 +1473,19 @@ bool Elem::ancestor() const
 
 #ifdef LIBMESH_ENABLE_AMR
 
-void Elem::add_child (Elem* elem)
+void Elem::add_child (Elem * elem)
 {
-  if(_children == NULL)
+  if(_children == libmesh_nullptr)
     {
-      _children = new Elem*[this->n_children()];
+      _children = new Elem *[this->n_children()];
 
       for (unsigned int c=0; c<this->n_children(); c++)
-        this->set_child(c, NULL);
+        this->set_child(c, libmesh_nullptr);
     }
 
   for (unsigned int c=0; c<this->n_children(); c++)
     {
-      if(this->_children[c] == NULL || this->_children[c] == remote_elem)
+      if(this->_children[c] == libmesh_nullptr || this->_children[c] == remote_elem)
         {
           libmesh_assert_equal_to (this, elem->parent());
           this->set_child(c, elem);
@@ -1553,17 +1498,17 @@ void Elem::add_child (Elem* elem)
 
 
 
-void Elem::add_child (Elem* elem, unsigned int c)
+void Elem::add_child (Elem * elem, unsigned int c)
 {
   if(!this->has_children())
     {
-      _children = new Elem*[this->n_children()];
+      _children = new Elem *[this->n_children()];
 
       for (unsigned int i=0; i<this->n_children(); i++)
-        this->set_child(i, NULL);
+        this->set_child(i, libmesh_nullptr);
     }
 
-  libmesh_assert (this->_children[c] == NULL || this->child(c) == remote_elem);
+  libmesh_assert (this->_children[c] == libmesh_nullptr || this->child(c) == remote_elem);
   libmesh_assert (elem == remote_elem || this == elem->parent());
 
   this->set_child(c, elem);
@@ -1571,7 +1516,7 @@ void Elem::add_child (Elem* elem, unsigned int c)
 
 
 
-void Elem::replace_child (Elem* elem, unsigned int c)
+void Elem::replace_child (Elem * elem, unsigned int c)
 {
   libmesh_assert(this->has_children());
 
@@ -1598,7 +1543,7 @@ bool Elem::is_child_on_edge(const unsigned int libmesh_dbg_var(c),
 }
 
 
-void Elem::family_tree (std::vector<const Elem*>& family,
+void Elem::family_tree (std::vector<const Elem *> & family,
                         const bool reset) const
 {
   // The "family tree" doesn't include subactive elements
@@ -1621,7 +1566,7 @@ void Elem::family_tree (std::vector<const Elem*>& family,
 
 
 
-void Elem::total_family_tree (std::vector<const Elem*>& family,
+void Elem::total_family_tree (std::vector<const Elem *> & family,
                               const bool reset) const
 {
   // Clear the vector if the flag reset tells us to.
@@ -1641,7 +1586,7 @@ void Elem::total_family_tree (std::vector<const Elem*>& family,
 
 
 
-void Elem::active_family_tree (std::vector<const Elem*>& active_family,
+void Elem::active_family_tree (std::vector<const Elem *> & active_family,
                                const bool reset) const
 {
   // The "family tree" doesn't include subactive elements
@@ -1665,7 +1610,7 @@ void Elem::active_family_tree (std::vector<const Elem*>& active_family,
 
 
 
-void Elem::family_tree_by_side (std::vector<const Elem*>& family,
+void Elem::family_tree_by_side (std::vector<const Elem *> & family,
                                 const unsigned int s,
                                 const bool reset)  const
 {
@@ -1691,7 +1636,7 @@ void Elem::family_tree_by_side (std::vector<const Elem*>& family,
 
 
 
-void Elem::active_family_tree_by_side (std::vector<const Elem*>& family,
+void Elem::active_family_tree_by_side (std::vector<const Elem *> & family,
                                        const unsigned int s,
                                        const bool reset) const
 {
@@ -1718,8 +1663,8 @@ void Elem::active_family_tree_by_side (std::vector<const Elem*>& family,
 
 
 
-void Elem::family_tree_by_neighbor (std::vector<const Elem*>& family,
-                                    const Elem* neighbor_in,
+void Elem::family_tree_by_neighbor (std::vector<const Elem *> & family,
+                                    const Elem * neighbor_in,
                                     const bool reset) const
 {
   // The "family tree" doesn't include subactive elements
@@ -1740,7 +1685,7 @@ void Elem::family_tree_by_neighbor (std::vector<const Elem*>& family,
   if (!this->active())
     for (unsigned int c=0; c<this->n_children(); c++)
       {
-        Elem *current_child = this->child(c);
+        Elem * current_child = this->child(c);
         if (current_child != remote_elem && current_child->has_neighbor(neighbor_in))
           current_child->family_tree_by_neighbor (family, neighbor_in, false);
       }
@@ -1748,9 +1693,9 @@ void Elem::family_tree_by_neighbor (std::vector<const Elem*>& family,
 
 
 
-void Elem::family_tree_by_subneighbor (std::vector<const Elem*>& family,
-                                       const Elem* neighbor_in,
-                                       const Elem* subneighbor,
+void Elem::family_tree_by_subneighbor (std::vector<const Elem *> & family,
+                                       const Elem * neighbor_in,
+                                       const Elem * subneighbor,
                                        const bool reset) const
 {
   // The "family tree" doesn't include subactive elements
@@ -1779,11 +1724,11 @@ void Elem::family_tree_by_subneighbor (std::vector<const Elem*>& family,
   if (!this->active())
     for (unsigned int c=0; c != this->n_children(); ++c)
       {
-        Elem *current_child = this->child(c);
+        Elem * current_child = this->child(c);
         if (current_child != remote_elem)
           for (unsigned int s=0; s != current_child->n_sides(); ++s)
             {
-              Elem *child_neigh = current_child->neighbor(s);
+              Elem * child_neigh = current_child->neighbor(s);
               if (child_neigh &&
                   (child_neigh == neighbor_in ||
                    (child_neigh->parent() == neighbor_in &&
@@ -1796,8 +1741,8 @@ void Elem::family_tree_by_subneighbor (std::vector<const Elem*>& family,
 
 
 
-void Elem::active_family_tree_by_neighbor (std::vector<const Elem*>& family,
-                                           const Elem* neighbor_in,
+void Elem::active_family_tree_by_neighbor (std::vector<const Elem *> & family,
+                                           const Elem * neighbor_in,
                                            const bool reset) const
 {
   // The "family tree" doesn't include subactive elements
@@ -1820,7 +1765,7 @@ void Elem::active_family_tree_by_neighbor (std::vector<const Elem*>& family,
   else if (!this->active())
     for (unsigned int c=0; c<this->n_children(); c++)
       {
-        Elem *current_child = this->child(c);
+        Elem * current_child = this->child(c);
         if (current_child != remote_elem && current_child->has_neighbor(neighbor_in))
           current_child->active_family_tree_by_neighbor (family, neighbor_in, false);
       }
@@ -1828,7 +1773,7 @@ void Elem::active_family_tree_by_neighbor (std::vector<const Elem*>& family,
 
 
 
-unsigned int Elem::min_p_level_by_neighbor(const Elem* neighbor_in,
+unsigned int Elem::min_p_level_by_neighbor(const Elem * neighbor_in,
                                            unsigned int current_min) const
 {
   libmesh_assert(!this->subactive());
@@ -1850,7 +1795,7 @@ unsigned int Elem::min_p_level_by_neighbor(const Elem* neighbor_in,
 
   for (unsigned int c=0; c<this->n_children(); c++)
     {
-      const Elem* const current_child = this->child(c);
+      const Elem * const current_child = this->child(c);
       if (current_child != remote_elem && current_child->has_neighbor(neighbor_in))
         min_p_level =
           current_child->min_p_level_by_neighbor(neighbor_in,
@@ -1861,7 +1806,7 @@ unsigned int Elem::min_p_level_by_neighbor(const Elem* neighbor_in,
 }
 
 
-unsigned int Elem::min_new_p_level_by_neighbor(const Elem* neighbor_in,
+unsigned int Elem::min_new_p_level_by_neighbor(const Elem * neighbor_in,
                                                unsigned int current_min) const
 {
   libmesh_assert(!this->subactive());
@@ -1887,7 +1832,7 @@ unsigned int Elem::min_new_p_level_by_neighbor(const Elem* neighbor_in,
 
   for (unsigned int c=0; c<this->n_children(); c++)
     {
-      const Elem* const current_child = this->child(c);
+      const Elem * const current_child = this->child(c);
       if (current_child && current_child != remote_elem)
         if (current_child->has_neighbor(neighbor_in))
           min_p_level =
@@ -1966,7 +1911,7 @@ unsigned int Elem::as_parent_node (unsigned int child,
 
 
 
-const std::vector<std::pair<unsigned char, unsigned char> >&
+const std::vector<std::pair<unsigned char, unsigned char> > &
 Elem::parent_bracketing_nodes(unsigned int child,
                               unsigned int child_node) const
 {
@@ -2264,7 +2209,7 @@ Elem::bracketing_nodes(unsigned int child,
 
 
 
-bool Elem::contains_point (const Point& p, Real tol) const
+bool Elem::contains_point (const Point & p, Real tol) const
 {
   // We currently allow the user to enlarge the bounding box by
   // providing a tol > TOLERANCE (so this routine is identical to
@@ -2289,7 +2234,7 @@ bool Elem::contains_point (const Point& p, Real tol) const
 
 
 
-bool Elem::close_to_point (const Point& p, Real tol) const
+bool Elem::close_to_point (const Point & p, Real tol) const
 {
   // This test uses the user's passed-in tolerance for the
   // bounding box test as well, thereby allowing the routine to
@@ -2301,7 +2246,7 @@ bool Elem::close_to_point (const Point& p, Real tol) const
 
 
 
-bool Elem::point_test(const Point& p, Real box_tol, Real map_tol) const
+bool Elem::point_test(const Point & p, Real box_tol, Real map_tol) const
 {
   libmesh_assert_greater (box_tol, 0.);
   libmesh_assert_greater (map_tol, 0.);
@@ -2404,7 +2349,7 @@ bool Elem::point_test(const Point& p, Real box_tol, Real map_tol) const
 
 
 
-void Elem::print_info (std::ostream& os) const
+void Elem::print_info (std::ostream & os) const
 {
   os << this->get_info()
      << std::endl;
@@ -2487,7 +2432,7 @@ void Elem::nullify_neighbors ()
   // Looks strange, huh?
   for (unsigned int n=0; n<this->n_neighbors(); n++)
     {
-      Elem* current_neighbor = this->neighbor(n);
+      Elem * current_neighbor = this->neighbor(n);
       if (current_neighbor && current_neighbor != remote_elem)
         {
           // Note:  it is possible that I see the neighbor
@@ -2497,8 +2442,8 @@ void Elem::nullify_neighbors ()
             {
               const unsigned int w_n_a_i = current_neighbor->which_neighbor_am_i(this);
               libmesh_assert_less (w_n_a_i, current_neighbor->n_neighbors());
-              current_neighbor->set_neighbor(w_n_a_i, NULL);
-              this->set_neighbor(n, NULL);
+              current_neighbor->set_neighbor(w_n_a_i, libmesh_nullptr);
+              this->set_neighbor(n, libmesh_nullptr);
             }
         }
     }
@@ -2772,7 +2717,7 @@ Real Elem::volume () const
   UniquePtr<FEBase> fe (FEBase::build(this->dim(),
                                       fe_type));
 
-  const std::vector<Real>& JxW = fe->get_JxW();
+  const std::vector<Real> & JxW = fe->get_JxW();
 
   // The default quadrature rule should integrate the mass matrix,
   // thus it should be plenty to compute the area

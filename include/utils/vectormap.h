@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -76,8 +76,8 @@ private:
    */
   struct FirstOrder
   {
-    bool operator()(const value_type &lhs,
-                    const value_type &rhs) const
+    bool operator()(const value_type & lhs,
+                    const value_type & rhs) const
     { return lhs.first < rhs.first; }
   };
 
@@ -86,8 +86,8 @@ private:
    */
   struct FirstCompare
   {
-    bool operator()(const value_type &lhs,
-                    const value_type &rhs) const
+    bool operator()(const value_type & lhs,
+                    const value_type & rhs) const
     { return lhs.first == rhs.first; }
   };
 
@@ -103,7 +103,7 @@ public:
   /**
    * Copy constructor.
    */
-  vectormap(const vectormap<Key,Tp> &other) :
+  vectormap(const vectormap<Key,Tp> & other) :
     std::vector<std::pair<Key, Tp> > (other),
     _sorted(other._sorted)
   {}
@@ -111,7 +111,7 @@ public:
   /**
    * Inserts \p x into the vectormap.
    */
-  void insert (const value_type &x)
+  void insert (const value_type & x)
   {
     _sorted = false;
     this->push_back(x);
@@ -135,10 +135,10 @@ public:
   /**
    * @returns the value corresponding to \p key
    */
-  const Tp & operator[](const key_type &key) const
+  const Tp & operator[](const key_type & key) const
   {
     if (!_sorted)
-      const_cast<vectormap<Key, Tp>*>(this)->sort();
+      const_cast<vectormap<Key, Tp> *>(this)->sort();
 
     libmesh_assert (_sorted);
 
@@ -161,10 +161,10 @@ public:
    * be 1 or 0.
    */
   difference_type
-  count (const key_type &key) const
+  count (const key_type & key) const
   {
     if (!_sorted)
-      const_cast<vectormap<Key, Tp>*>(this)->sort();
+      const_cast<vectormap<Key, Tp> *>(this)->sort();
 
     libmesh_assert (_sorted);
 

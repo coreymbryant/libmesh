@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,7 @@ namespace libMesh
 {
 
 // Constructor
-EigenTimeSolver::EigenTimeSolver (sys_type& s)
+EigenTimeSolver::EigenTimeSolver (sys_type & s)
   : Parent(s),
     eigen_solver     (EigenSolver<Number>::build(s.comm())),
     tol(pow(TOLERANCE, 5./3.)),
@@ -125,7 +125,7 @@ void EigenTimeSolver::solve ()
 
 
 bool EigenTimeSolver::element_residual(bool request_jacobian,
-                                       DiffContext &context)
+                                       DiffContext & context)
 {
   // The EigenTimeSolver always computes jacobians!
   libmesh_assert (request_jacobian);
@@ -172,7 +172,7 @@ bool EigenTimeSolver::element_residual(bool request_jacobian,
 
 
 bool EigenTimeSolver::side_residual(bool request_jacobian,
-                                    DiffContext &context)
+                                    DiffContext & context)
 {
   // The EigenTimeSolver always requests jacobians?
   //libmesh_assert (request_jacobian);
@@ -219,7 +219,7 @@ bool EigenTimeSolver::side_residual(bool request_jacobian,
 
 
 bool EigenTimeSolver::nonlocal_residual(bool request_jacobian,
-                                        DiffContext &context)
+                                        DiffContext & context)
 {
   // The EigenTimeSolver always requests jacobians?
   //libmesh_assert (request_jacobian);

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -144,7 +144,7 @@ void QGrundmann_Moller::gm_rule(unsigned int s, unsigned int dim)
 // why it works, but it does.
 void QGrundmann_Moller::compose_all(unsigned int s, // number to be compositioned
                                     unsigned int p, // # of partitions
-                                    std::vector<std::vector<unsigned int> >& result)
+                                    std::vector<std::vector<unsigned int> > & result)
 {
   // Clear out results remaining from previous calls
   result.clear();

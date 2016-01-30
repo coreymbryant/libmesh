@@ -42,7 +42,8 @@ namespace libMesh
  * \p ParalelObject *requires* a \p Parallel::Communicator object
  * for construction.
  *
- * \author Benjamin S. Kirk, 2013.
+ * \author Benjamin S. Kirk
+ * \date 2013
  */
 class ParallelObject
 {
@@ -52,14 +53,14 @@ public:
    * Constructor. Requires a reference to the communicator
    * that defines the object's parallel decomposition.
    */
-  ParallelObject (const Parallel::Communicator &comm_in) :
+  ParallelObject (const Parallel::Communicator & comm_in) :
     _communicator(comm_in)
   {}
 
   /**
    * Copy Constructor.
    */
-  ParallelObject (const ParallelObject &other) :
+  ParallelObject (const ParallelObject & other) :
     _communicator(other._communicator)
   {}
 
@@ -101,7 +102,7 @@ public:
 
 protected:
 
-  const Parallel::Communicator &_communicator;
+  const Parallel::Communicator & _communicator;
 };
 } // namespace libMesh
 

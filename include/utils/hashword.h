@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 // http://stackoverflow.com/questions/237370/does-stdsize-t-make-sense-in-c
 #include <stddef.h>
 #include <stdint.h> // uint32_t, uint64_t
+#include <vector>
 
 #include "libmesh_common.h" // libmesh_error_msg()
 
@@ -35,7 +36,9 @@
 namespace
 {
 // Rotate x by k bits
-// @author Bob Jenkins, May 2006, Public Domain.
+// \author Bob Jenkins
+// \date May 2006
+// \copyright Public Domain
 // http://burtleburtle.net/bob/hash/index.html
 inline
 uint32_t rot(uint32_t x, uint32_t k)
@@ -46,10 +49,12 @@ uint32_t rot(uint32_t x, uint32_t k)
 
 
 // mix 3 32-bit values reversibly
-// @author Bob Jenkins, May 2006, Public Domain.
+// \author Bob Jenkins
+// \date May 2006
+// \copyright Public Domain
 // http://burtleburtle.net/bob/hash/index.html
 inline
-void mix(uint32_t& a, uint32_t& b, uint32_t& c)
+void mix(uint32_t & a, uint32_t & b, uint32_t & c)
 {
   a -= c;  a ^= rot(c, 4);  c += b;
   b -= a;  b ^= rot(a, 6);  a += c;
@@ -61,10 +66,12 @@ void mix(uint32_t& a, uint32_t& b, uint32_t& c)
 
 
 // 'final' mixing of 3 32-bit numbers, result is stored in c.
-// @author Bob Jenkins, May 2006, Public Domain.
+// \author Bob Jenkins
+// \date May 2006
+// \copyright Public Domain
 // http://burtleburtle.net/bob/hash/index.html
 inline
-void final(uint32_t& a, uint32_t& b, uint32_t& c)
+void final(uint32_t & a, uint32_t & b, uint32_t & c)
 {
   c ^= b; c -= rot(b,14);
   a ^= c; a -= rot(c,11);
@@ -90,16 +97,16 @@ void final(uint32_t& a, uint32_t& b, uint32_t& c)
 // len - length of buffer in octets
 //
 // returns: 64 bit hash as a static hash type
-uint64_t fnv_64_buf(const void *buf, size_t len)
+uint64_t fnv_64_buf(const void * buf, size_t len)
 {
   // Initializing hval with this value corresponds to the FNV-1 hash algorithm.
   uint64_t hval = static_cast<uint64_t>(0xcbf29ce484222325ULL);
 
   // start of buffer
-  const unsigned char *bp = static_cast<const unsigned char *>(buf);
+  const unsigned char * bp = static_cast<const unsigned char *>(buf);
 
   // beyond end of buffer
-  const unsigned char *be = bp + len;
+  const unsigned char * be = bp + len;
 
   // FNV-1 hash each octet of the buffer
   while (bp < be)
@@ -126,10 +133,12 @@ namespace Utility
 {
 // The hashword function takes an array of uint32_t's of length 'length'
 // and computes a single key from it.
-// @author Bob Jenkins, May 2006, Public Domain.
+// \author Bob Jenkins
+// \date May 2006
+// \copyright Public Domain
 // http://burtleburtle.net/bob/hash/index.html
 inline
-uint32_t hashword(const uint32_t *k, size_t length, uint32_t initval=0)
+uint32_t hashword(const uint32_t * k, size_t length, uint32_t initval=0)
 {
   uint32_t a,b,c;
 
@@ -163,11 +172,21 @@ uint32_t hashword(const uint32_t *k, size_t length, uint32_t initval=0)
 }
 
 
+
+// Calls function above with slightly more convenient std::vector interface.
+inline
+uint32_t hashword(const std::vector<uint32_t> & keys, uint32_t initval=0)
+{
+  return hashword(&keys[0], keys.size(), initval);
+}
+
 // This is a hard-coded version of hashword for hashing exactly 2 numbers
-// @author Bob Jenkins, May 2006, Public Domain.
+// \author Bob Jenkins
+// \date May 2006
+// \copyright Public Domain
 // http://burtleburtle.net/bob/hash/index.html
 inline
-uint32_t hashword2(const uint32_t& first, const uint32_t& second, uint32_t initval=0)
+uint32_t hashword2(const uint32_t & first, const uint32_t & second, uint32_t initval=0)
 {
   uint32_t a,b,c;
 
@@ -202,9 +221,18 @@ uint16_t hashword2(const uint16_t first, const uint16_t second)
 
 // Call the 64-bit FNV hash function.
 inline
-uint64_t hashword(const uint64_t *k, size_t length)
+uint64_t hashword(const uint64_t * k, size_t length)
 {
   return fnv_64_buf(k, 8*length);
+}
+
+
+
+// Calls function above with slightly more convenient std::vector interface.
+inline
+uint64_t hashword(const std::vector<uint64_t> & keys)
+{
+  return hashword(&keys[0], keys.size());
 }
 
 // In a personal communication from Bob Jenkins, he recommended using
@@ -212,7 +240,7 @@ uint64_t hashword(const uint64_t *k, size_t length)
 // integers that way.  The output is c, or the top or bottom 16 bits
 // of c if you only need 16 bit hash values." [JWP]
 inline
-uint16_t hashword(const uint16_t *k, size_t length)
+uint16_t hashword(const uint16_t * k, size_t length)
 {
   // Three values that will be passed to final() after they are initialized.
   uint32_t a = 0;

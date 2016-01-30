@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -67,8 +67,6 @@ namespace libMesh
  * platforms.  For more information on the \p xdr format, see the
  * standard C include file \p rpc/rpc.h.
  *
- * @author Bill Barth, Robert McLay.
- *
  * There are essentially two inheritance trees and six classes:
  *       XdrMGF                         XdrHEAD
  *     ^        ^                    ^          ^
@@ -81,6 +79,10 @@ namespace libMesh
  *
  * XdrMGF, XdrMESH, and XdrSOLN handle the "meat" of the files: everything
  * other than the headers.
+ *
+ * \author Bill Barth
+ * \author Robert McLay
+ * \date 2000
  */
 class XdrMGF
 {
@@ -118,21 +120,14 @@ public:
 #endif
 
   /**
-   * Initialization of the \p xdr file.
-   * This function performs the following
-   * operations:
-   * @begin{itemize}
-   * @item Closes the old \p xdr file if necessary.
-   *
-   * @item Creates a new \p xdr file name and opens this file.
-   *
-   * @item Opens the appropriate \p xdr file handle.
-   *
-   * @item Reads/Writes a signature to the file.
-   *
-   * @end{itemize}
+   * Initialization of the \p xdr file.  This function performs the
+   * following operations:
+   * - Closes the old \p xdr file if necessary.
+   * - Creates a new \p xdr file name and opens this file.
+   * - Opens the appropriate \p xdr file handle.
+   * - Reads/Writes a signature to the file.
    */
-  void init(XdrIO_TYPE t, const char* fn, const char* type, int icnt);
+  void init(XdrIO_TYPE t, const char * fn, const char * type, int icnt);
 
   /**
    * Destructor. Frees the memory
@@ -152,21 +147,20 @@ public:
   void fini();
 
   /**
-   * Reads/Writes a block of \p ints
-   * to/from the current \p xdr
+   * Reads/Writes a block of \p ints to/from the current \p xdr
    * file/file handle.
    * \param array Pointer to data to be read/written
    * \param numvar The total number of variables (size of the array)
    * \param size The size of each individual variable in the array
    */
-  int dataBlk(int*  array, int numvar, int size);
+  int dataBlk(int *  array, int numvar, int size);
 
   /**
    * Read/Writes a block of \p Reals
    * to/from the current \p xdr
    * file/file handle.
    */
-  int dataBlk(Real* array, int numvar, int size);
+  int dataBlk(Real * array, int numvar, int size);
 
   /**
    * Get the originator flag.
@@ -197,15 +191,11 @@ protected:
   unsigned int _num_levels;
 
   /**
-   * Specifies the read/write
-   * permission for the current
-   * \p xdr file.  Possibilities
-   * are:
-   * @begin{itemize}
-   * @item \p UNKNOWN = -1
-   * @item \p ENCODE  = 0
-   * @item \p DECODE  = 1
-   * @end{itemize}
+   * Specifies the read/write permission for the current \p xdr file.
+   * Possibilities are:
+   * - \p UNKNOWN = -1
+   * - \p ENCODE  = 0
+   * - \p DECODE  = 1
    */
   XdrIO_TYPE m_type;
 
@@ -217,24 +207,18 @@ protected:
    * header file \p rpc/rpc.h
    * for more information.
    */
-  XDR*  mp_xdr_handle;
+  XDR * mp_xdr_handle;
 
 #endif
 
   /**
-   * Flag indicating how much checking
-   * we need to do.  We can read in
-   * mgf meshes more quickly because
-   * there is only one type of element
-   * in these meshes.  Deal meshes
-   * on the other hand will require
-   * a check for each element to find
-   * out what type it is.  Possible
+   * Flag indicating how much checking we need to do.  We can read in
+   * mgf meshes more quickly because there is only one type of element
+   * in these meshes.  Deal meshes on the other hand will require a
+   * check for each element to find out what type it is.  Possible
    * values are:
-   * @begin{itemize}
-   * @item 0: It's an DEAL style mesh
-   * @item 1: It's a MGF style mesh
-   * @end{itemize}
+   * - 0: It's an DEAL style mesh
+   * - 1: It's a MGF style mesh
    */
   LegacyXdrIO::FileFormat orig_flag;
 
@@ -249,13 +233,13 @@ protected:
   std::ofstream mp_out;
 
 private:
-  std::FILE* mp_fp;
+  std::FILE * mp_fp;
 
   /**
    * This function allows us to set the number of levels in
    * the mesh when reading.
    */
-  void tokenize_first_line(const char* p)
+  void tokenize_first_line(const char * p)
   {
     std::string buf_str(p);
     std::stringstream ss(buf_str);

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,7 @@ namespace libMesh
 //     /* put out accuracy reached after each solver iteration */
 //   {
 
-//     //FILE* out = fopen("residual.hist", "a");
+//     //FILE * out = fopen("residual.hist", "a");
 //     static int icall=0;
 
 //     if (!icall)
@@ -91,7 +91,7 @@ void LaspackLinearSolver<T>::clear ()
 
 
 template <typename T>
-void LaspackLinearSolver<T>::init (const char* /* name */)
+void LaspackLinearSolver<T>::init (const char * /* name */)
 {
   // Initialize the data structures if not done so already.
   if (!this->initialized())
@@ -106,9 +106,9 @@ void LaspackLinearSolver<T>::init (const char* /* name */)
 
 template <typename T>
 std::pair<unsigned int, Real>
-LaspackLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
-                               NumericVector<T> &solution_in,
-                               NumericVector<T> &rhs_in,
+LaspackLinearSolver<T>::solve (SparseMatrix<T> & matrix_in,
+                               NumericVector<T> & solution_in,
+                               NumericVector<T> & rhs_in,
                                const double tol,
                                const unsigned int m_its)
 {
@@ -116,9 +116,9 @@ LaspackLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
   this->init ();
 
   // Make sure the data passed in are really in Laspack types
-  LaspackMatrix<T>* matrix   = cast_ptr<LaspackMatrix<T>*>(&matrix_in);
-  LaspackVector<T>* solution = cast_ptr<LaspackVector<T>*>(&solution_in);
-  LaspackVector<T>* rhs      = cast_ptr<LaspackVector<T>*>(&rhs_in);
+  LaspackMatrix<T> * matrix   = cast_ptr<LaspackMatrix<T> *>(&matrix_in);
+  LaspackVector<T> * solution = cast_ptr<LaspackVector<T> *>(&solution_in);
+  LaspackVector<T> * rhs      = cast_ptr<LaspackVector<T> *>(&rhs_in);
 
   // Zero-out the solution to prevent the solver from exiting in 0
   // iterations (?)
@@ -281,9 +281,9 @@ LaspackLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
 
 template <typename T>
 std::pair<unsigned int, Real>
-LaspackLinearSolver<T>::adjoint_solve (SparseMatrix<T> &matrix_in,
-                                       NumericVector<T> &solution_in,
-                                       NumericVector<T> &rhs_in,
+LaspackLinearSolver<T>::adjoint_solve (SparseMatrix<T> & matrix_in,
+                                       NumericVector<T> & solution_in,
+                                       NumericVector<T> & rhs_in,
                                        const double tol,
                                        const unsigned int m_its)
 {
@@ -291,9 +291,9 @@ LaspackLinearSolver<T>::adjoint_solve (SparseMatrix<T> &matrix_in,
   this->init ();
 
   // Make sure the data passed in are really in Laspack types
-  LaspackMatrix<T>* matrix   = cast_ptr<LaspackMatrix<T>*>(&matrix_in);
-  LaspackVector<T>* solution = cast_ptr<LaspackVector<T>*>(&solution_in);
-  LaspackVector<T>* rhs      = cast_ptr<LaspackVector<T>*>(&rhs_in);
+  LaspackMatrix<T> * matrix   = cast_ptr<LaspackMatrix<T> *>(&matrix_in);
+  LaspackVector<T> * solution = cast_ptr<LaspackVector<T> *>(&solution_in);
+  LaspackVector<T> * rhs      = cast_ptr<LaspackVector<T> *>(&rhs_in);
 
   // Zero-out the solution to prevent the solver from exiting in 0
   // iterations (?)
@@ -457,9 +457,9 @@ LaspackLinearSolver<T>::adjoint_solve (SparseMatrix<T> &matrix_in,
 
 template <typename T>
 std::pair<unsigned int, Real>
-LaspackLinearSolver<T>::solve (const ShellMatrix<T>& /*shell_matrix*/,
-                               NumericVector<T>& /*solution_in*/,
-                               NumericVector<T>& /*rhs_in*/,
+LaspackLinearSolver<T>::solve (const ShellMatrix<T> & /*shell_matrix*/,
+                               NumericVector<T> & /*solution_in*/,
+                               NumericVector<T> & /*rhs_in*/,
                                const double /*tol*/,
                                const unsigned int /*m_its*/)
 {
@@ -471,10 +471,10 @@ LaspackLinearSolver<T>::solve (const ShellMatrix<T>& /*shell_matrix*/,
 
 template <typename T>
 std::pair<unsigned int, Real>
-LaspackLinearSolver<T>::solve (const ShellMatrix<T>& /*shell_matrix*/,
-                               const SparseMatrix<T>& /*precond_matrix*/,
-                               NumericVector<T>& /*solution_in*/,
-                               NumericVector<T>& /*rhs_in*/,
+LaspackLinearSolver<T>::solve (const ShellMatrix<T> & /*shell_matrix*/,
+                               const SparseMatrix<T> & /*precond_matrix*/,
+                               NumericVector<T> & /*solution_in*/,
+                               NumericVector<T> & /*rhs_in*/,
                                const double /*tol*/,
                                const unsigned int /*m_its*/)
 {
@@ -490,7 +490,7 @@ void LaspackLinearSolver<T>::set_laspack_preconditioner_type ()
   switch (this->_preconditioner_type)
     {
     case IDENTITY_PRECOND:
-      _precond_type = NULL; return;
+      _precond_type = libmesh_nullptr; return;
 
     case ILU_PRECOND:
       _precond_type = ILUPrecond; return;

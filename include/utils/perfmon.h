@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ public:
 
   ~PerfMon ();
   void reset ();
-  double print (std::string msg="NULL", std::ostream &out = libMesh::out);
+  double print (std::string msg="NULL", std::ostream & out = libMesh::out);
 
 private:
 
@@ -73,10 +73,10 @@ inline
 void
 PerfMon::reset ()
 {
-  gettimeofday (&the_time_start, NULL);
+  gettimeofday (&the_time_start, libmesh_nullptr);
 
 #ifdef HAVE_PAPI_H
-  Papi::PAPI_flops (&rtime, &ptime, &flpins, &mflops);
+  Papi::PAPI_flops (&rtime, & ptime, &flpins, &mflops);
 #endif
 }
 
@@ -86,10 +86,10 @@ inline
 double
 PerfMon::print (std::string msg, std::ostream &my_out)
 {
-  gettimeofday (&the_time_stop, NULL);
+  gettimeofday (&the_time_stop, libmesh_nullptr);
 
 #ifdef HAVE_PAPI_H
-  Papi::PAPI_flops (&rtime, &ptime, &flpins, &mflops);
+  Papi::PAPI_flops (&rtime, & ptime, &flpins, &mflops);
 #endif
 
   const double elapsed_time = ((double) (the_time_stop.tv_sec - the_time_start.tv_sec)) +

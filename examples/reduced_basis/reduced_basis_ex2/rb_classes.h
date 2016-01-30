@@ -17,8 +17,8 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __rb_classes_h__
-#define __rb_classes_h__
+#ifndef RB_CLASSES_H
+#define RB_CLASSES_H
 
 #if defined(LIBMESH_HAVE_SLEPC) && defined(LIBMESH_HAVE_GLPK)
 
@@ -26,6 +26,8 @@
 #include "libmesh/rb_scm_construction.h"
 #include "libmesh/fe_base.h"
 #include "libmesh/auto_ptr.h"
+#include "libmesh/rb_evaluation.h"
+#include "libmesh/rb_scm_evaluation.h"
 
 // Bring in bits from the libMesh namespace.
 // Just the bits we're using, since this is a header.
@@ -54,7 +56,7 @@ public:
   /**
    * Constructor. Just set the theta expansion.
    */
-  SimpleRBEvaluation(const libMesh::Parallel::Communicator& comm)
+  SimpleRBEvaluation(const libMesh::Parallel::Communicator & comm)
     : RBEvaluation(comm)
   {
     set_rb_theta_expansion(ex02_rb_theta_expansion);
@@ -66,14 +68,14 @@ public:
    */
   virtual Real get_stability_lower_bound()
   {
-    rb_scm_eval->set_parameters( get_parameters() );
-    return rb_scm_eval->get_SCM_LB() ;
+    rb_scm_eval->set_parameters(get_parameters());
+    return rb_scm_eval->get_SCM_LB();
   }
 
   /**
    * Pointer to the SCM object that will provide our coercivity constant lower bound.
    */
-  RBSCMEvaluation* rb_scm_eval;
+  RBSCMEvaluation * rb_scm_eval;
 
   /**
    * The object that stores the "theta" expansion of the parameter dependent PDE,
@@ -90,8 +92,8 @@ class SimpleRBConstruction : public RBConstruction
 {
 public:
 
-  SimpleRBConstruction (EquationSystems& es,
-                        const std::string& name,
+  SimpleRBConstruction (EquationSystems & es,
+                        const std::string & name,
                         const unsigned int number)
     : Parent(es, name, number)
   {}
@@ -142,13 +144,13 @@ public:
    * Pre-request all relevant element data. (This is not essential, but it
    * allows libMesh to cache data and hence run faster.)
    */
-  virtual void init_context(FEMContext &c)
+  virtual void init_context(FEMContext & c)
   {
     // For efficiency, we should prerequest all
     // the data we will need to build the
     // linear system before doing an element loop.
-    FEBase* elem_fe = NULL;
-    c.get_element_fe( u_var, elem_fe );
+    FEBase * elem_fe = libmesh_nullptr;
+    c.get_element_fe(u_var, elem_fe);
 
     elem_fe->get_JxW();
     elem_fe->get_phi();

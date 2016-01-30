@@ -1,21 +1,25 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
 
 // <h1>Introduction Example 2 - Defining a Simple System</h1>
+// \author Benjamin S. Kirk
+// \date 2003
 //
 // This is the second example program.  It demonstrates how to
 // create an equation system for a simple scalar system.  This
@@ -60,7 +64,7 @@ using namespace libMesh;
 
 
 
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   LibMeshInit init (argc, argv);
 
@@ -69,10 +73,10 @@ int main (int argc, char** argv)
 
   // A brief message to the user to inform her of the
   // exact name of the program being run, and its command line.
-  std::cout << "Running " << argv[0];
+  libMesh::out << "Running " << argv[0];
   for (int i=1; i<argc; i++)
-    std::cout << " " << argv[i];
-  std::cout << std::endl << std::endl;
+    libMesh::out << " " << argv[i];
+  libMesh::out << std::endl << std::endl;
 
   // Create a mesh, with dimension to be overridden later, distributed
   // across the default MPI communicator.
@@ -151,8 +155,8 @@ int main (int argc, char** argv)
   if (argc > 1)
     if (argv[1][0] != '-')
       {
-        std::cout << "<<< Writing system to file " << argv[1]
-                  << std::endl;
+        libMesh::out << "<<< Writing system to file " << argv[1]
+                     << std::endl;
 
         // Write the system.
         equation_systems.write (argv[1], WRITE);
@@ -160,8 +164,8 @@ int main (int argc, char** argv)
         // Clear the equation systems data structure.
         equation_systems.clear ();
 
-        std::cout << ">>> Reading system from file " << argv[1]
-                  << std::endl << std::endl;
+        libMesh::out << ">>> Reading system from file " << argv[1]
+                     << std::endl << std::endl;
 
         // Read the file we just wrote.  This better
         // work!

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,8 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // OptimizationSystem implementation
-OptimizationSystem::OptimizationSystem (EquationSystems& es,
-                                        const std::string& name_in,
+OptimizationSystem::OptimizationSystem (EquationSystems & es,
+                                        const std::string & name_in,
                                         const unsigned int number_in) :
 
   Parent(es, name_in, number_in),
@@ -44,7 +44,7 @@ OptimizationSystem::OptimizationSystem (EquationSystems& es,
   C_ineq(NumericVector<Number>::build(this->comm())),
   C_ineq_jac(SparseMatrix<Number>::build(this->comm())),
   lambda_eq(NumericVector<Number>::build(this->comm())),
-  lambda_ineq(NumericVector<Number>::build(this->comm())) //, _apply_bounds(false)
+  lambda_ineq(NumericVector<Number>::build(this->comm()))
 {
 }
 
@@ -88,7 +88,7 @@ void OptimizationSystem::reinit ()
 
 
 void OptimizationSystem::
-initialize_equality_constraints_storage(const std::vector< std::set<numeric_index_type> >& constraint_jac_sparsity)
+initialize_equality_constraints_storage(const std::vector< std::set<numeric_index_type> > & constraint_jac_sparsity)
 {
   unsigned int n_eq_constraints = constraint_jac_sparsity.size();
 
@@ -122,7 +122,7 @@ initialize_equality_constraints_storage(const std::vector< std::set<numeric_inde
 
 
 void OptimizationSystem::
-initialize_inequality_constraints_storage(const std::vector<std::set<numeric_index_type> >& constraint_jac_sparsity)
+initialize_inequality_constraints_storage(const std::vector<std::set<numeric_index_type> > & constraint_jac_sparsity)
 {
   unsigned int n_ineq_constraints = constraint_jac_sparsity.size();
 

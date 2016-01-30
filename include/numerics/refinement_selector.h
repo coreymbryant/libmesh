@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,8 @@ class System;
  * refinement.  Future subclasses may handle anisotropic refinement
  * instead.
  *
- * @author Roy H. Stogner, 2006.
+ * \author Roy H. Stogner
+ * \date 2006
  */
 class RefinementSelector
 {
@@ -65,7 +66,7 @@ public:
    * refinement and potentially change the desired
    * refinement type.
    */
-  virtual void select_refinement (const System& system);
+  virtual void select_refinement (const System & system);
 
   /**
    * This vector can be used to "scale" certain

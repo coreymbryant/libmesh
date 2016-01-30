@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,6 @@
 namespace libMesh
 {
 
-
-
-
 /**
  * This class creates quadrature points on a uniform grid, with
  * order+1 points on an edge.
@@ -44,12 +41,11 @@ namespace libMesh
  * This quadrature type may be useful iff you are integrating
  * functions which have discontinuities or discontinuous derivatives
  * on scales smaller than your element size.
+ *
+ * \author Roy Stogner
+ * \date 2005
  */
-
-// ------------------------------------------------------------
-// QGrid class definition
-
-class QGrid : public QBase
+class QGrid libmesh_final : public QBase
 {
 public:
 
@@ -57,48 +53,30 @@ public:
    * Constructor.  Declares the order of the quadrature rule.
    */
   QGrid (const unsigned int _dim,
-         const Order _order=INVALID_ORDER);
+         const Order _order=INVALID_ORDER) :
+    QBase(_dim, _order)
+  {}
 
   /**
    * Destructor.
    */
-  ~QGrid();
+  ~QGrid() {}
 
   /**
    * @returns \p QGRID
    */
-  QuadratureType type() const { return QGRID; }
+  virtual QuadratureType type() const libmesh_override { return QGRID; }
 
 
 private:
 
-  void init_1D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-  void init_2D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-  void init_3D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-
+  virtual void init_1D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
+  virtual void init_2D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
+  virtual void init_3D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 };
-
-
-
-// ------------------------------------------------------------
-// QGauss class members
-inline
-QGrid::QGrid(const unsigned int d,
-             const Order o) : QBase(d,o)
-{
-}
-
-
-
-
-inline
-QGrid::~QGrid()
-{
-}
-
 
 } // namespace libMesh
 

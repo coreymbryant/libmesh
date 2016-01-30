@@ -1,19 +1,19 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2002-2013 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
 
@@ -29,21 +29,26 @@ class HeatSystem : public FEMSystem
 {
 public:
   // Constructor
-  HeatSystem(EquationSystems& es,
-             const std::string& name_in,
+  HeatSystem(EquationSystems & es,
+             const std::string & name_in,
              const unsigned int number_in)
     : FEMSystem(es, name_in, number_in),
       _k(1.0),
-      _fe_family("LAGRANGE"), _fe_order(1),
-      _analytic_jacobians(true), R_plus_dp(0.0), R_minus_dp(0.0), dp(1.e-6) { qoi.resize(1); }
+      _fe_family("LAGRANGE"),
+      _fe_order(1),
+      _analytic_jacobians(true),
+      R_plus_dp(0.0),
+      R_minus_dp(0.0),
+      dp(1.e-6)
+  { qoi.resize(1); }
 
-  std::string & fe_family() { return _fe_family;  }
-  unsigned int & fe_order() { return _fe_order;  }
-  Real & k() { return _k;  }
+  std::string & fe_family() { return _fe_family; }
+  unsigned int & fe_order() { return _fe_order; }
+  Real & k() { return _k; }
   bool & analytic_jacobians() { return _analytic_jacobians; }
 
   // A function to compute and accumulate residuals
-  void perturb_accumulate_residuals(ParameterVector& parameters);
+  void perturb_accumulate_residuals(ParameterVector & parameters);
 
   // Sensitivity Calculation
   Number & compute_final_sensitivity()
@@ -58,18 +63,16 @@ public:
     tf = val;
   }
 
-  ParameterVector &get_parameter_vector()
+  ParameterVector & get_parameter_vector()
   {
     parameter_vector.resize(parameters.size());
-    for(unsigned int i = 0; i != parameters.size(); ++i)
-      {
-        parameter_vector[i] = &parameters[i];
-      }
+    for (unsigned int i = 0; i != parameters.size(); ++i)
+      parameter_vector[i] = &parameters[i];
 
     return parameter_vector;
   }
 
-  Number &get_QoI_value(unsigned int QoI_index)
+  Number & get_QoI_value(unsigned int QoI_index)
   {
     return computed_QoI[QoI_index];
   }
@@ -79,22 +82,22 @@ protected:
   virtual void init_data ();
 
   // Context initialization
-  virtual void init_context (DiffContext &context);
+  virtual void init_context (DiffContext & context);
 
   // Element residual and jacobian calculations
   // Time dependent parts
   virtual bool element_time_derivative (bool request_jacobian,
-                                        DiffContext &context);
+                                        DiffContext & context);
 
   // Constraint parts
-  //virtual bool side_constraint (bool request_jacobian,
-  //DiffContext &context);
+  // virtual bool side_constraint (bool request_jacobian,
+  //                               DiffContext & context);
 
   // RHS for adjoint problem
-  virtual void element_qoi_derivative (DiffContext &context,
+  virtual void element_qoi_derivative (DiffContext & context,
                                        const QoISet & /* qois */);
 
-  //virtual void element_qoi (DiffContext &context, const QoISet & qois);
+  //virtual void element_qoi (DiffContext & context, const QoISet & qois);
 
   // Parameters associated with the system
   std::vector<Number> parameters;
@@ -131,5 +134,4 @@ protected:
 
   // The final computed sensitivity
   Number final_sensitivity;
-
 };

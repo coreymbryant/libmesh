@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -77,7 +77,7 @@ void TetGenWrapper::set_numberofpoints(int i)
 
 
 
-void TetGenWrapper::get_output_node(unsigned i, REAL& x, REAL& y, REAL& z)
+void TetGenWrapper::get_output_node(unsigned i, REAL & x, REAL & y, REAL & z)
 {
   // Bounds checking...
   if (i >= static_cast<unsigned>(tetgen_output->numberofpoints))
@@ -146,7 +146,7 @@ void TetGenWrapper::allocate_pointlist(int numofpoints)
   if (this->tetgen_data.numberofpoints > 0)
     {
       // Is there previously-allocated memory here?
-      if (this->tetgen_data.pointlist != NULL)
+      if (this->tetgen_data.pointlist != libmesh_nullptr)
         libmesh_error_msg("Cannot allocate on top of previously allocated memory!");
 
       // We allocate memory here, the tetgenio destructor will delete it.
@@ -156,10 +156,10 @@ void TetGenWrapper::allocate_pointlist(int numofpoints)
 
 
 
-void TetGenWrapper::set_switches(const std::string& s)
+void TetGenWrapper::set_switches(const std::string & s)
 {
   // A temporary buffer for passing to the C API, it requires
-  // a char*, not a const char*...
+  // a char *, not a const char *...
   char buffer[256];
 
   // Make sure char buffer has enough room
@@ -219,7 +219,7 @@ void TetGenWrapper::allocate_facetlist(int numoffacets, int numofholes)
   if (this->tetgen_data.numberoffacets > 0)
     {
       // Is there previously-allocated memory here?
-      if (this->tetgen_data.facetlist != NULL)
+      if (this->tetgen_data.facetlist != libmesh_nullptr)
         libmesh_error_msg("Cannot allocate on top of previously allocated memory!");
 
       // We allocate memory here, the tetgenio destructor cleans it up.
@@ -234,7 +234,7 @@ void TetGenWrapper::allocate_facetlist(int numoffacets, int numofholes)
   if (this->tetgen_data.numberofholes > 0)
     {
       // Is there previously-allocated memory here?
-      if (this->tetgen_data.holelist != NULL)
+      if (this->tetgen_data.holelist != libmesh_nullptr)
         libmesh_error_msg("Cannot allocate on top of previously allocated memory!");
 
       this->tetgen_data.holelist = new REAL[this->tetgen_data.numberofholes * 3];
@@ -251,7 +251,7 @@ void TetGenWrapper::allocate_regionlist(int numofregions)
   if (this->tetgen_data.numberofregions > 0)
     {
       // Is there previously-allocated memory here?
-      if (this->tetgen_data.regionlist != NULL)
+      if (this->tetgen_data.regionlist != libmesh_nullptr)
         libmesh_error_msg("Cannot allocate on top of previously allocated memory!");
 
       // We allocate memory here, the tetgenio destructor cleans it up.
@@ -287,7 +287,7 @@ void TetGenWrapper::allocate_facet_polygonlist(unsigned i, int numofpolygons)
   if (numofpolygons > 0)
     {
       // Is there previously-allocated memory here?
-      if (this->tetgen_data.facetlist[i].polygonlist != NULL)
+      if (this->tetgen_data.facetlist[i].polygonlist != libmesh_nullptr)
         libmesh_error_msg("Cannot allocate on top of previously allocated memory!");
 
       // We allocate memory here, the tetgenio destructor cleans it up.
@@ -316,7 +316,7 @@ void TetGenWrapper::allocate_polygon_vertexlist(unsigned i, unsigned j, int numo
   if (numofvertices > 0)
     {
       // Is there previously-allocated memory here?
-      if (this->tetgen_data.facetlist[i].polygonlist[j].vertexlist != NULL)
+      if (this->tetgen_data.facetlist[i].polygonlist[j].vertexlist != libmesh_nullptr)
         libmesh_error_msg("Cannot allocate on top of previously allocated memory!");
 
       // We allocate memory here, the tetgenio destructor cleans it up.

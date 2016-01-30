@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@ namespace libMesh
 
 
 
-TimeSolver::TimeSolver (sys_type& s)
+TimeSolver::TimeSolver (sys_type & s)
   : quiet (true),
     reduce_deltat_on_diffsolver_failure (0),
     _diff_solver (),
@@ -65,10 +65,10 @@ void TimeSolver::init ()
 {
   // If the user hasn't given us a solver to use,
   // just build a default solver
-  if (this->diff_solver().get() == NULL)
+  if (this->diff_solver().get() == libmesh_nullptr)
     this->diff_solver() = DiffSolver::build(_system);
 
-  if (this->linear_solver().get() == NULL)
+  if (this->linear_solver().get() == libmesh_nullptr)
     this->linear_solver() = LinearSolver<Number>::build(_system.comm());
 }
 

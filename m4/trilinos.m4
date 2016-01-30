@@ -27,10 +27,28 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
     fi
 
     if test "$enabletrilinos10" != no ; then
+       dnl This actually implies Trilinos 10+, as this configure
+       dnl function also works with Trilinos 11.
        enabletrilinos10=yes
+
+       dnl Try to detect the full Trilinos version string by grepping through Trilinos_version.h.
+       dnl The version string is surrounded by quotes, so we use a slight variation on our usual
+       dnl grep command, and pass the result through 'tr' to remove those.
+       trilinosversionstring=`grep "define TRILINOS_VERSION_STRING" $withtrilinosdir/include/Trilinos_version.h | sed -e "s/#define TRILINOS_VERSION_STRING[ ]*//g" | tr -d '"'`
+
+       dnl If we couldn't extract anything for the full version string, try to just get the major version number.
+       if test "x$trilinosversionstring" = "x" ; then
+         trilinosversionstring=`grep "define TRILINOS_MAJOR_VERSION" $withtrilinosdir/include/Trilinos_version.h | sed -e "s/#define TRILINOS_MAJOR_VERSION[ ]*//g"`
+       fi
+
+       dnl If we couldn't extract the actual major version number, go with "10+"
+       if test "x$trilinosversionstring" = "x" ; then
+         trilinosversionstring=10+
+       fi
+
        AC_DEFINE(HAVE_TRILINOS, 1,
                  [Flag indicating whether the library shall be compiled to use the Trilinos solver collection])
-       AC_MSG_RESULT(<<< Configuring library with Trilinos 10 support >>>)
+       AC_MSG_RESULT([<<< Configuring library with Trilinos $trilinosversionstring support >>>])
 
        dnl ------------------------------------------------------
        dnl AztecOO
@@ -45,7 +63,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                                                          ])])
 
        if test "$enableaztecoo" != no ; then
-          AC_DEFINE(HAVE_AZTECOO, 1,
+          AC_DEFINE(TRILINOS_HAVE_AZTECOO, 1,
                     [Flag indicating whether the library shall be compiled to use the Trilinos AztecOO linear solver])
           AC_MSG_RESULT(<<< Configuring library with AztecOO support >>>)
        fi
@@ -62,7 +80,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                                                          [enablenox=no])])])
 
        if test "$enablenox" != no ; then
-          AC_DEFINE(HAVE_NOX, 1,
+          AC_DEFINE(TRILINOS_HAVE_NOX, 1,
                     [Flag indicating whether the library shall be compiled to use the Trilinos NOX nonlinear solver])
           AC_MSG_RESULT(<<< Configuring library with NOX support >>>)
        fi
@@ -95,7 +113,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                        ])
 
        if test "$enableml" != no ; then
-          AC_DEFINE(HAVE_ML, 1,
+          AC_DEFINE(TRILINOS_HAVE_ML, 1,
                     [Flag indicating whether the library shall be compiled to use the Trilinos ML package])
           AC_MSG_RESULT(<<< Configuring library with ML support >>>)
        fi
@@ -109,10 +127,14 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                                         [enabletpetra=yes],
                                         [AC_CHECK_HEADER([$withtrilinosdir/packages/tpetra/src/Tpetra_config.h],
                                                          [enabletpetra=yes],
-                                                         [enabletpetra=no])])])
+                                                         [AC_CHECK_HEADER([$withtrilinosdir/packages/tpetra/core/src/TpetraCore_config.h],
+                                                                          [enabletpetra=yes],
+                                                                          [AC_CHECK_HEADER([$withtrilinosdir/include/TpetraCore_config.h],
+                                                                                           [enabletpetra=yes],
+                                                                                           [enabletpetra=no])])])])])
 
        if test "$enabletpetra" != no ; then
-          AC_DEFINE(HAVE_TPETRA, 1,
+          AC_DEFINE(TRILINOS_HAVE_TPETRA, 1,
                     [Flag indicating whether the library shall be compiled to use the Trilinos TPetra package])
           AC_MSG_RESULT(<<< Configuring library with TPetra support >>>)
        fi
@@ -126,13 +148,49 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
                                         [enabledtk=yes],
                                         [AC_CHECK_HEADER([$withtrilinosdir/DataTransferKit/src/DataTransferKit_config.hpp],
                                                          [enabledtk=yes],
-                                                         [enabledtk=no])])])
+                                                         [AC_CHECK_HEADER([$withtrilinosdir/DataTransferKit/packages/Utils/src/DataTransferKitUtils_config.hpp],
+                                                                          [enabledtk=yes],
+                                                                          [AC_CHECK_HEADER([$withtrilinosdir/include/DataTransferKitUtils_config.hpp],
+                                                                                           [enabledtk=yes],
+                                                                                           [enabledtk=no])])])])])
 
        if test "$enabledtk" != no ; then
-          AC_DEFINE(HAVE_DTK, 1,
-                    [Flag indicating whether the library shall be compiled to use the Trilinos DTK nonlinear solver])
+          AC_DEFINE(TRILINOS_HAVE_DTK, 1,
+                    [Flag indicating whether the library shall be compiled to use the Trilinos DTK interfaces])
           AC_MSG_RESULT(<<< Configuring library with DTK support >>>)
        fi
+
+
+       dnl ------------------------------------------------------
+       dnl Ifpack - We are only going to look in one place for this,
+       dnl as I don't have access to lots of older versions of
+       dnl Trilinos to know where else it might be...
+       dnl ------------------------------------------------------
+       AC_CHECK_HEADER([$withtrilinosdir/include/Ifpack_config.h],
+                       [enableifpack=yes],
+                       [enableifpack=no])
+
+       if test "$enableifpack" != no ; then
+          AC_DEFINE(TRILINOS_HAVE_IFPACK, 1,
+                    [Flag indicating whether the library shall be compiled to use the Trilinos Ifpack interfaces])
+          AC_MSG_RESULT([<<< Configuring library with Trilinos Ifpack support >>>])
+       fi
+
+       dnl ------------------------------------------------------
+       dnl EpetraExt - We are only going to look in one place for this,
+       dnl as I don't have access to lots of older versions of
+       dnl Trilinos to know where else it might be...
+       dnl ------------------------------------------------------
+       AC_CHECK_HEADER([$withtrilinosdir/include/EpetraExt_config.h],
+                       [enableepetraext=yes],
+                       [enableepetraext=no])
+
+       if test "$enableepetraext" != no ; then
+          AC_DEFINE(TRILINOS_HAVE_EPETRAEXT, 1,
+                    [Flag indicating whether the library shall be compiled to use the Trilinos EpetraExt interfaces])
+          AC_MSG_RESULT([<<< Configuring library with Trilinos EpetraExt support >>>])
+       fi
+
     fi
   else
     enabletrilinos10=no
@@ -159,6 +217,13 @@ AC_DEFUN([CONFIGURE_TRILINOS_10],
     #echo TRILINOS_INCLUDES=$TRILINOS_INCLUDES
 
     rm -f Makefile_config_trilinos
+  fi
+
+  dnl Add an rpath for $withtrilinosdir/lib to the link line.  You don't
+  dnl need this if Trilinos is built with static libs or if you can rely
+  dnl on {DYLD,LD}_LIBRARY_PATH, but we don't want to assume either.
+  if (test "x$RPATHFLAG" != "x" -a -d ${withtrilinosdir}/lib); then
+    TRILINOS_LIBS="${RPATHFLAG}${withtrilinosdir}/lib $TRILINOS_LIBS"
   fi
 
   AC_SUBST(TRILINOS_LIBS)
@@ -195,7 +260,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
 
     if test "$enableaztecoo" != no ; then
        enableaztecoo=yes
-       AC_DEFINE(HAVE_AZTECOO, 1,
+       AC_DEFINE(TRILINOS_HAVE_AZTECOO, 1,
                  [Flag indicating whether the library shall be compiled to use the Trilinos solver collection])
        AC_DEFINE(HAVE_TRILINOS, 1,
                  [])
@@ -222,7 +287,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
 
     if test "$enablenox" != no ; then
        enablenox=yes
-       AC_DEFINE(HAVE_NOX, 1,
+       AC_DEFINE(TRILINOS_HAVE_NOX, 1,
                  [Flag indicating whether the library shall be compiled to use the Nox solver collection])
        AC_MSG_RESULT(<<< Configuring library with Nox support >>>)
     fi
@@ -249,7 +314,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
 
     if test "$enableml" != no ; then
        enableml=yes
-       AC_DEFINE(HAVE_ML, 1,
+       AC_DEFINE(TRILINOS_HAVE_ML, 1,
                  [Flag indicating whether the library shall be compiled to use the ML package])
        AC_MSG_RESULT(<<< Configuring library with ML support >>>)
     fi
@@ -274,7 +339,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
 
     if test "$enabletpetra" != no ; then
        enabletpetra=yes
-       AC_DEFINE(HAVE_TPETRA, 1,
+       AC_DEFINE(TRILINOS_HAVE_TPETRA, 1,
                  [Flag indicating whether the library shall be compiled to use the Tpetra solver collection])
        AC_MSG_RESULT(<<< Configuring library with Tpetra support >>>)
     fi
@@ -301,7 +366,7 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
 
     if test "$enabledtk" != no ; then
        enabledtk=yes
-       AC_DEFINE(HAVE_DTK, 1,
+       AC_DEFINE(TRILINOS_HAVE_DTK, 1,
                  [Flag indicating whether the library shall be compiled to use the DataTransferKit])
        AC_MSG_RESULT(<<< Configuring library with DTK support >>>)
     fi
@@ -309,6 +374,19 @@ AC_DEFUN([CONFIGURE_TRILINOS_9],
     enabledtk=no
   fi
 
+
+
+  dnl Ifpack - rather than try and guess how this would have worked in
+  dnl Trilinos 9, we're just going to assume we don't have it.  If
+  dnl anyone ever wants to go back and write a configure test with
+  dnl an older Trilinos, that would be great!
+  enableifpack=no
+
+  dnl EpetraEXT - rather than try and guess how this would have worked in
+  dnl Trilinos 9, we're just going to assume we don't have it.  If
+  dnl anyone ever wants to go back and write a configure test with
+  dnl an older Trilinos, that would be great!
+  enableepetraext=no
 
 
   AC_SUBST(AZTECOO_MAKEFILE_EXPORT)

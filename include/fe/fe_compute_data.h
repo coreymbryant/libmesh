@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -54,8 +54,8 @@ public:
    * Constructor.  Takes the required input data and clears
    * the output data using \p clear().
    */
-  FEComputeData (const EquationSystems& es,
-                 const Point& pin) :
+  FEComputeData (const EquationSystems & es,
+                 const Point & pin) :
     equation_systems(es),
     p(pin)
   {
@@ -69,11 +69,11 @@ public:
    * Const reference to the \p EquationSystems object
    * that contains simulation-specific data.
    */
-  const EquationSystems& equation_systems;
+  const EquationSystems & equation_systems;
   /**
    * Holds the point where the data are to be computed
    */
-  const Point& p;
+  const Point & p;
 
 
 

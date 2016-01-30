@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,6 @@
 #include "libmesh/libmesh_common.h"
 #include "libmesh/libmesh.h" // libMesh::invalid_uint
 #include "libmesh/topology_map.h"
-#include "libmesh/elem.h"
-#include "libmesh/point_locator_base.h"
 #include "libmesh/parallel_object.h"
 
 // C++ Includes   -----------------------------------
@@ -46,19 +44,16 @@ class Point;
 class Node;
 class ErrorVector;
 class PeriodicBoundaries;
-
-
+class Elem;
+class PointLocatorBase;
 
 /**
  * This is the \p MeshRefinement class.  This class implements
  * adaptive mesh refinement algorithms for a \p MeshBase.
  *
- * @author Benjamin S. Kirk, 2002-2007.
+ * \author Benjamin S. Kirk
+ * \date 2002-2007
  */
-
-
-// ------------------------------------------------------------
-// MeshRefinement class definition
 class MeshRefinement : public ParallelObject
 {
 public:
@@ -67,14 +62,14 @@ public:
    * Constructor.
    */
   explicit
-  MeshRefinement (MeshBase& mesh);
+  MeshRefinement (MeshBase & mesh);
 
 private:
   // Both the copy ctor and the assignment operator are
   // declared private but not implemented.  This is the
   // standard practice to prevent them from being used.
-  MeshRefinement (const MeshRefinement&);
-  MeshRefinement& operator=(const MeshRefinement&);
+  MeshRefinement (const MeshRefinement &);
+  MeshRefinement & operator=(const MeshRefinement &);
 
 public:
 
@@ -126,7 +121,7 @@ public:
    * future libMesh releases - to control these parameters,
    * set the corresponding member variables.
    */
-  void flag_elements_by_error_fraction (const ErrorVector& error_per_cell,
+  void flag_elements_by_error_fraction (const ErrorVector & error_per_cell,
                                         const Real refine_fraction  = 0.3,
                                         const Real coarsen_fraction = 0.0,
                                         const unsigned int max_level = libMesh::invalid_uint);
@@ -145,7 +140,7 @@ public:
    * The three fractions \p refine_fraction \p coarsen_fraction and
    * \p coarsen_threshold should be in \f$ [0,1] \f$.
    */
-  void flag_elements_by_error_tolerance (const ErrorVector& error_per_cell);
+  void flag_elements_by_error_tolerance (const ErrorVector & error_per_cell);
 
   /**
    * Flags elements for coarsening and refinement based on
@@ -160,7 +155,7 @@ public:
    * to produce a mesh with a narrow error distribution and the right
    * number of elements.
    */
-  bool flag_elements_by_nelem_target (const ErrorVector& error_per_cell);
+  bool flag_elements_by_nelem_target (const ErrorVector & error_per_cell);
 
   /**
    * Flags elements for coarsening and refinement based on
@@ -175,7 +170,7 @@ public:
    * future libMesh releases - to control these parameters,
    * set the corresponding member variables.
    */
-  void flag_elements_by_elem_fraction (const ErrorVector& error_per_cell,
+  void flag_elements_by_elem_fraction (const ErrorVector & error_per_cell,
                                        const Real refine_fraction  = 0.3,
                                        const Real coarsen_fraction = 0.0,
                                        const unsigned int max_level = libMesh::invalid_uint);
@@ -193,7 +188,7 @@ public:
    * future libMesh releases - to control these parameters,
    * set the corresponding member variables.
    */
-  void flag_elements_by_mean_stddev (const ErrorVector& error_per_cell,
+  void flag_elements_by_mean_stddev (const ErrorVector & error_per_cell,
                                      const Real refine_fraction  = 1.0,
                                      const Real coarsen_fraction = 0.0,
                                      const unsigned int max_level = libMesh::invalid_uint);
@@ -202,7 +197,7 @@ public:
    * Flag elements based on a function object.  The class \p ElementFlagging
    * defines a mechanism for implementing refinement strategies.
    */
-  void flag_elements_by (ElementFlagging &element_flagging);
+  void flag_elements_by (ElementFlagging & element_flagging);
 
   /**
    * Takes a mesh whose elements are flagged for h refinement and coarsening,
@@ -304,27 +299,27 @@ public:
    * if necessary.
    * The processor_id is assigned to any newly created node.
    */
-  Node* add_node (const Elem& parent,
-                  unsigned int child,
-                  unsigned int node,
-                  processor_id_type proc_id);
+  Node * add_node (const Elem & parent,
+                   unsigned int child,
+                   unsigned int node,
+                   processor_id_type proc_id);
 
   /**
    * Adds the element \p elem to the mesh.
    */
-  Elem* add_elem (Elem* elem);
+  Elem * add_elem (Elem * elem);
 
   /**
    * @returns a constant reference to the \p MeshBase object associated
    * with this object.
    */
-  const MeshBase& get_mesh () const { return _mesh; }
+  const MeshBase & get_mesh () const { return _mesh; }
 
   /**
    * @returns a writeable reference to the \p MeshBase object associated
    * with this object.
    */
-  MeshBase&       get_mesh ()       { return _mesh; }
+  MeshBase & get_mesh () { return _mesh; }
 
   /**
    * If \p coarsen_by_parents is true, complete groups of sibling elements
@@ -333,7 +328,7 @@ public:
    *
    * \p coarsen_by_parents is true by default.
    */
-  bool& coarsen_by_parents();
+  bool & coarsen_by_parents();
 
   /**
    * The \p refine_fraction sets either a desired target or a desired
@@ -342,7 +337,7 @@ public:
    *
    * \p refine_fraction must be in \f$ [0,1] \f$, and is 0.3 by default.
    */
-  Real& refine_fraction();
+  Real & refine_fraction();
 
   /**
    * The \p coarsen_fraction sets either a desired target or a desired
@@ -351,7 +346,7 @@ public:
    *
    * \p coarsen_fraction must be in \f$ [0,1] \f$, and is 0 by default.
    */
-  Real& coarsen_fraction();
+  Real & coarsen_fraction();
 
   /**
    * The \p max_h_level is the greatest refinement level an element should
@@ -359,7 +354,7 @@ public:
    *
    * \p max_h_level is unlimited (libMesh::invalid_uint) by default
    */
-  unsigned int& max_h_level();
+  unsigned int & max_h_level();
 
   /**
    * The \p coarsen_threshold provides hysteresis in AMR/C strategies.
@@ -369,7 +364,7 @@ public:
    *
    * \p coarsen_threshold must be in \f$ [0,1] \f$, and is 0.1 by default.
    */
-  Real& coarsen_threshold();
+  Real & coarsen_threshold();
 
   /**
    * If \p nelem_target is set to a nonzero value, methods like
@@ -378,7 +373,7 @@ public:
    *
    * \p nelem_target is 0 by default.
    */
-  dof_id_type& nelem_target();
+  dof_id_type & nelem_target();
 
   /**
    * If \p absolute_global_tolerance is set to a nonzero value, methods
@@ -389,7 +384,7 @@ public:
    *
    * \p absolute_global_tolerance is 0 by default.
    */
-  Real& absolute_global_tolerance();
+  Real & absolute_global_tolerance();
 
   /**
    * If \p face_level_mismatch_limit is set to a nonzero value, then
@@ -401,7 +396,7 @@ public:
    * \p face_level_mismatch_limit is 1 by default.  Currently the only
    * supported options are 0 and 1.
    */
-  unsigned char& face_level_mismatch_limit();
+  unsigned char & face_level_mismatch_limit();
 
   /**
    * If \p edge_level_mismatch_limit is set to a nonzero value, then
@@ -412,7 +407,7 @@ public:
    *
    * \p edge_level_mismatch_limit is 0 by default.
    */
-  unsigned char& edge_level_mismatch_limit();
+  unsigned char & edge_level_mismatch_limit();
 
   /**
    * If \p node_level_mismatch_limit is set to a nonzero value, then
@@ -423,7 +418,7 @@ public:
    *
    * \p node_level_mismatch_limit is 0 by default.
    */
-  unsigned char& node_level_mismatch_limit();
+  unsigned char & node_level_mismatch_limit();
 
   /**
    * If \p overrefined_boundary_limit is set to a nonnegative value,
@@ -442,7 +437,7 @@ public:
    * adaptive coarsening can only be done on an interior element if
    * any boundary elements on its sides are simultaneously coarsened.
    */
-  signed char& overrefined_boundary_limit();
+  signed char & overrefined_boundary_limit();
 
   /**
    * If \p underrefined_boundary_limit is set to a nonnegative value,
@@ -459,7 +454,7 @@ public:
    * any interior elements it is on the side of are simultaneously
    * coarsened.
    */
-  signed char& underrefined_boundary_limit();
+  signed char & underrefined_boundary_limit();
 
 
   /**
@@ -486,7 +481,7 @@ public:
    * Get/set the _enforce_mismatch_limit_prior_to_refinement flag.
    * The default value for this flag is false.
    */
-  bool& enforce_mismatch_limit_prior_to_refinement();
+  bool & enforce_mismatch_limit_prior_to_refinement();
 
 private:
 
@@ -606,14 +601,14 @@ private:
    * to prevent corresponding boundary element refinement mismatch
    * from exceeding the given limit.
    */
-  bool limit_overrefined_boundary (const unsigned int max_mismatch);
+  bool limit_overrefined_boundary (const signed char max_mismatch);
 
   /*
    * This algorithm flags boundary elements for refinement as needed
    * to prevent corresponding interior element refinement mismatch
    * from exceeding the given limit.
    */
-  bool limit_underrefined_boundary (const unsigned int max_mismatch);
+  bool limit_underrefined_boundary (const signed char max_mismatch);
 
   /**
    * This algorithm selects an element for refinement
@@ -677,10 +672,10 @@ private:
    * error_per_parent[parent_id] stores this error if parent_id corresponds
    * to a coarsenable parent, and stores -1 otherwise.
    */
-  void create_parent_error_vector (const ErrorVector& error_per_cell,
-                                   ErrorVector& error_per_parent,
-                                   Real &parent_error_min,
-                                   Real &parent_error_max);
+  void create_parent_error_vector (const ErrorVector & error_per_cell,
+                                   ErrorVector & error_per_parent,
+                                   Real & parent_error_min,
+                                   Real & parent_error_max);
 
   /**
    * Updates the \p _new_nodes_map
@@ -703,17 +698,17 @@ private:
    * Local dispatch function for getting the correct topological
    * neighbor from the Elem class
    */
-  Elem* topological_neighbor (Elem* elem,
-                              const PointLocatorBase* point_locator,
-                              const unsigned int side);
+  Elem * topological_neighbor (Elem * elem,
+                               const PointLocatorBase * point_locator,
+                               const unsigned int side);
 
   /**
    * Local dispatch function for checking the correct has_neighbor
    * function from the Elem class
    */
-  bool has_topological_neighbor (Elem* elem,
-                                 const PointLocatorBase* point_locator,
-                                 Elem* neighbor);
+  bool has_topological_neighbor (Elem * elem,
+                                 const PointLocatorBase * point_locator,
+                                 Elem * neighbor);
 
   /**
    * Data structure that holds the new nodes information.
@@ -723,7 +718,7 @@ private:
   /**
    * Reference to the mesh.
    */
-  MeshBase& _mesh;
+  MeshBase & _mesh;
 
   /**
    * For backwards compatibility, we initialize this
@@ -750,11 +745,12 @@ private:
 
   Real _absolute_global_tolerance;
 
-  unsigned char _face_level_mismatch_limit, _edge_level_mismatch_limit,
-    _node_level_mismatch_limit;
+  unsigned char _face_level_mismatch_limit;
+  unsigned char _edge_level_mismatch_limit;
+  unsigned char _node_level_mismatch_limit;
 
-  signed char _overrefined_boundary_limit,
-              _underrefined_boundary_limit;
+  signed char _overrefined_boundary_limit;
+  signed char _underrefined_boundary_limit;
 
   /**
    * This option enforces the mismatch level prior to refinement by checking
@@ -835,7 +831,7 @@ private:
    * elem to change, false otherwise.
    */
   enum NeighborType {POINT, EDGE};
-  bool enforce_mismatch_limit_prior_to_refinement(Elem* elem,
+  bool enforce_mismatch_limit_prior_to_refinement(Elem * elem,
                                                   NeighborType nt,
                                                   unsigned max_mismatch);
 
@@ -849,69 +845,69 @@ private:
 // ------------------------------------------------------------
 // MeshRefinement class inline members
 
-inline bool& MeshRefinement::coarsen_by_parents()
+inline bool & MeshRefinement::coarsen_by_parents()
 {
   _use_member_parameters = true;
   return _coarsen_by_parents;
 }
 
-inline Real& MeshRefinement::refine_fraction()
+inline Real & MeshRefinement::refine_fraction()
 {
   _use_member_parameters = true;
   return _refine_fraction;
 }
 
-inline Real& MeshRefinement::coarsen_fraction()
+inline Real & MeshRefinement::coarsen_fraction()
 {
   _use_member_parameters = true;
   return _coarsen_fraction;
 }
 
-inline unsigned int& MeshRefinement::max_h_level()
+inline unsigned int & MeshRefinement::max_h_level()
 {
   _use_member_parameters = true;
   return _max_h_level;
 }
 
-inline Real& MeshRefinement::coarsen_threshold()
+inline Real & MeshRefinement::coarsen_threshold()
 {
   _use_member_parameters = true;
   return _coarsen_threshold;
 }
 
-inline dof_id_type& MeshRefinement::nelem_target()
+inline dof_id_type & MeshRefinement::nelem_target()
 {
   _use_member_parameters = true;
   return _nelem_target;
 }
 
-inline Real& MeshRefinement::absolute_global_tolerance()
+inline Real & MeshRefinement::absolute_global_tolerance()
 {
   _use_member_parameters = true;
   return _absolute_global_tolerance;
 }
 
-inline unsigned char& MeshRefinement::face_level_mismatch_limit()
+inline unsigned char & MeshRefinement::face_level_mismatch_limit()
 {
   return _face_level_mismatch_limit;
 }
 
-inline unsigned char& MeshRefinement::edge_level_mismatch_limit()
+inline unsigned char & MeshRefinement::edge_level_mismatch_limit()
 {
   return _edge_level_mismatch_limit;
 }
 
-inline unsigned char& MeshRefinement::node_level_mismatch_limit()
+inline unsigned char & MeshRefinement::node_level_mismatch_limit()
 {
   return _node_level_mismatch_limit;
 }
 
-inline signed char& MeshRefinement::overrefined_boundary_limit()
+inline signed char & MeshRefinement::overrefined_boundary_limit()
 {
   return _overrefined_boundary_limit;
 }
 
-inline signed char& MeshRefinement::underrefined_boundary_limit()
+inline signed char & MeshRefinement::underrefined_boundary_limit()
 {
   return _underrefined_boundary_limit;
 }
@@ -928,7 +924,7 @@ inline void MeshRefinement::set_enforce_mismatch_limit_prior_to_refinement(bool 
   enforce_mismatch_limit_prior_to_refinement() = enforce;
 }
 
-inline bool& MeshRefinement::enforce_mismatch_limit_prior_to_refinement()
+inline bool & MeshRefinement::enforce_mismatch_limit_prior_to_refinement()
 {
   return _enforce_mismatch_limit_prior_to_refinement;
 }

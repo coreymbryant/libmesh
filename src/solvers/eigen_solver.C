@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,7 @@
 // Local Includes
 #include "libmesh/eigen_solver.h"
 #include "libmesh/slepc_eigen_solver.h"
+#include "libmesh/solver_configuration.h"
 
 namespace libMesh
 {
@@ -33,7 +34,7 @@ namespace libMesh
 // EigenSolver members
 template <typename T>
 UniquePtr<EigenSolver<T> >
-EigenSolver<T>::build(const Parallel::Communicator &comm,
+EigenSolver<T>::build(const Parallel::Communicator & comm,
                       const SolverPackage solver_package)
 {
   // Build the appropriate solver
@@ -52,6 +53,12 @@ EigenSolver<T>::build(const Parallel::Communicator &comm,
   return UniquePtr<EigenSolver<T> >();
 }
 
+
+template <typename T>
+void EigenSolver<T>::set_solver_configuration(SolverConfiguration & solver_configuration)
+{
+  _solver_configuration = &solver_configuration;
+}
 
 
 //------------------------------------------------------------------

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,26 +28,10 @@
 namespace libMesh
 {
 
-#if !defined(LIBMESH_HAVE_TBB_API) && defined(LIBMESH_HAVE_PTHREAD)
-std::map<pthread_t, unsigned int> Threads::_pthread_unique_ids;
-Threads::spin_mutex Threads::_pthread_unique_id_mutex;
-
-unsigned int Threads::pthread_unique_id()
-{
-#if LIBMESH_HAVE_OPENMP
-  return omp_get_thread_num();
-#else
-  spin_mutex::scoped_lock lock(_pthread_unique_id_mutex);
-  return _pthread_unique_ids[pthread_self()];
-#endif
-}
-#endif
-
 //-------------------------------------------------------------------------
 // Threads:: object instantiation
 Threads::spin_mutex Threads::spin_mtx;
 Threads::recursive_mutex Threads::recursive_mtx;
 bool Threads::in_threads = false;
-
 
 } // namespace libMesh

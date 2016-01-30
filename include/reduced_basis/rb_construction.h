@@ -22,14 +22,12 @@
 
 // rbOOmit includes
 #include "libmesh/rb_construction_base.h"
-#include "libmesh/rb_evaluation.h"
 
 // libMesh includes
 #include "libmesh/linear_implicit_system.h"
 #include "libmesh/dense_vector.h"
 #include "libmesh/dense_matrix.h"
 #include "libmesh/dg_fem_context.h"
-#include "libmesh/elem_assembly.h"
 #include "libmesh/dirichlet_boundaries.h"
 
 // C++ includes
@@ -39,6 +37,8 @@ namespace libMesh
 
 class RBThetaExpansion;
 class RBAssemblyExpansion;
+class RBEvaluation;
+class ElemAssembly;
 
 /**
  * This class is part of the rbOOmit framework.
@@ -47,13 +47,9 @@ class RBAssemblyExpansion;
  * of the certified reduced basis method for
  * steady-state elliptic parametrized PDEs.
  *
- * @author David J. Knezevic, 2009
+ * \author David J. Knezevic
+ * \date 2009
  */
-
-
-// ------------------------------------------------------------
-// RBConstruction class definition
-
 class RBConstruction : public RBConstructionBase<LinearImplicitSystem>
 {
 public:
@@ -62,8 +58,8 @@ public:
    * Constructor.  Optionally initializes required
    * data structures.
    */
-  RBConstruction (EquationSystems& es,
-                  const std::string& name,
+  RBConstruction (EquationSystems & es,
+                  const std::string & name,
                   const unsigned int number);
 
   /**
@@ -80,19 +76,19 @@ public:
    * Assembles & solves the linear system A*x=b for the specified
    * matrix \p input_matrix and right-hand side \p rhs.
    */
-  virtual void solve_for_matrix_and_rhs (LinearSolver<Number>& input_solver,
-                                         SparseMatrix<Number>& input_matrix,
-                                         NumericVector<Number>& input_rhs);
+  virtual void solve_for_matrix_and_rhs (LinearSolver<Number> & input_solver,
+                                         SparseMatrix<Number> & input_matrix,
+                                         NumericVector<Number> & input_rhs);
 
   /**
    * Set the RBEvaluation object.
    */
-  void set_rb_evaluation(RBEvaluation& rb_eval_in);
+  void set_rb_evaluation(RBEvaluation & rb_eval_in);
 
   /**
    * Get a reference to the RBEvaluation object.
    */
-  RBEvaluation& get_rb_evaluation();
+  RBEvaluation & get_rb_evaluation();
 
   /**
    * @return true if rb_eval is initialized. False, otherwise.
@@ -103,17 +99,17 @@ public:
    * Get a reference to the RBThetaExpansion object that
    * that belongs to rb_eval.
    */
-  RBThetaExpansion& get_rb_theta_expansion();
+  RBThetaExpansion & get_rb_theta_expansion();
 
   /**
    * Set the rb_assembly_expansion object.
    */
-  void set_rb_assembly_expansion(RBAssemblyExpansion& rb_assembly_expansion_in);
+  void set_rb_assembly_expansion(RBAssemblyExpansion & rb_assembly_expansion_in);
 
   /**
    * @return a reference to the rb_assembly_expansion object
    */
-  RBAssemblyExpansion& get_rb_assembly_expansion();
+  RBAssemblyExpansion & get_rb_assembly_expansion();
 
   /**
    * @returns a clever pointer to the system.
@@ -129,12 +125,12 @@ public:
    * Clear all the data structures associated with
    * the system.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * @returns a string indicating the type of the system.
    */
-  virtual std::string system_type () const;
+  virtual std::string system_type () const libmesh_override;
 
   /**
    * Perform a "truth" solve, i.e. solve the finite element system at
@@ -173,7 +169,7 @@ public:
    * Return the parameters chosen during the i^th step of
    * the Greedy algorithm.
    */
-  const RBParameters& get_greedy_parameter(unsigned int i);
+  const RBParameters & get_greedy_parameter(unsigned int i);
 
   /**
    * Get/set the tolerance for the basis training.
@@ -221,27 +217,17 @@ public:
    * us to do error checking (e.g. inner_product_matrix is not
    * defined in low-memory mode).
    */
-  SparseMatrix<Number>* get_inner_product_matrix();
-
-  /**
-   * Get a pointer to non_dirichlet_inner_product_matrix.
-   * Accessing via this function, rather than directly through
-   * the class member allows us to do error checking (e.g.
-   * non_dirichlet_inner_product_matrix is not
-   * defined in low-memory mode, and we need
-   * store_non_dirichlet_operators==true).
-   */
-  SparseMatrix<Number>* get_non_dirichlet_inner_product_matrix();
+  SparseMatrix<Number> * get_inner_product_matrix();
 
   /**
    * Get a pointer to Aq.
    */
-  SparseMatrix<Number>* get_Aq(unsigned int q);
+  SparseMatrix<Number> * get_Aq(unsigned int q);
 
   /**
    * Get a pointer to non_dirichlet_Aq.
    */
-  SparseMatrix<Number>* get_non_dirichlet_Aq(unsigned int q);
+  SparseMatrix<Number> * get_non_dirichlet_Aq(unsigned int q);
 
   /**
    * Allocate all the data structures necessary for the construction
@@ -258,37 +244,37 @@ public:
   /**
    * Get a pointer to Fq.
    */
-  NumericVector<Number>* get_Fq(unsigned int q);
+  NumericVector<Number> * get_Fq(unsigned int q);
 
   /**
    * Get a pointer to non-Dirichlet Fq.
    */
-  NumericVector<Number>* get_non_dirichlet_Fq(unsigned int q);
+  NumericVector<Number> * get_non_dirichlet_Fq(unsigned int q);
 
   /**
    * Get a pointer to the n^th output.
    */
-  NumericVector<Number>* get_output_vector(unsigned int n, unsigned int q_l);
+  NumericVector<Number> * get_output_vector(unsigned int n, unsigned int q_l);
 
   /**
    * Get a pointer to non-Dirichlet output vector.
    */
-  NumericVector<Number>* get_non_dirichlet_output_vector(unsigned int n, unsigned int q_l);
+  NumericVector<Number> * get_non_dirichlet_output_vector(unsigned int n, unsigned int q_l);
 
   /**
    * Get a map that stores pointers to all of the matrices.
    */
-  virtual void get_all_matrices(std::map<std::string, SparseMatrix<Number>*>& all_matrices);
+  virtual void get_all_matrices(std::map<std::string, SparseMatrix<Number> *> & all_matrices);
 
   /**
    * Get a map that stores pointers to all of the vectors.
    */
-  virtual void get_all_vectors(std::map<std::string, NumericVector<Number>*>& all_vectors);
+  virtual void get_all_vectors(std::map<std::string, NumericVector<Number> *> & all_vectors);
 
   /**
    * Get a map that stores pointers to all of the vectors.
    */
-  virtual void get_output_vectors(std::map<std::string, NumericVector<Number>*>& all_vectors);
+  virtual void get_output_vectors(std::map<std::string, NumericVector<Number> *> & all_vectors);
 
   /**
    * Assemble the matrices and vectors for this system.
@@ -301,24 +287,24 @@ public:
   /**
    * Assemble the inner product matrix and store it in input_matrix.
    */
-  void assemble_inner_product_matrix(SparseMatrix<Number>* input_matrix, bool apply_dof_constraints=true);
+  void assemble_inner_product_matrix(SparseMatrix<Number> * input_matrix, bool apply_dof_constraints=true);
 
   /**
    * Assemble the q^th affine matrix and store it in input_matrix.
    */
-  void assemble_Aq_matrix(unsigned int q, SparseMatrix<Number>* input_matrix, bool apply_dof_constraints=true);
+  void assemble_Aq_matrix(unsigned int q, SparseMatrix<Number> * input_matrix, bool apply_dof_constraints=true);
 
   /**
    * Assemble the q^th affine vector and store it in input_matrix.
    */
-  void assemble_Fq_vector(unsigned int q, NumericVector<Number>* input_vector, bool apply_dof_constraints=true);
+  void assemble_Fq_vector(unsigned int q, NumericVector<Number> * input_vector, bool apply_dof_constraints=true);
 
   /**
    * Add the scaled q^th affine matrix to input_matrix. If symmetrize==true, then
    * we symmetrize Aq before adding it.
    */
   void add_scaled_Aq(Number scalar, unsigned int q_a,
-                     SparseMatrix<Number>* input_matrix,
+                     SparseMatrix<Number> * input_matrix,
                      bool symmetrize);
 
   /**
@@ -326,7 +312,7 @@ public:
    * \p residual_representors_dir specifies which directory to write to.
    * \p write_binary_residual_representors specifies whether we write binary or ASCII data.
    */
-  virtual void write_riesz_representors_to_files(const std::string& riesz_representors_dir,
+  virtual void write_riesz_representors_to_files(const std::string & riesz_representors_dir,
                                                  const bool write_binary_residual_representors);
 
   /**
@@ -335,7 +321,7 @@ public:
    * \p io_flag specifies whether we read in all data, or only
    * a basis (in)dependent subset.
    */
-  virtual void read_riesz_representors_from_files(const std::string& riesz_representors_dir,
+  virtual void read_riesz_representors_from_files(const std::string & riesz_representors_dir,
                                                   const bool write_binary_residual_representors);
 
 
@@ -352,14 +338,13 @@ public:
    * Read in from the file specified by \p parameters_filename
    * and set the this system's member variables accordingly.
    */
-  virtual void process_parameters_file(const std::string& parameters_filename);
+  virtual void process_parameters_file(const std::string & parameters_filename);
 
   /**
    * Set the state of this RBConstruction object based on the arguments
    * to this function.
    */
-  void set_rb_construction_parameters(
-                                      unsigned int n_training_samples_in,
+  void set_rb_construction_parameters(unsigned int n_training_samples_in,
                                       bool deterministic_training_in,
                                       bool use_relative_bound_in_greedy_in,
                                       unsigned int training_parameters_random_seed_in,
@@ -395,18 +380,18 @@ public:
   /**
    * Set the rb_assembly_expansion object.
    */
-  void set_inner_product_assembly(ElemAssembly& inner_product_assembly_in);
+  void set_inner_product_assembly(ElemAssembly & inner_product_assembly_in);
 
   /**
    * @return a reference to the inner product assembly object
    */
-  ElemAssembly& get_inner_product_assembly();
+  ElemAssembly & get_inner_product_assembly();
 
   /**
    * It is sometimes useful to be able to zero vector entries
    * that correspond to constrained dofs.
    */
-  void zero_constrained_dofs_on_vector(NumericVector<Number>& vector);
+  void zero_constrained_dofs_on_vector(NumericVector<Number> & vector);
 
   /**
    * It's helpful to be able to generate a DirichletBoundary that stores a ZeroFunction in order
@@ -444,18 +429,12 @@ public:
    * else. For example, if a solver is already primed elsewhere
    * then it can be more efficient to use that solver.
    */
-  LinearSolver<Number>* extra_linear_solver;
+  LinearSolver<Number> * extra_linear_solver;
 
   /**
    * The inner product matrix.
    */
   UniquePtr< SparseMatrix<Number> > inner_product_matrix;
-
-  /**
-   * The inner product matrix without Dirichlet conditions enforced.
-   * (This is only computed if store_non_dirichlet_operators == true.)
-   */
-  UniquePtr< SparseMatrix<Number> > non_dirichlet_inner_product_matrix;
 
   /**
    * Vector storing the truth output values from the most
@@ -475,7 +454,7 @@ public:
    * These are basis independent and hence stored here, whereas
    * the Aq_representors are stored in RBEvaluation
    */
-  std::vector< NumericVector<Number>* > Fq_representor;
+  std::vector< NumericVector<Number> * > Fq_representor;
 
   /**
    * Vectors storing the residual representor inner products
@@ -563,7 +542,7 @@ protected:
    * norm solves. By default we use the inner product matrix
    * for steady state problems.
    */
-  virtual SparseMatrix<Number>& get_matrix_for_output_dual_solves();
+  virtual SparseMatrix<Number> & get_matrix_for_output_dual_solves();
 
   /**
    * Function that indicates when to terminate the Greedy
@@ -585,9 +564,9 @@ protected:
    * of the matrix, 0.5*(A + A^T)
    */
   void add_scaled_matrix_and_vector(Number scalar,
-                                    ElemAssembly* elem_assembly,
-                                    SparseMatrix<Number>* input_matrix,
-                                    NumericVector<Number>* input_vector,
+                                    ElemAssembly * elem_assembly,
+                                    SparseMatrix<Number> * input_matrix,
+                                    NumericVector<Number> * input_vector,
                                     bool symmetrize=false,
                                     bool apply_dof_constraints=true);
 
@@ -596,7 +575,7 @@ protected:
    * from FEMContext during assembly. Override in subclasses if
    * different behavior is required.
    */
-  virtual void set_context_solution_vec(NumericVector<Number>& vec);
+  virtual void set_context_solution_vec(NumericVector<Number> & vec);
 
   /**
    * Assemble and store all the inner-product
@@ -679,7 +658,7 @@ protected:
    * Reimplement this in derived classes in order to
    * call FE::get_*() as the particular physics requires.
    */
-  virtual void init_context(FEMContext& ) {}
+  virtual void init_context(FEMContext &) {}
 
   /**
    * Getter for the flag determining if convergence should be
@@ -691,7 +670,7 @@ protected:
    * Check if the linear solver reports convergence.
    * Throw an error when that is not the case.
    */
-  void check_convergence(LinearSolver<Number>& input_solver);
+  void check_convergence(LinearSolver<Number> & input_solver);
 
   //----------- PROTECTED DATA MEMBERS -----------//
 
@@ -735,44 +714,44 @@ private:
    * perform the Evaluation stage of the reduced basis
    * method.
    */
-  RBEvaluation* rb_eval;
+  RBEvaluation * rb_eval;
 
   /**
    * This member holds the (parameter independent) assembly functors
    * that define the "affine expansion" of the PDE that we are solving.
    */
-  RBAssemblyExpansion* rb_assembly_expansion;
+  RBAssemblyExpansion * rb_assembly_expansion;
 
   /**
    * Pointer to inner product assembly.
    */
-  ElemAssembly* inner_product_assembly;
+  ElemAssembly * inner_product_assembly;
 
   /**
    * Vector storing the Q_a matrices from the affine expansion
    */
-  std::vector< SparseMatrix<Number>* > Aq_vector;
+  std::vector< SparseMatrix<Number> * > Aq_vector;
 
   /**
    * Vector storing the Q_f vectors in the affine decomposition
    * of the right-hand side.
    */
-  std::vector< NumericVector<Number>* > Fq_vector;
+  std::vector< NumericVector<Number> * > Fq_vector;
 
   /**
    * The libMesh vectors that define the output functionals.
    * Each row corresponds to the affine expansion of an output.
    */
-  std::vector< std::vector< NumericVector<Number>* > > outputs_vector;
+  std::vector< std::vector< NumericVector<Number> * > > outputs_vector;
 
   /**
    * We may also need a second set of matrices/vectors
    * that do not have the Dirichlet boundary conditions
    * enforced.
    */
-  std::vector< SparseMatrix<Number>* > non_dirichlet_Aq_vector;
-  std::vector< NumericVector<Number>* > non_dirichlet_Fq_vector;
-  std::vector< std::vector< NumericVector<Number>* > > non_dirichlet_outputs_vector;
+  std::vector< SparseMatrix<Number> * > non_dirichlet_Aq_vector;
+  std::vector< NumericVector<Number> * > non_dirichlet_Fq_vector;
+  std::vector< std::vector< NumericVector<Number> * > > non_dirichlet_outputs_vector;
 
   /**
    * Tolerance for training reduced basis using the Greedy scheme.

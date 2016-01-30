@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,11 @@
 #include "libmesh/mesh.h"
 #include "libmesh/numeric_vector.h"
 #include "libmesh/id_types.h"
+#include "libmesh/elem.h"
 
 unsigned char dim = 2; // This gets overridden by most mesh formats
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   using namespace libMesh;
 
@@ -70,14 +71,14 @@ int main(int argc, char** argv)
 
   for (int argi = 4; argi < argc; argi += 2)
     {
-      const char* sysname = argv[argi];
-      const char* varname = argv[argi+1];
+      const char * sysname = argv[argi];
+      const char * varname = argv[argi+1];
 
       const unsigned int pairnum = (argi-4)/2;
 
       libmesh_assert(es1.has_system(sysname));
 
-      const System &old_sys = es1.get_system(sysname);
+      const System & old_sys = es1.get_system(sysname);
       old_system[pairnum] = &old_sys;
       old_sys_num[pairnum] = old_sys.number();
 
@@ -85,11 +86,11 @@ int main(int argc, char** argv)
 
       old_var_num[pairnum] = old_sys.variable_number(varname);
 
-      const Variable &variable = old_sys.variable(old_var_num[pairnum]);
+      const Variable & variable = old_sys.variable(old_var_num[pairnum]);
 
       std::string systype = old_sys.system_type();
 
-      System &new_sys = es2.add_system(systype, sysname);
+      System & new_sys = es2.add_system(systype, sysname);
       new_system[pairnum] = &new_sys;
       new_sys_num[pairnum] = new_sys.number();
 
@@ -111,8 +112,8 @@ int main(int argc, char** argv)
 
   for (; old_nit != old_nit_end; ++old_nit, ++new_nit)
     {
-      const Node* old_node = *old_nit;
-      const Node* new_node = *new_nit;
+      const Node * old_node = *old_nit;
+      const Node * new_node = *new_nit;
 
       // Mesh::operator= hopefully preserved elem/node orderings...
       libmesh_assert (*old_node == *new_node);
@@ -121,8 +122,8 @@ int main(int argc, char** argv)
         {
           const unsigned int pairnum = (argi-4)/2;
 
-          const System &old_sys = *old_system[pairnum];
-          System &new_sys = *new_system[pairnum];
+          const System & old_sys = *old_system[pairnum];
+          System & new_sys = *new_system[pairnum];
 
           const unsigned int n_comp =
             old_node->n_comp(old_sys_num[pairnum],old_var_num[pairnum]);
@@ -150,8 +151,8 @@ int main(int argc, char** argv)
 
   for (; old_eit != old_eit_end; ++old_eit, ++new_eit)
     {
-      const Elem* old_elem = *old_eit;
-      const Elem* new_elem = *new_eit;
+      const Elem * old_elem = *old_eit;
+      const Elem * new_elem = *new_eit;
 
       // Mesh::operator= hopefully preserved elem/node orderings...
       libmesh_assert (*old_elem == *new_elem);
@@ -160,8 +161,8 @@ int main(int argc, char** argv)
         {
           const unsigned int pairnum = (argi-4)/2;
 
-          const System &old_sys = *old_system[pairnum];
-          System &new_sys = *new_system[pairnum];
+          const System & old_sys = *old_system[pairnum];
+          System & new_sys = *new_system[pairnum];
 
           const unsigned int n_comp =
             old_elem->n_comp(old_sys_num[pairnum],old_var_num[pairnum]);

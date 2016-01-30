@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,15 +28,13 @@
 namespace libMesh
 {
 
-
-// ------------------------------------------------------------
-// QTrap class definition
-
-
 /**
- * This class implemenets trapezoidal quadratue.  Sometimes
- * also known as Newton-Cotes quadrature with two points.  These rules
- * sample at the corners and will integrate linears exactly.
+ * This class implemenets trapezoidal quadratue.  Sometimes also known
+ * as Newton-Cotes quadrature with two points.  These rules sample at
+ * the corners and will integrate linears exactly.
+ *
+ * \author Benjamin Kirk
+ * \date 2003
  */
 class QTrap : public QBase
 {
@@ -47,7 +45,17 @@ public:
    */
   explicit
   QTrap (const unsigned int _dim,
-         const Order o=FIRST);
+         const Order o=FIRST) :
+    QBase(_dim,o)
+  {
+    // explicitly call the init function in 1D since the
+    // other tensor-product rules require this one.
+    // note that EDGE will not be used internally, however
+    // if we called the function with INVALID_ELEM it would try to
+    // be smart and return, thinking it had already done the work.
+    if (_dim == 1)
+      init(EDGE2);
+  }
 
   /**
    * Destructor. Empty.
@@ -57,37 +65,18 @@ public:
   /**
    * @returns \p QTRAP
    */
-  QuadratureType type() const { return QTRAP; }
+  virtual QuadratureType type() const libmesh_override { return QTRAP; }
 
 private:
 
-  void init_1D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-  void init_2D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-  void init_3D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-
+  virtual void init_1D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
+  virtual void init_2D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
+  virtual void init_3D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 };
 
-// ------------------------------------------------------------
-// QTrap class members
-inline
-QTrap::QTrap(const unsigned int d,
-             const Order) : QBase(d,FIRST)
-{
-  // explicitly call the init function in 1D since the
-  // other tensor-product rules require this one.
-  // note that EDGE will not be used internally, however
-  // if we called the function with INVALID_ELEM it would try to
-  // be smart and return, thinking it had already done the work.
-  if (_dim == 1)
-    init(EDGE2);
-}
-
-
 } // namespace libMesh
-
-
 
 #endif // LIBMESH_QUADRATURE_TRAP_H

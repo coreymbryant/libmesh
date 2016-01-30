@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -129,7 +129,7 @@ public:
   /**
    * Tests equality
    */
-  bool operator== (const FEType &f2) const
+  bool operator== (const FEType & f2) const
   {
     return (order == f2.order
             && family == f2.family
@@ -144,7 +144,7 @@ public:
   /**
    * Tests inequality
    */
-  bool operator!= (const FEType &f2) const
+  bool operator!= (const FEType & f2) const
   {
     return !(*this == f2);
   }
@@ -152,7 +152,7 @@ public:
   /**
    * An ordering to make FEType useful as a std::map key
    */
-  bool operator< (const FEType &f2) const
+  bool operator< (const FEType & f2) const
   {
     if (order != f2.order)
       return (order < f2.order);

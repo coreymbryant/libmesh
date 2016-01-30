@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 
 #include "libmesh/libmesh_common.h"
 
-#ifdef LIBMESH_HAVE_NOX
+#ifdef LIBMESH_TRILINOS_HAVE_NOX
 
 
 // C++ includes
@@ -61,40 +61,56 @@ public:
   ~Problem_Interface();
 
   //! Compute and return F
-  bool computeF(const Epetra_Vector& x, Epetra_Vector& FVec,
+  bool computeF(const Epetra_Vector & x,
+                Epetra_Vector & FVec,
                 NOX::Epetra::Interface::Required::FillType fillType);
 
   //! Compute an explicit Jacobian
-  bool computeJacobian(const Epetra_Vector& x, Epetra_Operator& Jac);
+  bool computeJacobian(const Epetra_Vector & x,
+                       Epetra_Operator & Jac);
 
-  //! Compute the Epetra_RowMatrix M, that will be used by the Aztec preconditioner instead of the Jacobian.  This is used when there is no explicit Jacobian present (i.e. Matrix-Free Newton-Krylov).  This MUST BE an Epetra_RowMatrix since the Aztec preconditioners need to know the sparsity pattern of the matrix.  Returns true if computation was successful.
-  bool computePrecMatrix(const Epetra_Vector& x, Epetra_RowMatrix& M);
+  //! Compute the Epetra_RowMatrix M, that will be used by the Aztec
+  //! preconditioner instead of the Jacobian.  This is used when there
+  //! is no explicit Jacobian present (i.e. Matrix-Free
+  //! Newton-Krylov).  This MUST BE an Epetra_RowMatrix since the
+  //! Aztec preconditioners need to know the sparsity pattern of the
+  //! matrix.  Returns true if computation was successful.
+  bool computePrecMatrix(const Epetra_Vector & x,
+                         Epetra_RowMatrix & M);
 
-  //! Computes a user supplied preconditioner based on input vector x.  Returns true if computation was successful.
-  bool computePreconditioner(const Epetra_Vector& x, Epetra_Operator& Prec,
-                             Teuchos::ParameterList* p);
+  //! Computes a user supplied preconditioner based on input vector x.
+  //! Returns true if computation was successful.
+  bool computePreconditioner(const Epetra_Vector & x,
+                             Epetra_Operator & Prec,
+                             Teuchos::ParameterList * p);
 
   NoxNonlinearSolver<Number> * _solver;
 };
 
-//-----------------------------------------------------------------------------
+
+
 Problem_Interface::Problem_Interface(NoxNonlinearSolver<Number> * solver) :
   _solver(solver)
-{ }
+{}
+
+
 
 Problem_Interface::~Problem_Interface()
-{ }
+{}
 
-bool Problem_Interface::computeF(const Epetra_Vector& x, Epetra_Vector& r,
+
+
+bool Problem_Interface::computeF(const Epetra_Vector & x,
+                                 Epetra_Vector & r,
                                  NOX::Epetra::Interface::Required::FillType /*fillType*/)
 {
   START_LOG("residual()", "TrilinosNoxNonlinearSolver");
 
-  NonlinearImplicitSystem &sys = _solver->system();
+  NonlinearImplicitSystem & sys = _solver->system();
 
   EpetraVector<Number> X_global(*const_cast<Epetra_Vector *>(&x), sys.comm()), R(r, sys.comm());
-  EpetraVector<Number>& X_sys = *cast_ptr<EpetraVector<Number>*>(sys.solution.get());
-  EpetraVector<Number>& R_sys = *cast_ptr<EpetraVector<Number>*>(sys.rhs);
+  EpetraVector<Number> & X_sys = *cast_ptr<EpetraVector<Number> *>(sys.solution.get());
+  EpetraVector<Number> & R_sys = *cast_ptr<EpetraVector<Number> *>(sys.rhs);
 
   // Use the systems update() to get a good local version of the parallel solution
   X_global.swap(X_sys);
@@ -119,11 +135,20 @@ bool Problem_Interface::computeF(const Epetra_Vector& x, Epetra_Vector& r,
   if (_solver->matvec && _solver->residual_and_jacobian_object)
     libmesh_error_msg("ERROR: cannot specifiy both a function and object to compute the combined Residual & Jacobian!");
 
-  if      (_solver->residual != NULL)                     _solver->residual                                            (*sys.current_local_solution.get(), R, sys);
-  else if (_solver->residual_object != NULL)              _solver->residual_object->residual                           (*sys.current_local_solution.get(), R, sys);
-  else if (_solver->matvec   != NULL)                     _solver->matvec                                              (*sys.current_local_solution.get(), &R, NULL, sys);
-  else if (_solver->residual_and_jacobian_object != NULL) _solver->residual_and_jacobian_object->residual_and_jacobian (*sys.current_local_solution.get(), &R, NULL, sys);
-  else return false;
+  if (_solver->residual != libmesh_nullptr)
+    _solver->residual(*sys.current_local_solution.get(), R, sys);
+
+  else if (_solver->residual_object != libmesh_nullptr)
+    _solver->residual_object->residual(*sys.current_local_solution.get(), R, sys);
+
+  else if (_solver->matvec != libmesh_nullptr)
+    _solver->matvec(*sys.current_local_solution.get(), &R, libmesh_nullptr, sys);
+
+  else if (_solver->residual_and_jacobian_object != libmesh_nullptr)
+    _solver->residual_and_jacobian_object->residual_and_jacobian (*sys.current_local_solution.get(), &R, libmesh_nullptr, sys);
+
+  else
+    return false;
 
   R.close();
   X_global.close();
@@ -133,15 +158,17 @@ bool Problem_Interface::computeF(const Epetra_Vector& x, Epetra_Vector& r,
   return true;
 }
 
+
+
 bool Problem_Interface::computeJacobian(const Epetra_Vector & x,
                                         Epetra_Operator & jac)
 {
   START_LOG("jacobian()", "TrilinosNoxNonlinearSolver");
 
-  NonlinearImplicitSystem &sys = _solver->system();
+  NonlinearImplicitSystem & sys = _solver->system();
 
   EpetraMatrix<Number> Jac(&dynamic_cast<Epetra_FECrsMatrix &>(jac), sys.comm());
-  EpetraVector<Number>& X_sys = *cast_ptr<EpetraVector<Number>*>(sys.solution.get());
+  EpetraVector<Number> & X_sys = *cast_ptr<EpetraVector<Number> *>(sys.solution.get());
   EpetraVector<Number> X_global(*const_cast<Epetra_Vector *>(&x), sys.comm());
 
   // Set the dof maps
@@ -164,10 +191,18 @@ bool Problem_Interface::computeJacobian(const Epetra_Vector & x,
   if (_solver->matvec && _solver->residual_and_jacobian_object)
     libmesh_error_msg("ERROR: cannot specify both a function and object to compute the combined Residual & Jacobian!");
 
-  if      (_solver->jacobian != NULL)                     _solver->jacobian                                            (*sys.current_local_solution.get(), Jac, sys);
-  else if (_solver->jacobian_object != NULL)              _solver->jacobian_object->jacobian                           (*sys.current_local_solution.get(), Jac, sys);
-  else if (_solver->matvec   != NULL)                     _solver->matvec                                              (*sys.current_local_solution.get(), NULL, &Jac, sys);
-  else if (_solver->residual_and_jacobian_object != NULL) _solver->residual_and_jacobian_object->residual_and_jacobian (*sys.current_local_solution.get(), NULL, &Jac, sys);
+  if (_solver->jacobian != libmesh_nullptr)
+    _solver->jacobian(*sys.current_local_solution.get(), Jac, sys);
+
+  else if (_solver->jacobian_object != libmesh_nullptr)
+    _solver->jacobian_object->jacobian(*sys.current_local_solution.get(), Jac, sys);
+
+  else if (_solver->matvec != libmesh_nullptr)
+    _solver->matvec(*sys.current_local_solution.get(), libmesh_nullptr, &Jac, sys);
+
+  else if (_solver->residual_and_jacobian_object != libmesh_nullptr)
+    _solver->residual_and_jacobian_object->residual_and_jacobian (*sys.current_local_solution.get(), libmesh_nullptr, &Jac, sys);
+
   else
     libmesh_error_msg("Error! Unable to compute residual and/or Jacobian!");
 
@@ -179,11 +214,15 @@ bool Problem_Interface::computeJacobian(const Epetra_Vector & x,
   return true;
 }
 
+
+
 bool Problem_Interface::computePrecMatrix(const Epetra_Vector & /*x*/, Epetra_RowMatrix & /*M*/)
 {
   //   libMesh::out << "ERROR: Problem_Interface::preconditionVector() - Use Explicit Jacobian only for this test problem!" << endl;
   throw 1;
 }
+
+
 
 bool Problem_Interface::computePreconditioner(const Epetra_Vector & x,
                                               Epetra_Operator & prec,
@@ -191,11 +230,11 @@ bool Problem_Interface::computePreconditioner(const Epetra_Vector & x,
 {
   START_LOG("preconditioner()", "TrilinosNoxNonlinearSolver");
 
-  NonlinearImplicitSystem &sys = _solver->system();
+  NonlinearImplicitSystem & sys = _solver->system();
   TrilinosPreconditioner<Number> & tpc = dynamic_cast<TrilinosPreconditioner<Number> &>(prec);
 
   EpetraMatrix<Number> Jac(dynamic_cast<Epetra_FECrsMatrix *>(tpc.mat()),sys.comm());
-  EpetraVector<Number>& X_sys = *cast_ptr<EpetraVector<Number>*>(sys.solution.get());
+  EpetraVector<Number> & X_sys = *cast_ptr<EpetraVector<Number> *>(sys.solution.get());
   EpetraVector<Number> X_global(*const_cast<Epetra_Vector *>(&x), sys.comm());
 
   // Set the dof maps
@@ -218,10 +257,18 @@ bool Problem_Interface::computePreconditioner(const Epetra_Vector & x,
   if (_solver->matvec && _solver->residual_and_jacobian_object)
     libmesh_error_msg("ERROR: cannot specify both a function and object to compute the combined Residual & Jacobian!");
 
-  if      (_solver->jacobian != NULL)                     _solver->jacobian                                            (*sys.current_local_solution.get(), Jac, sys);
-  else if (_solver->jacobian_object != NULL)              _solver->jacobian_object->jacobian                           (*sys.current_local_solution.get(), Jac, sys);
-  else if (_solver->matvec   != NULL)                     _solver->matvec                                              (*sys.current_local_solution.get(), NULL, &Jac, sys);
-  else if (_solver->residual_and_jacobian_object != NULL) _solver->residual_and_jacobian_object->residual_and_jacobian (*sys.current_local_solution.get(), NULL, &Jac, sys);
+  if (_solver->jacobian != libmesh_nullptr)
+    _solver->jacobian(*sys.current_local_solution.get(), Jac, sys);
+
+  else if (_solver->jacobian_object != libmesh_nullptr)
+    _solver->jacobian_object->jacobian(*sys.current_local_solution.get(), Jac, sys);
+
+  else if (_solver->matvec != libmesh_nullptr)
+    _solver->matvec(*sys.current_local_solution.get(), libmesh_nullptr, &Jac, sys);
+
+  else if (_solver->residual_and_jacobian_object != libmesh_nullptr)
+    _solver->residual_and_jacobian_object->residual_and_jacobian (*sys.current_local_solution.get(), libmesh_nullptr, &Jac, sys);
+
   else
     libmesh_error_msg("Error! Unable to compute residual and/or Jacobian!");
 
@@ -236,12 +283,15 @@ bool Problem_Interface::computePreconditioner(const Epetra_Vector & x,
 }
 
 
+
 //---------------------------------------------------------------------
 // NoxNonlinearSolver<> methods
 template <typename T>
 void NoxNonlinearSolver<T>::clear ()
 {
 }
+
+
 
 template <typename T>
 void NoxNonlinearSolver<T>::init (const char * /*name*/)
@@ -250,11 +300,13 @@ void NoxNonlinearSolver<T>::init (const char * /*name*/)
     _interface = new Problem_Interface(this);
 }
 
+
+
 template <typename T>
 std::pair<unsigned int, Real>
-NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobian Matrix
-                              NumericVector<T>& x_in,          // Solution vector
-                              NumericVector<T>& /* r_in */,    // Residual vector
+NoxNonlinearSolver<T>::solve (SparseMatrix<T> &  /* jac_in */,  // System Jacobian Matrix
+                              NumericVector<T> & x_in,          // Solution vector
+                              NumericVector<T> & /* r_in */,    // Residual vector
                               const double,                    // Stopping tolerance
                               const unsigned int)
 {
@@ -263,17 +315,17 @@ NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobia
   if (this->user_presolve)
     this->user_presolve(this->system());
 
-  EpetraVector<T> * x_epetra = cast_ptr<EpetraVector<T>*>(&x_in);
+  EpetraVector<T> * x_epetra = cast_ptr<EpetraVector<T> *>(&x_in);
   // Creating a Teuchos::RCP as they do in NOX examples does not work here - we get some invalid memory references
   // thus we make a local copy
   NOX::Epetra::Vector x(*x_epetra->vec());
 
   Teuchos::RCP<Teuchos::ParameterList> nlParamsPtr = Teuchos::rcp(new Teuchos::ParameterList);
-  Teuchos::ParameterList& nlParams = *(nlParamsPtr.get());
+  Teuchos::ParameterList & nlParams = *(nlParamsPtr.get());
   nlParams.set("Nonlinear Solver", "Line Search Based");
 
   //print params
-  Teuchos::ParameterList& printParams = nlParams.sublist("Printing");
+  Teuchos::ParameterList & printParams = nlParams.sublist("Printing");
   printParams.set("Output Precision", 3);
   printParams.set("Output Processor", 0);
   printParams.set("Output Information",
@@ -285,12 +337,12 @@ NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobia
                   NOX::Utils::Details +
                   NOX::Utils::Warning);
 
-  Teuchos::ParameterList& dirParams = nlParams.sublist("Direction");
+  Teuchos::ParameterList & dirParams = nlParams.sublist("Direction");
   dirParams.set("Method", "Newton");
-  Teuchos::ParameterList& newtonParams = dirParams.sublist("Newton");
+  Teuchos::ParameterList & newtonParams = dirParams.sublist("Newton");
   newtonParams.set("Forcing Term Method", "Constant");
 
-  Teuchos::ParameterList& lsParams = newtonParams.sublist("Linear Solver");
+  Teuchos::ParameterList & lsParams = newtonParams.sublist("Linear Solver");
   lsParams.set("Aztec Solver", "GMRES");
   lsParams.set("Max Iterations", static_cast<int>(this->max_linear_iterations));
   lsParams.set("Tolerance", this->initial_linear_tolerance);
@@ -324,7 +376,7 @@ NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobia
 
           // full jacobian
           NonlinearImplicitSystem & sys = _interface->_solver->system();
-          EpetraMatrix<Number> & jacSys = *cast_ptr<EpetraMatrix<Number>*>(sys.matrix);
+          EpetraMatrix<Number> & jacSys = *cast_ptr<EpetraMatrix<Number> *>(sys.matrix);
           Teuchos::RCP<Epetra_RowMatrix> jacMat = Teuchos::rcp(jacSys.mat());
 
           Teuchos::RCP<NOX::Epetra::Interface::Jacobian> iJac(_interface);
@@ -342,7 +394,7 @@ NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobia
 
   //create group
   Teuchos::RCP<NOX::Epetra::Group> grpPtr = Teuchos::rcp(new NOX::Epetra::Group(printParams, iReq, x, linSys));
-  NOX::Epetra::Group& grp = *(grpPtr.get());
+  NOX::Epetra::Group & grp = *(grpPtr.get());
 
   Teuchos::RCP<NOX::StatusTest::NormF> absresid =
     Teuchos::rcp(new NOX::StatusTest::NormF(this->absolute_residual_tolerance, NOX::StatusTest::NormF::Unscaled));
@@ -368,8 +420,8 @@ NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobia
   NOX::StatusTest::StatusType status = solver->solve();
   this->converged = (status == NOX::StatusTest::Converged);
 
-  const NOX::Epetra::Group& finalGroup = dynamic_cast<const NOX::Epetra::Group&>(solver->getSolutionGroup());
-  const NOX::Epetra::Vector& noxFinalSln = dynamic_cast<const NOX::Epetra::Vector&>(finalGroup.getX());
+  const NOX::Epetra::Group & finalGroup = dynamic_cast<const NOX::Epetra::Group &>(solver->getSolutionGroup());
+  const NOX::Epetra::Vector & noxFinalSln = dynamic_cast<const NOX::Epetra::Vector &>(finalGroup.getX());
 
   *x_epetra->vec() = noxFinalSln.getEpetraVector();
   x_in.close();
@@ -384,6 +436,8 @@ NoxNonlinearSolver<T>::solve (SparseMatrix<T>&  /* jac_in */,  // System Jacobia
 
   return std::make_pair(total_iters, residual_norm);
 }
+
+
 
 template <typename T>
 int
@@ -402,4 +456,4 @@ template class NoxNonlinearSolver<Number>;
 
 
 
-#endif // #ifdef LIBMESH_HAVE_NOX
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_NOX

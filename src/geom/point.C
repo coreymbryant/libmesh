@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@
 
 //   tempx = static_cast<unsigned int>(((*this)(0)*deg));
 //   tempy = static_cast<unsigned int>(((*this)(1)*deg));
-//   tempz = static_cast<unsigned int>(((*this)(2)*deg));
+//   tempz = static_cast<unsigned int>(((*t!his)(2)*deg));
 
 //   index[0]=0;
 //   index[1]=0;

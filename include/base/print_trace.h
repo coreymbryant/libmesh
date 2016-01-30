@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -30,12 +30,12 @@ namespace libMesh
 /**
  * Print a stack trace (for code compiled with gcc)
  */
-void print_trace(std::ostream &out_stream = std::cerr);
+void print_trace(std::ostream & out_stream = std::cerr);
 
 /**
  * Mostly system independent demangler
  */
-std::string demangle(const char *name);
+std::string demangle(const char * name);
 
 /**
  * Writes a stack trace to a uniquely named file if

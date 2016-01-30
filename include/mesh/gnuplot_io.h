@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,14 +34,12 @@ namespace libMesh
 class MeshBase;
 
 /**
- * This class implements writing meshes using GNUplot, designed for use only
- * with 1D meshes.
+ * This class implements writing meshes using GNUplot, designed for
+ * use only with 1D meshes.
  *
- * @author David Knezevic, 2005
+ * \author David Knezevic
+ * \date 2005
  */
-
-// ------------------------------------------------------------
-// GnuPlotIO class definition
 class GnuPlotIO : public MeshOutput<MeshBase>
 {
 public:
@@ -59,27 +57,27 @@ public:
    * e.g. GnuPlotIO::GRID_ON | GnuPlotIO::PNG_OUTPUT
    */
   explicit
-  GnuPlotIO (const MeshBase&,
-             const std::string& = std::string("FE 1D Solution"),
+  GnuPlotIO (const MeshBase &,
+             const std::string & = std::string("FE 1D Solution"),
              int properties=0);
 
   /**
    * Write the mesh to the specified file.
    */
-  virtual void write(const std::string&);
+  virtual void write(const std::string &) libmesh_override;
 
   /**
    * This method implements writing a mesh with nodal data to a
    * specified file where the nodal data and variable names are provided.
    */
-  virtual void write_nodal_data (const std::string&,
-                                 const std::vector<Number>&,
-                                 const std::vector<std::string>&);
+  virtual void write_nodal_data (const std::string &,
+                                 const std::vector<Number> &,
+                                 const std::vector<std::string> &) libmesh_override;
 
   /**
    * Set title of plot
    */
-  void set_title(const std::string& title) { _title = title; }
+  void set_title(const std::string & title) { _title = title; }
 
   /**
    * Turn grid on or off.
@@ -108,9 +106,9 @@ private:
    * specified file where the nodal data and variable names are optionally
    * provided.  This will write an ASCII file.
    */
-  void write_solution (const std::string&,
-                       const std::vector<Number>* = NULL,
-                       const std::vector<std::string>* = NULL);
+  void write_solution (const std::string &,
+                       const std::vector<Number> * = libmesh_nullptr,
+                       const std::vector<std::string> * = libmesh_nullptr);
 
   std::string _title;
 

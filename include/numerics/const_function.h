@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,22 +34,24 @@ class ConstFunction : public FunctionBase<Output>
 {
 public:
   explicit
-  ConstFunction (const Output &c) : _c(c) { this->_initialized = true; }
+  ConstFunction (const Output & c) : _c(c) { this->_initialized = true;
+                                             this->_is_time_dependent = false;}
 
-  virtual Output operator() (const Point&,
-                             const Real = 0)
+  virtual Output operator() (const Point &,
+                             const Real = 0) libmesh_override
   { return _c; }
 
-  virtual void operator() (const Point&,
+  virtual void operator() (const Point &,
                            const Real,
-                           DenseVector<Output>& output)
+                           DenseVector<Output> & output) libmesh_override
   {
     unsigned int size = output.size();
     for (unsigned int i=0; i != size; ++i)
       output(i) = _c;
   }
 
-  virtual UniquePtr<FunctionBase<Output> > clone() const {
+  virtual UniquePtr<FunctionBase<Output> > clone() const libmesh_override
+  {
     return UniquePtr<FunctionBase<Output> >
       (new ConstFunction<Output>(_c));
   }

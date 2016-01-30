@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -31,24 +31,34 @@ class NoSolutionHistory : public SolutionHistory
 {
 public:
 
-  // Constructor
+  /**
+   * Constructor
+   */
   NoSolutionHistory() : SolutionHistory() {}
 
-  // Destructor
+  /**
+   * Destructor
+   */
   virtual ~NoSolutionHistory() {}
 
-  // Virtual function store which we will be overriding
-  virtual void store();
+  /**
+   * Virtual function store which we will be overriding
+   */
+  virtual void store() libmesh_override;
 
-  // Virtual function retrieve which we will be overriding
-  virtual void retrieve();
+  /**
+   * Virtual function retrieve which we will be overriding
+   */
+  virtual void retrieve() libmesh_override;
 
-  // Definition of the clone function needed for the setter function
-  virtual UniquePtr<SolutionHistory > clone() const {
-    return UniquePtr<SolutionHistory >
-      (new NoSolutionHistory());}
-
-}; // end NoSolutionHistory class definition
+  /**
+   * Definition of the clone function needed for the setter function
+   */
+  virtual UniquePtr<SolutionHistory > clone() const libmesh_override
+  {
+    return UniquePtr<SolutionHistory >(new NoSolutionHistory());
+  }
+};
 
 } // end namespace libMesh
 

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -31,8 +31,11 @@ namespace libMesh
 
 /**
  * The \p Tri3 is an element in 2D composed of 3 nodes.
+ *
+ * \author Roman Vetter and Norbert Stoop
+ * \date 2014
  */
-class Tri3Subdivision : public Tri3
+class Tri3Subdivision libmesh_final : public Tri3
 {
 public:
 
@@ -45,29 +48,29 @@ public:
   /**
    * Constructor with parent specification.
    */
-  Tri3Subdivision(Elem *p);
+  Tri3Subdivision(Elem * p);
 
   /**
    * @returns \p TRI3SUBDIVISION
    */
-  ElemType type () const { return TRI3SUBDIVISION; }
+  virtual ElemType type () const libmesh_override { return TRI3SUBDIVISION; }
 
   /**
    * @returns true iff the element map is definitely affine within
    * numerical tolerances
    */
-  virtual bool has_affine_map () const { return false; }
+  virtual bool has_affine_map () const libmesh_override { return false; }
 
   /**
    * @returns true iff the Lagrange shape functions on this element
    * are linear
    */
-  virtual bool is_linear () const { return false; }
+  virtual bool is_linear () const libmesh_override { return false; }
 
   /**
    * @returns FOURTH
    */
-  Order default_order() const { return FOURTH; }
+  virtual Order default_order() const libmesh_override { return FOURTH; }
 
   /**
    * Prepares the element for use by reordering the nodes such that
@@ -85,7 +88,7 @@ public:
   /**
    * @returns a pointer to the node whose ordered id is \p node_id.
    */
-  Node* get_ordered_node(unsigned int node_id) const;
+  Node * get_ordered_node(unsigned int node_id) const;
 
   /**
    * @returns the number of nodes connected to the ordered node
@@ -115,7 +118,7 @@ private:
    * A list containing the ordered nodes such that the irregular
    * node (valence != 6), if there is one, is the first.
    */
-  Node* _ordered_nodes[3];
+  Node * _ordered_nodes[3];
 
   /**
    * \p true iff the subdivision element is ready for use,

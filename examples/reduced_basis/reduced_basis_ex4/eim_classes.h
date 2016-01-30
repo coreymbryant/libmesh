@@ -1,8 +1,9 @@
-#ifndef __eim_classes_h__
-#define __eim_classes_h__
+#ifndef EIM_CLASSES_H
+#define EIM_CLASSES_H
 
 // local includes
 #include "libmesh/rb_eim_construction.h"
+#include "libmesh/rb_eim_evaluation.h"
 #include "assembly.h"
 
 // Bring in bits from the libMesh namespace.
@@ -18,8 +19,8 @@ class SimpleEIMEvaluation : public RBEIMEvaluation
 {
 public:
 
-  SimpleEIMEvaluation(const libMesh::Parallel::Communicator& comm)
-    : RBEIMEvaluation(comm)
+  SimpleEIMEvaluation(const libMesh::Parallel::Communicator & comm) :
+    RBEIMEvaluation(comm)
   {
     attach_parametrized_function(&sg);
   }
@@ -28,7 +29,6 @@ public:
    * Parametrized function that we approximate with EIM
    */
   ShiftedGaussian sg;
-
 };
 
 // A simple subclass of RBEIMConstruction.
@@ -39,8 +39,8 @@ public:
   /**
    * Constructor.
    */
-  SimpleEIMConstruction (EquationSystems& es,
-                         const std::string& name_in,
+  SimpleEIMConstruction (EquationSystems & es,
+                         const std::string & name_in,
                          const unsigned int number_in)
     : Parent(es, name_in, number_in)
   {
@@ -64,11 +64,25 @@ public:
    */
   virtual void init_data()
   {
-    u_var = this->add_variable ("f_EIM", libMesh::FIRST);
-
     Parent::init_data();
 
     set_inner_product_assembly(ip);
+  }
+
+  /**
+   * Initialize the implicit system that is used to perform L2 projections.
+   */
+  virtual void init_implicit_system()
+  {
+    this->add_variable ("L2_proj_var", libMesh::FIRST);
+  }
+
+  /**
+   * Initialize the explicit system that is used to store the basis functions.
+   */
+  virtual void init_explicit_system()
+  {
+    u_var = get_explicit_system().add_variable ("f_EIM", libMesh::FIRST);
   }
 
   /**
@@ -80,7 +94,6 @@ public:
    * Inner product assembly object
    */
   EIM_IP_assembly ip;
-
 };
 
 #endif

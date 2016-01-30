@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // LinearPartitioner implementation
-void LinearPartitioner::_do_partition (MeshBase& mesh,
+void LinearPartitioner::_do_partition (MeshBase & mesh,
                                        const unsigned int n)
 {
   libmesh_assert_greater (n, 0);
@@ -59,13 +59,13 @@ void LinearPartitioner::_do_partition (MeshBase& mesh,
       {
         if ((e/blksize) < n)
           {
-            Elem *elem = *elem_it;
+            Elem * elem = *elem_it;
             elem->processor_id() =
               cast_int<processor_id_type>(e/blksize);
           }
         else
           {
-            Elem *elem = *elem_it;
+            Elem * elem = *elem_it;
             elem->processor_id() = 0;
             elem = elem->parent();
           }

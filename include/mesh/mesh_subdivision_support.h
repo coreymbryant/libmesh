@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,6 @@
 
 // Local Includes -----------------------------------
 #include "libmesh/libmesh.h"
-#include "libmesh/mesh_base.h"
 #include "libmesh/face_tri3_subdivision.h"
 #include "libmesh/elem.h"
 
@@ -32,6 +31,9 @@
 
 namespace libMesh
 {
+
+// Forward declarations
+class MeshBase;
 
 // ------------------------------------------------------------
 // MeshTools::Subdivision namespace
@@ -61,14 +63,14 @@ namespace Subdivision
  *        5--4--3
  * \endverbatim
  */
-void find_one_ring(const Tri3Subdivision* elem, std::vector<Node*>& nodes);
+void find_one_ring(const Tri3Subdivision * elem, std::vector<Node *> & nodes);
 
 /**
  * Turns a triangulated \p mesh into a subdivision mesh. This
  * function normally needn't be called by the user, because it is
  * invoked by \p prepare_subdivision_mesh.
  */
-void all_subdivision(MeshBase& mesh);
+void all_subdivision(MeshBase & mesh);
 
 /**
  * Prepares the \p mesh for use with subdivision elements. The
@@ -77,21 +79,21 @@ void all_subdivision(MeshBase& mesh);
  * boundaries. If \p true, the outermost element layer is taken as
  * ghosts, i.e. no new elements are added.
  */
-void prepare_subdivision_mesh(MeshBase& mesh, bool ghosted = false);
+void prepare_subdivision_mesh(MeshBase & mesh, bool ghosted = false);
 
 /**
  * Adds a new layer of "ghost" elements along the domain boundaries.
  * This function normally needn't be called by the user, because it
  * is invoked by \p prepare_subdivision_mesh.
  */
-void add_boundary_ghosts(MeshBase& mesh);
+void add_boundary_ghosts(MeshBase & mesh);
 
 /**
  * Flags the outermost element layer along the domain boundaries as
  * "ghost" elements. This function normally needn't be called by the
  * user, because it is invoked by \p prepare_subdivision_mesh.
  */
-void tag_boundary_ghosts(MeshBase& mesh);
+void tag_boundary_ghosts(MeshBase & mesh);
 
 /**
  * A lookup table for the increment modulo 3 operation, for iterating

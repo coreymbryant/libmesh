@@ -146,7 +146,6 @@ libmesh_SOURCES =  \
         src/geom/elem_cutter.C \
         src/geom/elem_quality.C \
         src/geom/elem_refinement.C \
-        src/geom/elem_type.C \
         src/geom/face.C \
         src/geom/face_inf_quad.C \
         src/geom/face_inf_quad4.C \
@@ -193,6 +192,7 @@ libmesh_SOURCES =  \
         src/mesh/mesh_data_xdr_support.C \
         src/mesh/mesh_function.C \
         src/mesh/mesh_generation.C \
+        src/mesh/mesh_iterators.C \
         src/mesh/mesh_modification.C \
         src/mesh/mesh_output.C \
         src/mesh/mesh_refinement.C \
@@ -214,11 +214,9 @@ libmesh_SOURCES =  \
         src/mesh/nemesis_io_helper.C \
         src/mesh/off_io.C \
         src/mesh/parallel_mesh.C \
-        src/mesh/parallel_mesh_iterators.C \
         src/mesh/patch.C \
         src/mesh/postscript_io.C \
         src/mesh/serial_mesh.C \
-        src/mesh/serial_mesh_iterators.C \
         src/mesh/tecplot_io.C \
         src/mesh/tetgen_io.C \
         src/mesh/ucd_io.C \
@@ -309,7 +307,6 @@ libmesh_SOURCES =  \
         src/quadrature/quadrature_monomial_1D.C \
         src/quadrature/quadrature_monomial_2D.C \
         src/quadrature/quadrature_monomial_3D.C \
-        src/quadrature/quadrature_rules.C \
         src/quadrature/quadrature_simpson.C \
         src/quadrature/quadrature_simpson_1D.C \
         src/quadrature/quadrature_simpson_2D.C \

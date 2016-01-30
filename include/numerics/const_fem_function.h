@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,12 @@
 
 #include "libmesh/dense_vector.h"
 #include "libmesh/fem_function_base.h"
-#include "libmesh/point.h"
 
-namespace libMesh {
+namespace libMesh
+{
+
+// Forward declarations
+class Point;
 
 template <typename Output=Number>
 class ConstFEMFunction : public FEMFunctionBase<Output>
@@ -37,13 +40,15 @@ public:
   virtual UniquePtr<FEMFunctionBase<Output> > clone () const
   {return UniquePtr<FEMFunctionBase<Output> >( new ConstFEMFunction(*this) ); }
 
-  virtual Output operator() (const FEMContext&, const Point&,
+  virtual Output operator() (const FEMContext &,
+                             const Point &,
                              const Real /* time */ = 0.)
   { return _c; }
 
-  virtual void operator() (const FEMContext&, const Point&,
+  virtual void operator() (const FEMContext &,
+                           const Point &,
                            const Real,
-                           DenseVector<Output>& output)
+                           DenseVector<Output> & output)
   {for(unsigned int i = 0; i < output.size(); i++ )
       output(i) = _c;}
 

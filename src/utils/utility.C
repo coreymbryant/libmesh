@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,7 @@ std::string Utility::system_info()
 
   // Get user information
 #ifdef LIBMESH_HAVE_GETPWUID
-  struct passwd* p = getpwuid(getuid());
+  struct passwd * p = getpwuid(getuid());
 #endif
 
 
@@ -80,7 +80,7 @@ std::string Utility::system_info()
 
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
 
-std::string Utility::complex_filename (const std::string& basename,
+std::string Utility::complex_filename (const std::string & basename,
                                        const unsigned int r_o_c)
 {
   std::string name(basename);
@@ -96,9 +96,9 @@ std::string Utility::complex_filename (const std::string& basename,
 
 
 
-void Utility::prepare_complex_data(const std::vector<Complex>& source,
-                                   std::vector<Real>& real_part,
-                                   std::vector<Real>& imag_part)
+void Utility::prepare_complex_data(const std::vector<Complex> & source,
+                                   std::vector<Real> & real_part,
+                                   std::vector<Real> & imag_part)
 {
   const unsigned int len = source.size();
 

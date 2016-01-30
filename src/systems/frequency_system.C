@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -43,11 +43,11 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // FrequencySystem implementation
-FrequencySystem::FrequencySystem (EquationSystems& es,
-                                  const std::string& name_in,
+FrequencySystem::FrequencySystem (EquationSystems & es,
+                                  const std::string & name_in,
                                   const unsigned int number_in) :
   LinearImplicitSystem      (es, name_in, number_in),
-  solve_system              (NULL),
+  solve_system              (libmesh_nullptr),
   _finished_set_frequencies (false),
   _keep_solution_duplicates (true),
   _finished_init            (false),
@@ -98,8 +98,7 @@ void FrequencySystem::clear_all ()
 {
   this->clear ();
 
-  EquationSystems& es =
-    this->get_equation_systems();
+  EquationSystems & es = this->get_equation_systems();
 
   // clear frequencies in the parameters section of the
   // EquationSystems object
@@ -123,7 +122,7 @@ void FrequencySystem::init_data ()
   // Log how long initializing the system takes
   START_LOG("init()", "FrequencySystem");
 
-  EquationSystems& es =
+  EquationSystems & es =
     this->get_equation_systems();
 
   // make sure we have frequencies to solve for
@@ -194,7 +193,7 @@ void FrequencySystem::set_frequencies_by_steps (const Real base_freq,
   if (_finished_set_frequencies)
     libmesh_error_msg("ERROR: frequencies already initialized.");
 
-  EquationSystems& es =
+  EquationSystems & es =
     this->get_equation_systems();
 
   // store number of frequencies as parameter
@@ -233,7 +232,7 @@ void FrequencySystem::set_frequencies_by_range (const Real min_freq,
   if (_finished_set_frequencies)
     libmesh_error_msg("ERROR: frequencies already initialized.");
 
-  EquationSystems& es =
+  EquationSystems & es =
     this->get_equation_systems();
 
   // store number of frequencies as parameter
@@ -259,7 +258,7 @@ void FrequencySystem::set_frequencies_by_range (const Real min_freq,
 
 
 
-void FrequencySystem::set_frequencies (const std::vector<Real>& frequencies,
+void FrequencySystem::set_frequencies (const std::vector<Real> & frequencies,
                                        const bool allocate_solution_duplicates)
 {
   this->_keep_solution_duplicates = allocate_solution_duplicates;
@@ -270,7 +269,7 @@ void FrequencySystem::set_frequencies (const std::vector<Real>& frequencies,
   if (_finished_set_frequencies)
     libmesh_error_msg("ERROR: frequencies already initialized.");
 
-  EquationSystems& es =
+  EquationSystems & es =
     this->get_equation_systems();
 
   // store number of frequencies as parameter
@@ -328,7 +327,7 @@ void FrequencySystem::solve (const unsigned int n_start,
   libmesh_assert_greater (this->n_frequencies(), 0);
   libmesh_assert_less (n_stop, this->n_frequencies());
 
-  EquationSystems& es =
+  EquationSystems & es =
     this->get_equation_systems();
 
   // Get the user-specified linear solver tolerance,
@@ -381,8 +380,8 @@ void FrequencySystem::solve (const unsigned int n_start,
 
 
 
-void FrequencySystem::attach_solve_function(void fptr(EquationSystems& es,
-                                                      const std::string& name))
+void FrequencySystem::attach_solve_function(void fptr(EquationSystems & es,
+                                                      const std::string & name))
 {
   libmesh_assert(fptr);
 
@@ -395,7 +394,7 @@ void FrequencySystem::set_current_frequency(unsigned int n)
 {
   libmesh_assert_less (n, n_frequencies());
 
-  EquationSystems& es =
+  EquationSystems & es =
     this->get_equation_systems();
 
   es.parameters.set<Real>("current frequency") =

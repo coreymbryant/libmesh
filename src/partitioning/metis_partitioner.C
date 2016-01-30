@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@ extern "C" {
 
 
 // Hash maps for interior->boundary element lookups
-#include LIBMESH_INCLUDE_UNORDERED_MAP
+#include LIBMESH_INCLUDE_UNORDERED_MULTIMAP
 #include LIBMESH_INCLUDE_HASH
 LIBMESH_DEFINE_HASH_POINTERS
 
@@ -59,7 +59,7 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // MetisPartitioner implementation
-void MetisPartitioner::_do_partition (MeshBase& mesh,
+void MetisPartitioner::_do_partition (MeshBase & mesh,
                                       const unsigned int n_pieces)
 {
   libmesh_assert_greater (n_pieces, 0);
@@ -132,7 +132,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
 
     for (std::size_t cnt=0; it != end; ++it)
       {
-        const Elem *elem = *it;
+        const Elem * elem = *it;
 
         global_index_map.insert (std::make_pair(elem->id(), global_index[cnt++]));
       }
@@ -144,7 +144,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
   // interior elements from boundary elements, but we need to build up
   // a lookup map to do the reverse.
 
-  typedef LIBMESH_BEST_UNORDERED_MAP<const Elem *, const Elem *>
+  typedef LIBMESH_BEST_UNORDERED_MULTIMAP<const Elem *, const Elem *>
     map_type;
   map_type interior_to_boundary_map;
 
@@ -154,7 +154,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
 
     for (; elem_it != elem_end; ++elem_it)
       {
-        const Elem* elem = *elem_it;
+        const Elem * elem = *elem_it;
 
         // If we don't have an interior_parent then there's nothing to look us
         // up.
@@ -163,17 +163,20 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
           continue;
 
         // get all relevant interior elements
-        std::set<const Elem*> neighbor_set;
+        std::set<const Elem *> neighbor_set;
         elem->find_interior_neighbors(neighbor_set);
 
-        std::set<const Elem*>::iterator n_it = neighbor_set.begin();
+        std::set<const Elem *>::iterator n_it = neighbor_set.begin();
         for (; n_it != neighbor_set.end(); ++n_it)
           {
             // FIXME - non-const versions of the Elem set methods
             // would be nice
-            Elem* neighbor = const_cast<Elem*>(*n_it);
+            Elem * neighbor = const_cast<Elem *>(*n_it);
 
-#if defined(LIBMESH_HAVE_UNORDERED_MAP) || defined(LIBMESH_HAVE_TR1_UNORDERED_MAP) || defined(LIBMESH_HAVE_HASH_MAP) || defined(LIBMESH_HAVE_EXT_HASH_MAP)
+#if defined(LIBMESH_HAVE_UNORDERED_MULTIMAP) ||         \
+  defined(LIBMESH_HAVE_TR1_UNORDERED_MULTIMAP) ||       \
+  defined(LIBMESH_HAVE_HASH_MULTIMAP) ||                \
+  defined(LIBMESH_HAVE_EXT_HASH_MULTIMAP)
             interior_to_boundary_map.insert
               (std::make_pair(neighbor, elem));
 #else
@@ -201,7 +204,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
         // face neighbors
 
 #ifdef LIBMESH_ENABLE_AMR
-        std::vector<const Elem*> neighbors_offspring;
+        std::vector<const Elem *> neighbors_offspring;
 #endif
 
         MeshBase::element_iterator       elem_it  = mesh.active_elements_begin();
@@ -215,7 +218,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
         // of face neighbors.  Also populate the vwght array if necessary
         for (; elem_it != elem_end; ++elem_it)
           {
-            const Elem* elem = *elem_it;
+            const Elem * elem = *elem_it;
 
             const dof_id_type elem_global_index =
               global_index_map[elem->id()];
@@ -235,9 +238,9 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
             // adjacency corresponds to a face neighbor
             for (unsigned int ms=0; ms<elem->n_neighbors(); ms++)
               {
-                const Elem* neighbor = elem->neighbor(ms);
+                const Elem * neighbor = elem->neighbor(ms);
 
-                if (neighbor != NULL)
+                if (neighbor != libmesh_nullptr)
                   {
                     // If the neighbor is active treat it
                     // as a connection
@@ -275,7 +278,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
                         // to us
                         for (unsigned int nc=0; nc<neighbors_offspring.size(); nc++)
                           {
-                            const Elem* child =
+                            const Elem * child =
                               neighbors_offspring[nc];
 
                             // This does not assume a level-1 mesh.
@@ -299,7 +302,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
                 elem->interior_parent())
               {
                 // get all relevant interior elements
-                std::set<const Elem*> neighbor_set;
+                std::set<const Elem *> neighbor_set;
                 elem->find_interior_neighbors(neighbor_set);
 
                 num_neighbors += neighbor_set.size();
@@ -324,7 +327,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
 
         for (; elem_it != elem_end; ++elem_it)
           {
-            const Elem* elem = *elem_it;
+            const Elem * elem = *elem_it;
 
             const dof_id_type elem_global_index =
               global_index_map[elem->id()];
@@ -335,9 +338,9 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
             // adjacency corresponds to a face neighbor
             for (unsigned int ms=0; ms<elem->n_neighbors(); ms++)
               {
-                const Elem* neighbor = elem->neighbor(ms);
+                const Elem * neighbor = elem->neighbor(ms);
 
-                if (neighbor != NULL)
+                if (neighbor != libmesh_nullptr)
                   {
                     // If the neighbor is active treat it
                     // as a connection
@@ -366,7 +369,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
                         // to us
                         for (unsigned int nc=0; nc<neighbors_offspring.size(); nc++)
                           {
-                            const Elem* child =
+                            const Elem * child =
                               neighbors_offspring[nc];
 
                             // This does not assume a level-1 mesh.
@@ -390,15 +393,15 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
                 elem->interior_parent())
               {
                 // get all relevant interior elements
-                std::set<const Elem*> neighbor_set;
+                std::set<const Elem *> neighbor_set;
                 elem->find_interior_neighbors(neighbor_set);
 
-                std::set<const Elem*>::iterator n_it = neighbor_set.begin();
+                std::set<const Elem *>::iterator n_it = neighbor_set.begin();
                 for (; n_it != neighbor_set.end(); ++n_it)
                   {
                     // FIXME - non-const versions of the Elem set methods
                     // would be nice
-                    Elem* neighbor = const_cast<Elem*>(*n_it);
+                    Elem * neighbor = const_cast<Elem *>(*n_it);
 
                     csr_graph(elem_global_index, connection++) =
                       global_index_map[neighbor->id()];
@@ -412,7 +415,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
 
             for (map_it_type it = bounds.first; it != bounds.second; ++it)
               {
-                const Elem* neighbor = it->second;
+                const Elem * neighbor = it->second;
                 csr_graph(elem_global_index, connection++) =
                   global_index_map[neighbor->id()];
               }
@@ -430,14 +433,14 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
 
       // Use recursive if the number of partitions is less than or equal to 8
       if (n_pieces <= 8)
-        Metis::METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
-                                        NULL, &nparts, NULL, NULL, NULL,
+        Metis::METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], libmesh_nullptr,
+                                        libmesh_nullptr, &nparts, libmesh_nullptr, libmesh_nullptr, libmesh_nullptr,
                                         &edgecut, &part[0]);
 
       // Otherwise  use kway
       else
-        Metis::METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
-                                   NULL, &nparts, NULL, NULL, NULL,
+        Metis::METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], libmesh_nullptr,
+                                   libmesh_nullptr, &nparts, libmesh_nullptr, libmesh_nullptr, libmesh_nullptr,
                                    &edgecut, &part[0]);
 
     } // end processor 0 part
@@ -454,7 +457,7 @@ void MetisPartitioner::_do_partition (MeshBase& mesh,
 
     for (; it!=end; ++it)
       {
-        Elem* elem = *it;
+        Elem * elem = *it;
 
         libmesh_assert (global_index_map.count(elem->id()));
 

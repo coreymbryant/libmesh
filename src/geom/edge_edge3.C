@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -92,7 +92,7 @@ bool Edge3::has_affine_map() const
 
 void Edge3::connectivity(const unsigned int sc,
                          const IOPackage iop,
-                         std::vector<dof_id_type>& conn) const
+                         std::vector<dof_id_type> & conn) const
 {
   libmesh_assert_less_equal (sc, 1);
   libmesh_assert_less (sc, this->n_sub_elem());
@@ -195,5 +195,13 @@ Real Edge3::volume () const
                            (ca - 0.25*ba*ba)*std::log( (1.-0.5*ba+s1)/(-1.-0.5*ba+s2) )
                            );
 }
+
+
+
+dof_id_type Edge3::key () const
+{
+  return this->compute_key(this->node(2));
+}
+
 
 } // namespace libMesh

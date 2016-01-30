@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -24,8 +24,8 @@ namespace libMesh
 {
 
 template <typename T>
-void TensorShellMatrix<T>::vector_mult (NumericVector<T>& dest,
-                                        const NumericVector<T>& arg) const
+void TensorShellMatrix<T>::vector_mult (NumericVector<T> & dest,
+                                        const NumericVector<T> & arg) const
 {
   dest = _v;
   dest.scale(_w.dot(arg));
@@ -34,8 +34,8 @@ void TensorShellMatrix<T>::vector_mult (NumericVector<T>& dest,
 
 
 template <typename T>
-void TensorShellMatrix<T>::vector_mult_add (NumericVector<T>& dest,
-                                            const NumericVector<T>& arg) const
+void TensorShellMatrix<T>::vector_mult_add (NumericVector<T> & dest,
+                                            const NumericVector<T> & arg) const
 {
   dest.add(_w.dot(arg),_v);
 }
@@ -43,7 +43,7 @@ void TensorShellMatrix<T>::vector_mult_add (NumericVector<T>& dest,
 
 
 template <typename T>
-void TensorShellMatrix<T>::get_diagonal (NumericVector<T>& dest) const
+void TensorShellMatrix<T>::get_diagonal (NumericVector<T> & dest) const
 {
   dest.pointwise_mult(_v,_w);
 }

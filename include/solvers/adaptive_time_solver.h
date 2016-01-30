@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -43,11 +43,9 @@ class System;
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2007
+ * \author Roy H. Stogner
+ * \date 2007
  */
-
-// ------------------------------------------------------------
-// Solver class definition
 class AdaptiveTimeSolver : public FirstOrderUnsteadySolver
 {
 public:
@@ -61,54 +59,54 @@ public:
    * to be solved.
    */
   explicit
-  AdaptiveTimeSolver (sys_type& s);
+  AdaptiveTimeSolver (sys_type & s);
 
   /**
    * Destructor.
    */
   virtual ~AdaptiveTimeSolver ();
 
-  virtual void init();
+  virtual void init() libmesh_override;
 
-  virtual void reinit();
+  virtual void reinit() libmesh_override;
 
-  virtual void solve() = 0;
+  virtual void solve() libmesh_override = 0;
 
-  virtual void advance_timestep();
+  virtual void advance_timestep() libmesh_override;
 
   /**
    * This method is passed on to the core_time_solver
    */
-  virtual Real error_order () const;
+  virtual Real error_order () const libmesh_override;
 
   /**
    * This method is passed on to the core_time_solver
    */
   virtual bool element_residual (bool get_jacobian,
-                                 DiffContext&);
+                                 DiffContext &) libmesh_override;
 
   /**
    * This method is passed on to the core_time_solver
    */
   virtual bool side_residual (bool get_jacobian,
-                              DiffContext&);
+                              DiffContext &) libmesh_override;
 
   /**
    * This method is passed on to the core_time_solver
    */
   virtual bool nonlocal_residual (bool get_jacobian,
-                                  DiffContext&);
+                                  DiffContext &) libmesh_override;
 
   /**
    * An implicit linear or nonlinear solver to use at each timestep.
    */
-  virtual UniquePtr<DiffSolver> &diff_solver();
+  virtual UniquePtr<DiffSolver> & diff_solver() libmesh_override;
 
   /**
    * An implicit linear solver to use for adjoint and sensitivity
    * problems.
    */
-  virtual UniquePtr<LinearSolver<Number> > &linear_solver();
+  virtual UniquePtr<LinearSolver<Number> > & linear_solver() libmesh_override;
 
   /**
    * This object is used to take timesteps

@@ -1,21 +1,25 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
 
 // <h1>Adaptivity Example 5 - Periodic Boundary Conditions with Adaptive Mesh Refinement</h1>
+// \author Benjamin S. Kirk
+// \date 2003
 //
 // This example uses the same simple, linear transient
 // system as in example 10; however in this case periodic boundary
@@ -76,16 +80,16 @@ using namespace libMesh;
 // In subsequent examples we will employ adaptive mesh refinement,
 // and with a changing mesh it will be necessary to rebuild the
 // system matrix.
-void assemble_cd (EquationSystems& es,
-                  const std::string& system_name);
+void assemble_cd (EquationSystems & es,
+                  const std::string & system_name);
 
 // Function prototype.  This function will initialize the system.
 // Initialization functions are optional for systems.  They allow
 // you to specify the initial values of the solution.  If an
 // initialization function is not provided then the default (0)
 // solution is provided.
-void init_cd (EquationSystems& es,
-              const std::string& system_name);
+void init_cd (EquationSystems & es,
+              const std::string & system_name);
 
 // Exact solution function prototype.  This gives the exact
 // solution as a function of space and time.  In this case the
@@ -95,17 +99,17 @@ Real exact_solution (const Real x,
                      const Real y,
                      const Real t);
 
-Number exact_value (const Point& p,
-                    const Parameters& parameters,
-                    const std::string&,
-                    const std::string&)
+Number exact_value (const Point & p,
+                    const Parameters & parameters,
+                    const std::string &,
+                    const std::string &)
 {
   return exact_solution(p(0), p(1), parameters.get<Real> ("time"));
 }
 
 // With --enable-fparser, the user can also optionally set their own
 // exact solution equations.
-FunctionBase<Number>* parsed_solution = NULL;
+FunctionBase<Number> * parsed_solution = libmesh_nullptr;
 
 
 // Returns a string with 'number' formatted and placed directly
@@ -118,7 +122,7 @@ std::string exodus_filename(unsigned number);
 // you are in complex number mode, since this
 // example is only intended to work with real
 // numbers.
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   // Initialize libMesh.
   LibMeshInit init (argc, argv);
@@ -146,18 +150,18 @@ int main (int argc, char** argv)
 
   // Use commandline parameter to specify if we are to
   // read in an initial solution or generate it ourself
-  std::cout << "Usage:\n"
-            <<"\t " << argv[0] << " -init_timestep 0\n"
-            << "OR\n"
-            <<"\t " << argv[0] << " -read_solution -init_timestep 26\n"
-            << std::endl;
+  libMesh::out << "Usage:\n"
+               <<"\t " << argv[0] << " -init_timestep 0\n"
+               << "OR\n"
+               <<"\t " << argv[0] << " -read_solution -init_timestep 26\n"
+               << std::endl;
 
-  std::cout << "Running: " << argv[0];
+  libMesh::out << "Running: " << argv[0];
 
   for (int i=1; i<argc; i++)
-    std::cout << " " << argv[i];
+    libMesh::out << " " << argv[i];
 
-  std::cout << std::endl << std::endl;
+  libMesh::out << std::endl << std::endl;
 
   // Create a GetPot object to parse the command line
   GetPot command_line (argc, argv);
@@ -169,7 +173,7 @@ int main (int argc, char** argv)
   // the mesh and solution files "saved_mesh.xda" and "saved_solution.xda"
   // or whether we are going to start from scratch by just reading
   // "mesh.xda"
-  const bool read_solution   = command_line.search("-read_solution");
+  const bool read_solution = command_line.search("-read_solution");
 
   // This value is also obtained from the commandline and it specifies the
   // initial value for the t_step looping variable. We must
@@ -180,7 +184,7 @@ int main (int argc, char** argv)
 
   // Search the command line for the "init_timestep" flag and if it is
   // present, set init_timestep accordingly.
-  if(command_line.search("-init_timestep"))
+  if (command_line.search("-init_timestep"))
     init_timestep = command_line.next(0);
   else
     {
@@ -194,7 +198,7 @@ int main (int argc, char** argv)
   unsigned int n_timesteps = 0;
 
   // Again do a search on the command line for the argument
-  if(command_line.search("-n_timesteps"))
+  if (command_line.search("-n_timesteps"))
     n_timesteps = command_line.next(0);
   else
     libmesh_error_msg("ERROR: Number of timesteps not specified");
@@ -222,17 +226,17 @@ int main (int argc, char** argv)
   MeshRefinement mesh_refinement (mesh);
 
   // First we process the case where we do not read in the solution
-  if(!read_solution)
+  if (!read_solution)
     {
       MeshTools::Generation::build_square(mesh, 2, 2, 0., 2., 0., 2., QUAD4);
 
       // Again do a search on the command line for an argument
       unsigned int n_refinements = 5;
-      if(command_line.search("-n_refinements"))
+      if (command_line.search("-n_refinements"))
         n_refinements = command_line.next(0);
 
       // Uniformly refine the mesh 5 times
-      if(!read_solution)
+      if (!read_solution)
         mesh_refinement.uniformly_refine (n_refinements);
 
       // Print information about the mesh to the screen.
@@ -301,7 +305,7 @@ int main (int argc, char** argv)
   dof_map.add_periodic_boundary(vert);
 
   // Initialize the data structures for the equation system.
-  if(!read_solution)
+  if (!read_solution)
     equation_systems.init ();
   else
     equation_systems.reinit ();
@@ -310,7 +314,7 @@ int main (int argc, char** argv)
   // verification purposes:
   Real H1norm = system.calculate_norm(*system.solution, SystemNorm(H1));
 
-  std::cout << "Initial H1 norm = " << H1norm << std::endl << std::endl;
+  libMesh::out << "Initial H1 norm = " << H1norm << std::endl << std::endl;
 
   // Prints information about the system to the screen.
   equation_systems.print_info();
@@ -320,7 +324,7 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<Real>
     ("linear solver tolerance") = TOLERANCE;
 
-  if(!read_solution)
+  if (!read_solution)
     {
       // Write out the initial condition
 #ifdef LIBMESH_HAVE_GMV
@@ -361,10 +365,8 @@ int main (int argc, char** argv)
   // looping over the specified time interval and calling the
   // \p solve() member at each time step.  This will assemble the
   // system and call the linear solver.
-
   const Real dt = 0.025;
-  system.time   = init_timestep*dt;
-
+  system.time = init_timestep*dt;
 
   // Tell the MeshRefinement object about the periodic boundaries so
   // that it can get heuristics like level-one conformity and
@@ -373,9 +375,7 @@ int main (int argc, char** argv)
 
   // We do 25 timesteps both before and after writing out the
   // intermediate solution
-  for(unsigned int t_step=init_timestep;
-      t_step<(init_timestep+n_timesteps);
-      t_step++)
+  for (unsigned int t_step=init_timestep; t_step<(init_timestep+n_timesteps); t_step++)
     {
       // Increment the time counter, set the time and the
       // time step size as parameters in the EquationSystem.
@@ -385,24 +385,24 @@ int main (int argc, char** argv)
       equation_systems.parameters.set<Real> ("dt")   = dt;
 
       // A pretty update message
-      std::cout << " Solving time step ";
+      libMesh::out << " Solving time step ";
 
       {
         // Save flags to avoid polluting cout with custom precision values, etc.
-        std::ios_base::fmtflags os_flags = std::cout.flags();
+        std::ios_base::fmtflags os_flags = libMesh::out.flags();
 
-        std::cout << t_step
-                  << ", time="
-                  << std::setw(6)
-                  << std::setprecision(3)
-                  << std::setfill('0')
-                  << std::left
-                  << system.time
-                  << "..."
-                  << std::endl;
+        libMesh::out << t_step
+                     << ", time="
+                     << std::setw(6)
+                     << std::setprecision(3)
+                     << std::setfill('0')
+                     << std::left
+                     << system.time
+                     << "..."
+                     << std::endl;
 
         // Restore flags
-        std::cout.flags(os_flags);
+        libMesh::out.flags(os_flags);
       }
 
       // At this point we need to update the old
@@ -417,7 +417,7 @@ int main (int argc, char** argv)
 
       // The number of refinement steps per time step.
       unsigned int max_r_steps = 1;
-      if(command_line.search("-max_r_steps"))
+      if (command_line.search("-max_r_steps"))
         max_r_steps = command_line.next(0);
 
       // A refinement loop.
@@ -428,12 +428,12 @@ int main (int argc, char** argv)
 
           // Print out the H1 norm, for verification purposes:
           H1norm = system.calculate_norm(*system.solution, SystemNorm(H1));
-          std::cout << "H1 norm = " << H1norm << std::endl;
+          libMesh::out << "H1 norm = " << H1norm << std::endl;
 
           // Possibly refine the mesh
           if (r_step+1 <= max_r_steps)
             {
-              std::cout << "  Refining the mesh..." << std::endl;
+              libMesh::out << "  Refining the mesh..." << std::endl;
 
               // The \p ErrorVector is a particular \p StatisticsVector
               // for computing error information on a finite element mesh.
@@ -480,20 +480,21 @@ int main (int argc, char** argv)
 
       // Again do a search on the command line for an argument
       unsigned int output_freq = 10;
-      if(command_line.search("-output_freq"))
+      if (command_line.search("-output_freq"))
         output_freq = command_line.next(0);
 
       // Output every 10 timesteps to file.
-      if ( (t_step+1)%output_freq == 0)
+      if ((t_step+1)%output_freq == 0)
         {
-          // OStringStream file_name;
-
 #ifdef LIBMESH_HAVE_GMV
-          //          file_name << "out.gmv.";
-          //          OSSRealzeroright(file_name,3,0,t_step+1);
-          //
-          //          GMVIO(mesh).write_equation_systems (file_name.str(),
-          //                                              equation_systems);
+          // std::ostringstream file_name;
+          // out << "out.gmv."
+          //     << std::setw(3)
+          //     << std::setfill('0')
+          //     << std::right
+          //     << t_step+1;
+          // GMVIO(mesh).write_equation_systems (file_name.str(),
+          //                                     equation_systems);
 #endif
 #ifdef LIBMESH_HAVE_EXODUS_API
           // So... if paraview is told to open a file called out.e.{N}, it automatically tries to
@@ -506,12 +507,12 @@ int main (int argc, char** argv)
         }
     }
 
-  if(!read_solution)
+  if (!read_solution)
     {
       // Print out the H1 norm of the saved solution, for verification purposes:
       H1norm = system.calculate_norm(*system.solution, SystemNorm(H1));
 
-      std::cout << "Final H1 norm = " << H1norm << std::endl << std::endl;
+      libMesh::out << "Final H1 norm = " << H1norm << std::endl << std::endl;
 
       mesh.write("saved_mesh.xdr");
       equation_systems.write("saved_solution.xdr", ENCODE);
@@ -536,8 +537,8 @@ int main (int argc, char** argv)
 // Convection-Diffusion system.  This routine is
 // responsible for applying the initial conditions to
 // the system.
-void init_cd (EquationSystems& es,
-              const std::string& system_name)
+void init_cd (EquationSystems & es,
+              const std::string & system_name)
 {
   // It is a good idea to make sure we are initializing
   // the proper system.
@@ -551,9 +552,9 @@ void init_cd (EquationSystems& es,
   es.parameters.set<Real> ("time") = system.time = 0;
 
   if (parsed_solution)
-    system.project_solution(parsed_solution, NULL);
+    system.project_solution(parsed_solution, libmesh_nullptr);
   else
-    system.project_solution(exact_value, NULL, es.parameters);
+    system.project_solution(exact_value, libmesh_nullptr, es.parameters);
 }
 
 
@@ -562,8 +563,8 @@ void init_cd (EquationSystems& es,
 // will be called at each time step.  It is responsible
 // for computing the proper matrix entries for the
 // element stiffness matrices and right-hand sides.
-void assemble_cd (EquationSystems& es,
-                  const std::string& system_name)
+void assemble_cd (EquationSystems & es,
+                  const std::string & system_name)
 {
 #ifdef LIBMESH_ENABLE_AMR
   // It is a good idea to make sure we are assembling
@@ -571,7 +572,7 @@ void assemble_cd (EquationSystems& es,
   libmesh_assert_equal_to (system_name, "Convection-Diffusion");
 
   // Get a constant reference to the mesh object.
-  const MeshBase& mesh = es.get_mesh();
+  const MeshBase & mesh = es.get_mesh();
 
   // The dimension that we are running
   const unsigned int dim = mesh.mesh_dimension();
@@ -603,20 +604,20 @@ void assemble_cd (EquationSystems& es,
   // Here we define some references to cell-specific data that
   // will be used to assemble the linear system.  We will start
   // with the element Jacobian * quadrature weight at each integration point.
-  const std::vector<Real>& JxW      = fe->get_JxW();
+  const std::vector<Real> & JxW = fe->get_JxW();
 
   // The element shape functions evaluated at the quadrature points.
-  const std::vector<std::vector<Real> >& phi = fe->get_phi();
+  const std::vector<std::vector<Real> > & phi = fe->get_phi();
 
   // The element shape function gradients evaluated at the quadrature
   // points.
-  const std::vector<std::vector<RealGradient> >& dphi = fe->get_dphi();
+  const std::vector<std::vector<RealGradient> > & dphi = fe->get_dphi();
 
   // A reference to the \p DofMap object for this system.  The \p DofMap
   // object handles the index translation from node and element numbers
   // to degree of freedom numbers.  We will talk more about the \p DofMap
   // in future examples.
-  const DofMap& dof_map = system.get_dof_map();
+  const DofMap & dof_map = system.get_dof_map();
 
   // Define data structures to contain the element matrix
   // and right-hand-side vector contribution.  Following
@@ -652,7 +653,7 @@ void assemble_cd (EquationSystems& es,
     {
       // Store a pointer to the element we are currently
       // working on.  This allows for nicer syntax later.
-      const Elem* elem = *el;
+      const Elem * elem = *el;
 
       // Get the degree of freedom indices for the
       // current element.  These define where in the global
@@ -686,18 +687,18 @@ void assemble_cd (EquationSystems& es,
       for (unsigned int qp=0; qp<qrule.n_points(); qp++)
         {
           // Values to hold the old solution & its gradient.
-          Number   u_old = 0.;
+          Number u_old = 0.;
           Gradient grad_u_old;
 
           // Compute the old solution & its gradient.
           for (unsigned int l=0; l<phi.size(); l++)
             {
-              u_old      += phi[l][qp]*system.old_solution  (dof_indices[l]);
+              u_old += phi[l][qp]*system.old_solution  (dof_indices[l]);
 
               // This will work,
               // grad_u_old += dphi[l][qp]*system.old_solution (dof_indices[l]);
               // but we can do it without creating a temporary like this:
-              grad_u_old.add_scaled (dphi[l][qp],system.old_solution (dof_indices[l]));
+              grad_u_old.add_scaled (dphi[l][qp], system.old_solution (dof_indices[l]));
             }
 
           // Now compute the element matrix and RHS contributions.

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ template <>
 Real FE<0,L2_LAGRANGE>::shape(const ElemType,
                               const Order,
                               const unsigned int libmesh_dbg_var(i),
-                              const Point&)
+                              const Point &)
 {
   libmesh_assert_less (i, 1);
   return 1.;
@@ -41,10 +41,10 @@ Real FE<0,L2_LAGRANGE>::shape(const ElemType,
 
 
 template <>
-Real FE<0,L2_LAGRANGE>::shape(const Elem*,
+Real FE<0,L2_LAGRANGE>::shape(const Elem *,
                               const Order,
                               const unsigned int libmesh_dbg_var(i),
-                              const Point&)
+                              const Point &)
 {
   libmesh_assert_less (i, 1);
   return 1.;
@@ -57,7 +57,7 @@ Real FE<0,L2_LAGRANGE>::shape_deriv(const ElemType,
                                     const Order,
                                     const unsigned int,
                                     const unsigned int,
-                                    const Point&)
+                                    const Point &)
 {
   libmesh_error_msg("No spatial derivatives in 0D!");
   return 0.;
@@ -66,11 +66,11 @@ Real FE<0,L2_LAGRANGE>::shape_deriv(const ElemType,
 
 
 template <>
-Real FE<0,L2_LAGRANGE>::shape_deriv(const Elem*,
+Real FE<0,L2_LAGRANGE>::shape_deriv(const Elem *,
                                     const Order,
                                     const unsigned int,
                                     const unsigned int,
-                                    const Point&)
+                                    const Point &)
 {
   libmesh_error_msg("No spatial derivatives in 0D!");
   return 0.;
@@ -84,7 +84,7 @@ Real FE<0,L2_LAGRANGE>::shape_second_deriv(const ElemType,
                                            const Order,
                                            const unsigned int,
                                            const unsigned int,
-                                           const Point&)
+                                           const Point &)
 {
   libmesh_error_msg("No spatial derivatives in 0D!");
   return 0.;
@@ -93,11 +93,11 @@ Real FE<0,L2_LAGRANGE>::shape_second_deriv(const ElemType,
 
 
 template <>
-Real FE<0,L2_LAGRANGE>::shape_second_deriv(const Elem*,
+Real FE<0,L2_LAGRANGE>::shape_second_deriv(const Elem *,
                                            const Order,
                                            const unsigned int,
                                            const unsigned int,
-                                           const Point&)
+                                           const Point &)
 {
   libmesh_error_msg("No spatial derivatives in 0D!");
   return 0.;

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,9 @@ namespace libMesh
 
 
 
-DifferentiableSystem::DifferentiableSystem
-(EquationSystems& es,
- const std::string& name_in,
- const unsigned int number_in) :
+DifferentiableSystem::DifferentiableSystem(EquationSystems & es,
+                                           const std::string & name_in,
+                                           const unsigned int number_in) :
   Parent      (es, name_in, number_in),
   time_solver (),
   deltat(1.),
@@ -50,7 +49,13 @@ DifferentiableSystem::DifferentiableSystem
 
 DifferentiableSystem::~DifferentiableSystem ()
 {
-  this->clear();
+  // If we had an attached Physics object, delete it.
+  if (this->_diff_physics != this)
+    delete this->_diff_physics;
+
+  // If we had an attached QoI object, delete it.
+  if (this->diff_qoi != this)
+    delete this->diff_qoi;
 }
 
 
@@ -116,7 +121,7 @@ void DifferentiableSystem::init_data ()
 
 UniquePtr<DiffContext> DifferentiableSystem::build_context ()
 {
-  DiffContext* context = new DiffContext(*this);
+  DiffContext * context = new DiffContext(*this);
   context->set_deltat_pointer( &this->deltat );
   return UniquePtr<DiffContext>(context);
 }
@@ -141,7 +146,7 @@ void DifferentiableSystem::solve ()
 
 
 
-std::pair<unsigned int, Real> DifferentiableSystem::adjoint_solve (const QoISet& qoi_indices)
+std::pair<unsigned int, Real> DifferentiableSystem::adjoint_solve (const QoISet & qoi_indices)
 {
   // Get the time solver object associated with the system, and tell it that
   // we are solving the adjoint problem
@@ -152,7 +157,7 @@ std::pair<unsigned int, Real> DifferentiableSystem::adjoint_solve (const QoISet&
 
 
 
-LinearSolver<Number>* DifferentiableSystem::get_linear_solver() const
+LinearSolver<Number> * DifferentiableSystem::get_linear_solver() const
 {
   libmesh_assert(time_solver.get());
   libmesh_assert_equal_to (&(time_solver->system()), this);
@@ -171,7 +176,7 @@ std::pair<unsigned int, Real> DifferentiableSystem::get_linear_solve_parameters(
 
 
 
-void DifferentiableSystem::release_linear_solver(LinearSolver<Number>*) const
+void DifferentiableSystem::release_linear_solver(LinearSolver<Number> *) const
 {
 }
 

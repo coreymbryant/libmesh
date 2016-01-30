@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -127,63 +127,11 @@ UniquePtr<Elem> Hex8::build_side (const unsigned int i,
 
   else
     {
-      Elem* face = new Quad4;
+      Elem * face = new Quad4;
       face->subdomain_id() = this->subdomain_id();
 
-      // Think of a unit cube: (-1,1) x (-1,1) x (-1,1)
-      switch (i)
-        {
-        case 0:  // the face at z = -1
-          {
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(2);
-            face->set_node(3) = this->get_node(1);
-            break;
-          }
-        case 1:  // the face at y = -1
-          {
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(1);
-            face->set_node(2) = this->get_node(5);
-            face->set_node(3) = this->get_node(4);
-            break;
-          }
-        case 2:  // the face at x = 1
-          {
-            face->set_node(0) = this->get_node(1);
-            face->set_node(1) = this->get_node(2);
-            face->set_node(2) = this->get_node(6);
-            face->set_node(3) = this->get_node(5);
-            break;
-          }
-        case 3: // the face at y = 1
-          {
-            face->set_node(0) = this->get_node(2);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(7);
-            face->set_node(3) = this->get_node(6);
-            break;
-          }
-        case 4: // the face at x = -1
-          {
-            face->set_node(0) = this->get_node(3);
-            face->set_node(1) = this->get_node(0);
-            face->set_node(2) = this->get_node(4);
-            face->set_node(3) = this->get_node(7);
-            break;
-          }
-        case 5: // the face at z = 1
-          {
-            face->set_node(0) = this->get_node(4);
-            face->set_node(1) = this->get_node(5);
-            face->set_node(2) = this->get_node(6);
-            face->set_node(3) = this->get_node(7);
-            break;
-          }
-        default:
-          libmesh_error_msg("Invalid side i = " << i);
-        }
+      for (unsigned n=0; n<face->n_nodes(); ++n)
+        face->set_node(n) = this->get_node(Hex8::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -205,7 +153,7 @@ UniquePtr<Elem> Hex8::build_edge (const unsigned int i) const
 
 void Hex8::connectivity(const unsigned int libmesh_dbg_var(sc),
                         const IOPackage iop,
-                        std::vector<dof_id_type>& conn) const
+                        std::vector<dof_id_type> & conn) const
 {
   libmesh_assert(_nodes);
   libmesh_assert_less (sc, this->n_sub_elem());
@@ -390,7 +338,7 @@ Real Hex8::volume () const
   // The centroid is a convenient point to use
   // for the apex of all the pyramids.
   const Point R = this->centroid();
-  Node* pyr_base[4];
+  Node * pyr_base[4];
 
   Real vol=0.;
 

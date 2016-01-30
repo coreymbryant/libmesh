@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,10 +33,6 @@
 #include "libmesh/reference_counted_object.h"
 #include "libmesh/libmesh.h"
 
-// Eigen includes
-
-// C++ includes
-
 namespace libMesh
 {
 
@@ -49,18 +45,17 @@ template <typename T> class ShellMatrix;
  * This class provides an interface to the suite of preconditioners available
  * from Eigen.
  *
- * @author Benjamin Kirk, 2013.
+ * \author Benjamin Kirk
+ * \date 2013
  */
-
 template <typename T>
 class EigenPreconditioner : public Preconditioner<T>
 {
 public:
-
   /**
    *  Constructor. Initializes EigenPreconditioner data structures
    */
-  EigenPreconditioner (const libMesh::Parallel::Communicator &comm_in
+  EigenPreconditioner (const libMesh::Parallel::Communicator & comm_in
                        LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
   /**
@@ -72,19 +67,17 @@ public:
    * Computes the preconditioned vector "y" based on input "x".
    * Usually by solving Py=x to get the action of P^-1 x.
    */
-  virtual void apply(const NumericVector<T> & x, NumericVector<T> & y);
+  virtual void apply(const NumericVector<T> & x, NumericVector<T> & y) libmesh_override;
 
   /**
    * Release all memory and clear data structures.
    */
-  virtual void clear () {}
+  virtual void clear () libmesh_override {}
 
   /**
    * Initialize data structures if not done so already.
    */
-  virtual void init ();
-
-protected:
+  virtual void init () libmesh_override;
 };
 
 
@@ -93,7 +86,7 @@ protected:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-EigenPreconditioner<T>::EigenPreconditioner(const libMesh::Parallel::Communicator &comm_in) :
+EigenPreconditioner<T>::EigenPreconditioner(const libMesh::Parallel::Communicator & comm_in) :
   Preconditioner<T>(comm_in)
 {
 }

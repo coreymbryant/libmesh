@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -182,10 +182,10 @@ void QGauss::keast_rule(const Real rule_data[][4],
 // II:   3-permutation, (a,a,1-2a)
 // III:  6-permutation, (a,b,1-a-b)
 // The weights for a given set of permutations are all the same.
-void QGauss::dunavant_rule2(const Real* wts,
-                            const Real* a,
-                            const Real* b,
-                            const unsigned int* permutation_ids,
+void QGauss::dunavant_rule2(const Real * wts,
+                            const Real * a,
+                            const Real * b,
+                            const unsigned int * permutation_ids,
                             unsigned int n_wts)
 {
   // Figure out how many total points by summing up the entries

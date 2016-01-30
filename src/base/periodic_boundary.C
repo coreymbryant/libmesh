@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@ PeriodicBoundary::PeriodicBoundary() :
 
 
 
-PeriodicBoundary::PeriodicBoundary(const PeriodicBoundary& o, TransformationType t) :
+PeriodicBoundary::PeriodicBoundary(const PeriodicBoundary & o, TransformationType t) :
   PeriodicBoundaryBase(o),
   translation_vector(o.translation_vector)
 {
@@ -51,7 +51,7 @@ PeriodicBoundary::PeriodicBoundary(const PeriodicBoundary& o, TransformationType
 
 
 
-PeriodicBoundary::PeriodicBoundary(const RealVectorValue& vector) :
+PeriodicBoundary::PeriodicBoundary(const RealVectorValue & vector) :
   PeriodicBoundaryBase(),
   translation_vector(vector)
 {
@@ -59,7 +59,7 @@ PeriodicBoundary::PeriodicBoundary(const RealVectorValue& vector) :
 
 
 
-Point PeriodicBoundary::get_corresponding_pos(const Point& pt) const
+Point PeriodicBoundary::get_corresponding_pos(const Point & pt) const
 {
   return pt + translation_vector;
 }

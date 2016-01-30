@@ -1,11 +1,12 @@
-#ifndef __rb_classes_h__
-#define __rb_classes_h__
+#ifndef RB_CLASSES_H
+#define RB_CLASSES_H
 
 // local includes
 #include "assembly.h"
 
 // rbOOmit includes
 #include "libmesh/rb_construction.h"
+#include "libmesh/rb_evaluation.h"
 
 // libMesh includes
 #include "libmesh/fe_base.h"
@@ -21,7 +22,7 @@ public:
   /**
    * Constructor. Just set the theta expansion.
    */
-  ElasticityRBEvaluation(const Parallel::Communicator& comm)
+  ElasticityRBEvaluation(const Parallel::Communicator & comm)
     : RBEvaluation(comm)
   {
     set_rb_theta_expansion(elasticity_theta_expansion);
@@ -45,12 +46,12 @@ class ElasticityRBConstruction : public RBConstruction
 {
 public:
 
-  ElasticityRBConstruction (EquationSystems& es,
-                            const std::string& name_in,
-                            const unsigned int number_in)
-    : Parent(es, name_in, number_in),
-      elasticity_assembly_expansion(*this),
-      ip_assembly(*this)
+  ElasticityRBConstruction (EquationSystems & es,
+                            const std::string & name_in,
+                            const unsigned int number_in) :
+    Parent(es, name_in, number_in),
+    elasticity_assembly_expansion(*this),
+    ip_assembly(*this)
   {}
 
   /**
@@ -101,12 +102,12 @@ public:
   /**
    * Pre-request all relevant element data.
    */
-  virtual void init_context(FEMContext &c)
+  virtual void init_context(FEMContext & c)
   {
     // For efficiency, we should prerequest all
     // the data we will need to build the
     // linear system before doing an element loop.
-    FEBase* elem_fe = NULL;
+    FEBase * elem_fe = libmesh_nullptr;
     c.get_element_fe(u_var, elem_fe);
 
     elem_fe->get_JxW();
@@ -135,7 +136,6 @@ public:
    * The object that defines which degrees of freedom are on a Dirichlet boundary.
    */
   UniquePtr<DirichletBoundary> dirichlet_bc;
-
 };
 
 #endif

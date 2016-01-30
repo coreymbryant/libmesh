@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,6 @@ namespace libMesh
 // Forward declarations
 class Nemesis_IO_Helper;
 
-
 /**
  * The \p Nemesis_IO class implements reading parallel meshes in the
  * \p Nemesis file format from Sandia National Labs.  Nemesis files
@@ -45,11 +44,9 @@ class Nemesis_IO_Helper;
  * of files the Mesh is split into and rank is the ID of the processor's
  * elements that were written to the file.
  *
- * @author John Peterson, 2008.
+ * \author John Peterson
+ * \date 2008
  */
-
-// ------------------------------------------------------------
-// Nemesis_IO class definition
 class Nemesis_IO : public MeshInput<MeshBase>,
                    public MeshOutput<MeshBase>,
                    public ParallelObject
@@ -62,7 +59,7 @@ public:
    * This is the constructor required to read a mesh.
    */
   explicit
-  Nemesis_IO (MeshBase& mesh, bool single_precision=false);
+  Nemesis_IO (MeshBase & mesh, bool single_precision=false);
 
   /**
    * Destructor.
@@ -74,22 +71,27 @@ public:
    * You provide the basename, then LibMesh appends the ".size.rank"
    * depending on this->n_processors() and this->processor_id().
    */
-  virtual void read (const std::string& base_filename);
+  virtual void read (const std::string & base_filename) libmesh_override;
 
   /**
    * This method implements writing a mesh to a specified file.
    */
-  virtual void write (const std::string& base_filename);
+  virtual void write (const std::string & base_filename) libmesh_override;
 
   /**
    * Write one timestep's worth of the solution.
    */
-  void write_timestep (const std::string& fname, const EquationSystems& es, const int timestep, const Real time);
+  void write_timestep (const std::string & fname,
+                       const EquationSystems & es,
+                       const int timestep,
+                       const Real time);
 
   /**
    * Output a nodal solution.
    */
-  void write_nodal_data (const std::string& fname, const std::vector<Number>& soln, const std::vector<std::string>& names);
+  virtual void write_nodal_data (const std::string & fname,
+                                 const std::vector<Number> & soln,
+                                 const std::vector<std::string> & names) libmesh_override;
 
   /**
    * Set the flag indicationg if we should be verbose.
@@ -99,13 +101,13 @@ public:
   /**
    * Write out global variables.
    */
-  void write_global_data (const std::vector<Number>&,
-                          const std::vector<std::string>&);
+  void write_global_data (const std::vector<Number> &,
+                          const std::vector<std::string> &);
 
   /**
    * Write out information records.
    */
-  void write_information_records (const std::vector<std::string>&);
+  void write_information_records (const std::vector<std::string> &);
 
   /**
    * If true, this flag will cause the Nemesis_IO object to attempt to
@@ -116,9 +118,9 @@ public:
 
 private:
 #if defined(LIBMESH_HAVE_EXODUS_API) && defined(LIBMESH_HAVE_NEMESIS_API)
-  Nemesis_IO_Helper *nemhelper;
-#endif
+  Nemesis_IO_Helper * nemhelper;
   int _timestep;
+#endif
 
   bool _verbose;
 

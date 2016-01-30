@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // SFCPartitioner implementation
-void SFCPartitioner::_do_partition (MeshBase& mesh,
+void SFCPartitioner::_do_partition (MeshBase & mesh,
                                     const unsigned int n)
 {
 
@@ -82,7 +82,7 @@ void SFCPartitioner::_do_partition (MeshBase& mesh,
 
   // the reverse_map maps the contiguous ids back
   // to active elements
-  std::vector<Elem*> reverse_map (n_active_elem, NULL);
+  std::vector<Elem *> reverse_map (n_active_elem, libmesh_nullptr);
 
   int size = static_cast<int>(n_active_elem);
   std::vector<double> x      (size);
@@ -94,9 +94,6 @@ void SFCPartitioner::_do_partition (MeshBase& mesh,
   // We need to map the active element ids into a
   // contiguous range.
   {
-    //     active_elem_iterator       elem_it (mesh.elements_begin());
-    //     const active_elem_iterator elem_end(mesh.elements_end());
-
     MeshBase::element_iterator       elem_it  = mesh.active_elements_begin();
     const MeshBase::element_iterator elem_end = mesh.active_elements_end();
 
@@ -125,7 +122,7 @@ void SFCPartitioner::_do_partition (MeshBase& mesh,
 
     for (; elem_it != elem_end; ++elem_it)
       {
-        const Elem* elem = *elem_it;
+        const Elem * elem = *elem_it;
 
         libmesh_assert_less (elem->id(), forward_map.size());
 
@@ -177,7 +174,7 @@ void SFCPartitioner::_do_partition (MeshBase& mesh,
       {
         libmesh_assert_less (static_cast<unsigned int>(table[i]-1), reverse_map.size());
 
-        Elem* elem = reverse_map[table[i]-1];
+        Elem * elem = reverse_map[table[i]-1];
 
         elem->processor_id() = cast_int<processor_id_type>
           (i/blksize);

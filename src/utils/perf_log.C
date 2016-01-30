@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,13 +42,13 @@ namespace libMesh
 bool PerfLog::called = false;
 
 
-PerfLog::PerfLog(const std::string& ln,
+PerfLog::PerfLog(const std::string & ln,
                  const bool le) :
   label_name(ln),
   log_events(le),
   total_time(0.)
 {
-  gettimeofday (&tstart, NULL);
+  gettimeofday (&tstart, libmesh_nullptr);
 
   if (log_events)
     this->clear();
@@ -78,7 +78,7 @@ void PerfLog::clear()
                             << pos->first.second                      \
                             << " is still being monitored!");
 
-      gettimeofday (&tstart, NULL);
+      gettimeofday (&tstart, libmesh_nullptr);
 
       log.clear();
 
@@ -111,7 +111,7 @@ std::string PerfLog::get_info_header() const
       // on the backend.  Hence we have added a configure flag, --disable-getpwuid,
       // to manually turn this off.
 #ifdef LIBMESH_HAVE_GETPWUID
-      struct passwd* p = getpwuid(getuid());
+      struct passwd * p = getpwuid(getuid());
 #endif
       oss << "\n";
 
@@ -247,7 +247,7 @@ std::string PerfLog::get_perf_info() const
       // Stop timing for this event.
       struct timeval tstop;
 
-      gettimeofday (&tstop, NULL);
+      gettimeofday (&tstop, libmesh_nullptr);
 
       const double elapsed_time = (static_cast<double>(tstop.tv_sec  - tstart.tv_sec) +
                                    static_cast<double>(tstop.tv_usec - tstart.tv_usec)*1.e-6);
@@ -383,7 +383,7 @@ std::string PerfLog::get_perf_info() const
 
       for (pos = log.begin(); pos != log.end(); ++pos)
         {
-          const PerfData& perf_data = pos->second;
+          const PerfData & perf_data = pos->second;
 
           // Only print the event if the count is non-zero.
           if (perf_data.count != 0)
@@ -591,21 +591,21 @@ void PerfLog::print_log() const
     }
 }
 
-PerfData PerfLog::get_perf_data(const std::string &label, const std::string &header)
+PerfData PerfLog::get_perf_data(const std::string & label, const std::string & header)
 {
   return log[std::make_pair(header, label)];
 }
 
-void PerfLog::start_event(const std::string &label,
-                          const std::string &header)
+void PerfLog::start_event(const std::string & label,
+                          const std::string & header)
 {
   this->push(label,header);
 }
 
 
 
-void PerfLog::stop_event(const std::string &label,
-                         const std::string &header)
+void PerfLog::stop_event(const std::string & label,
+                         const std::string & header)
 {
   this->pop(label,header);
 }
@@ -628,7 +628,7 @@ void PerfLog::restart_event(const std::string &,
 
 
 
-void PerfLog::split_on_whitespace(const std::string& input, std::vector<std::string>& output) const
+void PerfLog::split_on_whitespace(const std::string & input, std::vector<std::string> & output) const
 {
   // Check for easy return
   if (input.size()==0)

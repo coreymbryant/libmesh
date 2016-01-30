@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #include "libmesh/dtk_solution_transfer.h"
 
@@ -42,9 +42,10 @@
 #include <DTK_CommTools.hpp>
 #include <DTK_CommIndexer.hpp>
 
-namespace libMesh {
+namespace libMesh
+{
 
-DTKSolutionTransfer::DTKSolutionTransfer(const libMesh::Parallel::Communicator &comm) :
+DTKSolutionTransfer::DTKSolutionTransfer(const libMesh::Parallel::Communicator & comm) :
   SolutionTransfer(comm)
 {
   //comm_default = Teuchos::DefaultComm<int>::getComm();
@@ -58,14 +59,15 @@ DTKSolutionTransfer::~DTKSolutionTransfer()
       ++it)
     delete it->second;
 
-  for(std::map<std::pair<EquationSystems *, EquationSystems *>, shared_domain_map_type * >::iterator it = dtk_maps.begin();
+  for(std::map<std::pair<EquationSystems *, EquationSystems *>, shared_domain_map_type *>::iterator it = dtk_maps.begin();
       it != dtk_maps.end();
       ++it)
     delete it->second;
 }
 
 void
-DTKSolutionTransfer::transfer(const Variable & from_var, const Variable & to_var)
+DTKSolutionTransfer::transfer(const Variable & from_var,
+                              const Variable & to_var)
 {
   libmesh_experimental();
 
@@ -110,4 +112,4 @@ DTKSolutionTransfer::transfer(const Variable & from_var, const Variable & to_var
 
 } // namespace libMesh
 
-#endif // #ifdef LIBMESH_HAVE_DTK
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_DTK

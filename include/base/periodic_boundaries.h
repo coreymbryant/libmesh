@@ -1,6 +1,6 @@
 
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -45,12 +45,12 @@ class PointLocatorBase;
  * declarations and future flexibility.  Note that std::map has no
  * virtual destructor, so downcasting here would be dangerous.
  */
-class PeriodicBoundaries : public std::map<boundary_id_type, PeriodicBoundaryBase*>
+class PeriodicBoundaries : public std::map<boundary_id_type, PeriodicBoundaryBase *>
 {
 public:
-  PeriodicBoundaryBase* boundary(boundary_id_type id);
+  PeriodicBoundaryBase * boundary(boundary_id_type id);
 
-  const PeriodicBoundaryBase* boundary(boundary_id_type id) const;
+  const PeriodicBoundaryBase * boundary(boundary_id_type id) const;
 
   PeriodicBoundaries() {}
 
@@ -58,10 +58,10 @@ public:
 
   // The periodic neighbor of \p e in direction \p side, if it
   // exists.  NULL otherwise
-  const Elem* neighbor(boundary_id_type boundary_id,
-                       const PointLocatorBase& point_locator,
-                       const Elem* e,
-                       unsigned int side) const;
+  const Elem * neighbor(boundary_id_type boundary_id,
+                        const PointLocatorBase & point_locator,
+                        const Elem * e,
+                        unsigned int side) const;
 };
 
 } // namespace libMesh

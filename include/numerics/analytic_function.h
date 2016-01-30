@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,23 +29,18 @@
 namespace libMesh
 {
 
-
-
 // Forward Declarations
 template <typename T>
 class DenseVector;
-
 
 /**
  * This class provides function-like objects for which an
  * analytical expression can be provided.  The user may
  * either provide vector-return or number-return functions.
  *
- * @author Daniel Dreyer, 2003
+ * \author Daniel Dreyer
+ * \date 2003
  */
-
-// ------------------------------------------------------------
-// AnalyticFunction class definition
 template <typename Output=Number>
 class AnalyticFunction : public FunctionBase<Output>
 {
@@ -55,15 +50,15 @@ public:
    * Constructor.  Takes a function pointer for scalar
    * return values.
    */
-  AnalyticFunction (Output fptr(const Point& p,
+  AnalyticFunction (Output fptr(const Point & p,
                                 const Real time));
 
   /**
    * Constructor.  Takes a function pointer for
    * vector valued functions.
    */
-  AnalyticFunction (void fptr(DenseVector<Output>& output,
-                              const Point& p,
+  AnalyticFunction (void fptr(DenseVector<Output> & output,
+                              const Point & p,
                               const Real time));
   /**
    * Destructor.
@@ -76,46 +71,45 @@ public:
    * the boundary values when an analytical expression
    * is available.
    */
-  Output (* _number_fptr) (const Point& p,
+  Output (* _number_fptr) (const Point & p,
                            const Real time);
 
   /**
    * Pointer to user-provided vector valued function.
    */
-  void (* _vector_fptr) (DenseVector<Output>& output,
-                         const Point& p,
+  void (* _vector_fptr) (DenseVector<Output> & output,
+                         const Point & p,
                          const Real time);
 
   /**
    * The actual initialization process.
    */
-  void init ();
+  virtual void init () libmesh_override;
 
   /**
    * Clears the function.
    */
-  void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Returns a new deep copy of the function.
    */
-  virtual UniquePtr<FunctionBase<Output> > clone () const;
+  virtual UniquePtr<FunctionBase<Output> > clone () const libmesh_override;
 
   /**
    * @returns the value at point \p p and time
    * \p time, which defaults to zero.
    */
-  Output operator() (const Point& p,
-                     const Real time=0.);
+  virtual Output operator() (const Point & p,
+                             const Real time=0.) libmesh_override;
 
   /**
    * Like before, but returns the values in a
    * writable reference.
    */
-  void operator() (const Point& p,
-                   const Real time,
-                   DenseVector<Output>& output);
-
+  virtual void operator() (const Point & p,
+                           const Real time,
+                           DenseVector<Output> & output) libmesh_override;
 };
 
 
@@ -124,7 +118,7 @@ public:
 // AnalyticFunction inline methods
 template <typename Output>
 inline
-Output AnalyticFunction<Output>::operator() (const Point& p,
+Output AnalyticFunction<Output>::operator() (const Point & p,
                                              const Real time)
 {
   libmesh_assert (this->initialized());
@@ -135,9 +129,9 @@ Output AnalyticFunction<Output>::operator() (const Point& p,
 
 template <typename Output>
 inline
-void AnalyticFunction<Output>::operator() (const Point& p,
+void AnalyticFunction<Output>::operator() (const Point & p,
                                            const Real time,
-                                           DenseVector<Output>& output)
+                                           DenseVector<Output> & output)
 {
   libmesh_assert (this->initialized());
   this->_vector_fptr(output, p, time);
@@ -147,11 +141,11 @@ void AnalyticFunction<Output>::operator() (const Point& p,
 
 
 template <typename Output>
-AnalyticFunction<Output>::AnalyticFunction (Output fptr(const Point& p,
+AnalyticFunction<Output>::AnalyticFunction (Output fptr(const Point & p,
                                                         const Real time)) :
   FunctionBase<Output> (),
   _number_fptr (fptr),
-  _vector_fptr (NULL)
+  _vector_fptr (libmesh_nullptr)
 {
   libmesh_assert(fptr);
   this->_initialized = true;
@@ -161,11 +155,11 @@ AnalyticFunction<Output>::AnalyticFunction (Output fptr(const Point& p,
 
 template <typename Output>
 inline
-AnalyticFunction<Output>::AnalyticFunction (void fptr(DenseVector<Output>& output,
-                                                      const Point& p,
+AnalyticFunction<Output>::AnalyticFunction (void fptr(DenseVector<Output> & output,
+                                                      const Point & p,
                                                       const Real time)) :
   FunctionBase<Output> (),
-  _number_fptr (NULL),
+  _number_fptr (libmesh_nullptr),
   _vector_fptr (fptr)
 {
   libmesh_assert(fptr);
@@ -186,7 +180,7 @@ template <typename Output>
 void AnalyticFunction<Output>::init ()
 {
   // dumb double-test
-  libmesh_assert ((_number_fptr != NULL) || (_vector_fptr != NULL));
+  libmesh_assert ((_number_fptr != libmesh_nullptr) || (_vector_fptr != libmesh_nullptr));
 
   // definitely ready
   this->_initialized = true;
@@ -199,8 +193,8 @@ inline
 void AnalyticFunction<Output>::clear ()
 {
   // We probably need a method to reset these later...
-  _number_fptr = NULL;
-  _vector_fptr = NULL;
+  _number_fptr = libmesh_nullptr;
+  _vector_fptr = libmesh_nullptr;
 
   // definitely not ready
   this->_initialized = false;

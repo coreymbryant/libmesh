@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -44,7 +44,8 @@ class UnstructuredMesh;
  * A C++ interface between LibMesh and the Triangle library written by
  * J.R. Shewchuk.
  *
- * @author John W. Peterson
+ * \author John W. Peterson
+ * \date 2011
  */
 class TriangleInterface
 {
@@ -56,7 +57,7 @@ public:
    * and the convex hull will be meshed.
    */
   explicit
-  TriangleInterface(UnstructuredMesh& mesh);
+  TriangleInterface(UnstructuredMesh & mesh);
 
   /**
    * Empty destructor.
@@ -112,46 +113,46 @@ public:
   /**
    * Sets and/or gets the desired element type.
    */
-  ElemType& elem_type() {return _elem_type;}
+  ElemType & elem_type() {return _elem_type;}
 
   /**
    * Sets and/or gets the desired triangle area. Set to zero to disable
    * area constraint.
    */
-  Real& desired_area() {return _desired_area;}
+  Real & desired_area() {return _desired_area;}
 
   /**
    * Sets and/or gets the minimum angle. Set to zero to disable area
    * constraint.
    */
-  Real& minimum_angle() {return _minimum_angle;}
+  Real & minimum_angle() {return _minimum_angle;}
 
   /**
    * Sets and/or gets additional flags to be passed to triangle
    */
-  std::string& extra_flags() {return _extra_flags;}
+  std::string & extra_flags() {return _extra_flags;}
 
   /**
    * Sets and/or gets the desired triangulation type.
    */
-  TriangulationType& triangulation_type() {return _triangulation_type;}
+  TriangulationType & triangulation_type() {return _triangulation_type;}
 
   /**
    * Sets and/or gets the flag for inserting add'l points.
    */
-  bool& insert_extra_points() {return _insert_extra_points;}
+  bool & insert_extra_points() {return _insert_extra_points;}
 
   /**
    * Sets/gets flag which tells whether to do Delaunay mesh
    * smoothing after generating the grid.
    */
-  bool& smooth_after_generating() {return _smooth_after_generating;}
+  bool & smooth_after_generating() {return _smooth_after_generating;}
 
   /**
    * Attaches a vector of Hole* pointers which will be
    * meshed around.
    */
-  void attach_hole_list(const std::vector<Hole*>* holes) {_holes = holes;}
+  void attach_hole_list(const std::vector<Hole*> * holes) {_holes = holes;}
 
   /**
    * When constructing a PSLG, it is often not possible to do
@@ -170,13 +171,13 @@ private:
   /**
    * Reference to the mesh which is to be created by triangle.
    */
-  UnstructuredMesh& _mesh;
+  UnstructuredMesh & _mesh;
 
   /**
    * A pointer to a vector of Hole*s.  If this is NULL, there
    * are no holes!
    */
-  const std::vector<Hole*>* _holes;
+  const std::vector<Hole*> * _holes;
 
   /**
    * The type of elements to generate.  (Defaults to

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ class Node;
 struct myhash {
 public:
   template <typename T1, typename T2>
-  std::size_t operator()(const std::pair<T1, T2> &x) const
+  std::size_t operator()(const std::pair<T1, T2> & x) const
   {
     // recommendation from
     // http://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
@@ -66,10 +66,10 @@ public:
 class TopologyMap
 {
   // We need to supply our own hash function if we're hashing
-#if defined(LIBMESH_HAVE_STD_UNORDERED_MAP) || \
-    defined(LIBMESH_HAVE_TR1_UNORDERED_MAP) || \
-    defined(LIBMESH_HAVE_EXT_HASH_MAP) || \
-    defined(LIBMESH_HAVE_HASH_MAP)
+#if defined(LIBMESH_HAVE_STD_UNORDERED_MAP) ||  \
+  defined(LIBMESH_HAVE_TR1_UNORDERED_MAP) ||    \
+  defined(LIBMESH_HAVE_EXT_HASH_MAP) ||         \
+  defined(LIBMESH_HAVE_HASH_MAP)
 #  define MYHASH ,myhash
 #else
 #  define MYHASH
@@ -78,7 +78,7 @@ class TopologyMap
   typedef LIBMESH_BEST_UNORDERED_MAP<std::pair<dof_id_type, dof_id_type>,
                                      dof_id_type MYHASH> map_type;
 public:
-  void init(MeshBase&);
+  void init(MeshBase &);
 
   void clear() { _map.clear(); }
 
@@ -86,9 +86,9 @@ public:
    * Add a node to the map, between each pair of specified bracketing
    * nodes.
    */
-  void add_node(const Node& mid_node,
+  void add_node(const Node & mid_node,
                 const std::vector<
-                std::pair<dof_id_type, dof_id_type> >&
+                std::pair<dof_id_type, dof_id_type> > &
                 bracketing_nodes);
 
   bool empty() const { return _map.empty(); }
@@ -97,11 +97,11 @@ public:
                    dof_id_type bracket_node2) const;
 
   dof_id_type find(const std::vector<
-                   std::pair<dof_id_type, dof_id_type> >&
+                   std::pair<dof_id_type, dof_id_type> > &
                    bracketing_nodes) const;
 
 protected:
-  void fill(const MeshBase&);
+  void fill(const MeshBase &);
 
 private:
   map_type          _map;

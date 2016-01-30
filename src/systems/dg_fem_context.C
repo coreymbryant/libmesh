@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -26,9 +26,9 @@
 namespace libMesh
 {
 
-DGFEMContext::DGFEMContext (const System &sys)
+DGFEMContext::DGFEMContext (const System & sys)
   : FEMContext(sys),
-    _neighbor(NULL),
+    _neighbor(libmesh_nullptr),
     _neighbor_dof_indices_var(sys.n_vars()),
     _dg_terms_active(false)
 {
@@ -69,10 +69,9 @@ DGFEMContext::DGFEMContext (const System &sys)
     {
       FEType fe_type = sys.variable_type(i);
 
-      if ( _neighbor_side_fe[fe_type] == NULL )
-        {
-          _neighbor_side_fe[fe_type] = FEAbstract::build(this->_dim, fe_type).release();
-        }
+      if (_neighbor_side_fe[fe_type] == libmesh_nullptr)
+        _neighbor_side_fe[fe_type] = FEAbstract::build(this->_dim, fe_type).release();
+
       _neighbor_side_fe_var[i] = _neighbor_side_fe[fe_type];
     }
 }
@@ -122,7 +121,7 @@ void DGFEMContext::neighbor_side_fe_reinit ()
        i != local_fe_end; ++i)
     {
       FEType neighbor_side_fe_type = i->first;
-      FEAbstract* side_fe = _side_fe[this->get_dim()][neighbor_side_fe_type];
+      FEAbstract * side_fe = _side_fe[this->get_dim()][neighbor_side_fe_type];
       qface_side_points = side_fe->get_xyz();
 
       FEInterface::inverse_map (this->get_dim(),

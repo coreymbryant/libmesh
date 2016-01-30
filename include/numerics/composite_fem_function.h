@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -48,8 +48,8 @@ public:
   // Attach a new subfunction, along with a map from the indices of
   // that subfunction to the indices of the global function.
   // (*this)(index_map[i]) will return f(i).
-  void attach_subfunction (const FEMFunctionBase<Output>& f,
-                           const std::vector<unsigned int>& index_map)
+  void attach_subfunction (const FEMFunctionBase<Output> & f,
+                           const std::vector<unsigned int> & index_map)
   {
     const unsigned int subfunction_index = subfunctions.size();
     libmesh_assert_equal_to(subfunctions.size(), index_maps.size());
@@ -77,17 +77,17 @@ public:
       }
   }
 
-  virtual Output operator() (const FEMContext& c,
-                             const Point& p,
-                             const Real time = 0)
+  virtual Output operator() (const FEMContext & c,
+                             const Point & p,
+                             const Real time = 0) libmesh_override
   {
     return this->component(c,0,p,time);
   }
 
-  virtual void operator() (const FEMContext& c,
-                           const Point& p,
+  virtual void operator() (const FEMContext & c,
+                           const Point & p,
                            const Real time,
-                           DenseVector<Output>& output)
+                           DenseVector<Output> & output) libmesh_override
   {
     libmesh_assert_greater_equal (output.size(),
                                   reverse_index_map.size());
@@ -110,10 +110,10 @@ public:
    * @returns the vector component \p i at coordinate
    * \p p and time \p time.
    */
-  virtual Output component (const FEMContext& c,
+  virtual Output component (const FEMContext & c,
                             unsigned int i,
-                            const Point& p,
-                            Real time)
+                            const Point & p,
+                            Real time) libmesh_override
   {
     if (i >= reverse_index_map.size() ||
         reverse_index_map[i].first == libMesh::invalid_uint)
@@ -127,18 +127,21 @@ public:
       component(c, reverse_index_map[i].second, p, time);
   }
 
-  virtual UniquePtr<FEMFunctionBase<Output> > clone() const {
-    CompositeFEMFunction* returnval = new CompositeFEMFunction();
+  virtual UniquePtr<FEMFunctionBase<Output> > clone() const libmesh_override
+  {
+    CompositeFEMFunction * returnval = new CompositeFEMFunction();
     for (unsigned int i=0; i != subfunctions.size(); ++i)
       returnval->attach_subfunction(*subfunctions[i], index_maps[i]);
     return UniquePtr<FEMFunctionBase<Output> > (returnval);
   }
 
-  unsigned int n_subfunctions () const {
+  unsigned int n_subfunctions () const
+  {
     return subfunctions.size();
   }
 
-  unsigned int n_components () const {
+  unsigned int n_components () const
+  {
     return reverse_index_map.size();
   }
 

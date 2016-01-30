@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@
 
 #include "libmesh/libmesh_config.h"
 #include "libmesh_common.h" // for libmesh_deprecated()
+#include "libmesh/safe_bool.h"
 
 // LibMesh's AutoPtr is now libmesh_deprecated(), just like the
 // std::auto_ptr it is based on.
@@ -159,14 +160,14 @@ struct AutoPtrRef
  * purpose.  It is provided "as is" without express or implied warranty.
  */
 template<typename Tp>
-class AutoPtr
+class AutoPtr : public safe_bool<AutoPtr<Tp> >
 {
 private:
 
   /**
    * The actual dumb pointer this class wraps.
    */
-  Tp* _ptr;
+  Tp * _ptr;
 
 public:
   /**
@@ -181,7 +182,7 @@ public:
    *  This object now @e owns the object pointed to by @a p.
    */
   explicit
-  AutoPtr(element_type* p = 0)
+  AutoPtr(element_type * p = 0)
     : _ptr(p)
   {
     // Note: we can't call libmesh_deprecated() here, since global
@@ -196,7 +197,7 @@ public:
    *  This object now @e owns the object previously owned by @a a, which has
    *  given up ownsership.
    */
-  AutoPtr(AutoPtr& a)
+  AutoPtr(AutoPtr & a)
     : _ptr(a.release())
   {
   }
@@ -211,7 +212,7 @@ public:
    *  given up ownsership.
    */
   template<typename Tp1>
-  AutoPtr(AutoPtr<Tp1>& a)
+  AutoPtr(AutoPtr<Tp1> & a)
     : _ptr(a.release())
   {
   }
@@ -224,8 +225,8 @@ public:
    *  given up ownsership.  The object that this one @e used to own and
    *  track has been deleted.
    */
-  AutoPtr&
-  operator=(AutoPtr& a)
+  AutoPtr &
+  operator=(AutoPtr & a)
   {
     reset(a.release());
     return *this;
@@ -242,8 +243,8 @@ public:
    *  track has been deleted.
    */
   template <typename Tp1>
-  AutoPtr&
-  operator=(AutoPtr<Tp1>& a)
+  AutoPtr &
+  operator=(AutoPtr<Tp1> & a)
   {
     reset(a.release());
     return *this;
@@ -266,8 +267,7 @@ public:
     if (!libMesh::warned_about_auto_ptr)
       {
         libMesh::warned_about_auto_ptr = true;
-        libMesh::out << "*** Warning, AutoPtr is deprecated and will be removed in a future library version! "
-                     << __FILE__ << ", line " << __LINE__ << ", compiled " << __DATE__ << " at " << __TIME__ << " ***" << std::endl;
+        libmesh_deprecated();
       }
     delete _ptr;
   }
@@ -280,7 +280,7 @@ public:
    *  being a null pointer, and you know what happens when you dereference
    *  one of those...)
    */
-  element_type&
+  element_type &
   operator*() const  { return *_ptr; }
 
   /**
@@ -289,7 +289,7 @@ public:
    *  This returns the pointer itself, which the language then will
    *  automatically cause to be dereferenced.
    */
-  element_type*
+  element_type *
   operator->() const  { return _ptr; }
 
   /**
@@ -302,7 +302,7 @@ public:
    *
    *  @note  This %AutoPtr still owns the memory.
    */
-  element_type*
+  element_type *
   get() const  { return _ptr; }
 
   /**
@@ -316,10 +316,10 @@ public:
    *  @note  This %AutoPtr no longer owns the memory.  When this object
    *  goes out of scope, nothing will happen.
    */
-  element_type*
+  element_type *
   release()
   {
-    element_type* tmp = _ptr;
+    element_type * tmp = _ptr;
     _ptr = 0;
     return tmp;
   }
@@ -332,7 +332,7 @@ public:
    *  object has been deleted.
    */
   void
-  reset(element_type* p = 0)
+  reset(element_type * p = 0)
   {
     if (p != _ptr)
       {
@@ -361,7 +361,7 @@ public:
    * AutoPtr<Base> ptr = func_returning_AutoPtr(.....);
    * @endcode
    */
-  AutoPtr&
+  AutoPtr &
   operator=(AutoPtrRef<element_type> ref)
   {
     if (ref._ptr != this->get())
@@ -370,6 +370,16 @@ public:
         _ptr = ref._ptr;
       }
     return *this;
+  }
+
+  /**
+   * A "safe" replacement for operator bool () that behaves more like
+   * an explicit conversion operator even in C++98. This allows code
+   * like if (!foo) to work with AutoPtr.
+   */
+  bool boolean_test() const
+  {
+    return (this->get() != NULL);
   }
 
   /**

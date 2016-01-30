@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -50,14 +50,14 @@ public:
    * Constructor.  By default this element has no parent.
    */
   explicit
-  Edge3 (Elem* p=NULL) :
+  Edge3 (Elem * p=libmesh_nullptr) :
     Edge(Edge3::n_nodes(), p, _nodelinks_data) {}
 
   /**
    * @returns the \p Point associated with local \p Node \p i,
    * in master element rather than physical coordinates.
    */
-  Point master_point (const unsigned int i) const
+  virtual Point master_point (const unsigned int i) const libmesh_override
   {
     libmesh_assert_less(i, this->n_nodes());
     if (i < 2)
@@ -68,74 +68,74 @@ public:
   /**
    * @returns 3
    */
-  unsigned int n_nodes() const { return 3; }
+  virtual unsigned int n_nodes() const libmesh_override { return 3; }
 
   /**
    * @returns 2
    */
-  unsigned int n_sub_elem() const { return 2; }
+  virtual unsigned int n_sub_elem() const libmesh_override { return 2; }
 
   /**
    * @returns true iff the specified (local) node number is a vertex.
    */
-  virtual bool is_vertex(const unsigned int i) const;
+  virtual bool is_vertex(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is an edge.
    */
-  virtual bool is_edge(const unsigned int i) const;
+  virtual bool is_edge(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is a face.
    */
-  virtual bool is_face(const unsigned int i) const;
+  virtual bool is_face(const unsigned int i) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified side
    */
   virtual bool is_node_on_side(const unsigned int n,
-                               const unsigned int s) const;
+                               const unsigned int s) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified edge (i.e. "returns true" in 1D)
    */
   virtual bool is_node_on_edge(const unsigned int n,
-                               const unsigned int e) const;
+                               const unsigned int e) const libmesh_override;
 
   /*
    * @returns true iff the element map is definitely affine within
    * numerical tolerances
    */
-  virtual bool has_affine_map () const;
+  virtual bool has_affine_map () const libmesh_override;
 
   /**
    * @returns \p EDGE3
    */
-  ElemType type()  const { return EDGE3; }
+  virtual ElemType type() const libmesh_override { return EDGE3; }
 
   /**
    * @returns SECOND
    */
-  Order default_order() const { return SECOND; }
+  virtual Order default_order() const libmesh_override { return SECOND; }
 
   virtual void connectivity(const unsigned int sc,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const;
+                            std::vector<dof_id_type> & conn) const libmesh_override;
 
   /**
    * @returns 2 for all \p n
    */
-  unsigned int n_second_order_adjacent_vertices (const unsigned int) const
+  virtual unsigned int n_second_order_adjacent_vertices (const unsigned int) const libmesh_override
   { return 2; }
 
   /**
    * @returns the element-local number of the  \f$ v^{th} \f$ vertex
    * that defines the \f$ n^{th} \f$ second-order node.
    */
-  unsigned short int second_order_adjacent_vertex (const unsigned int,
-                                                   const unsigned int v) const
+  virtual unsigned short int second_order_adjacent_vertex (const unsigned int,
+                                                           const unsigned int v) const libmesh_override
   { return static_cast<unsigned short int>(v); }
 
   /**
@@ -148,21 +148,34 @@ public:
    * \p this->get_node(n)==this->child(c)->get_node(v)
    */
   virtual std::pair<unsigned short int, unsigned short int>
-  second_order_child_vertex (const unsigned int n) const;
+  second_order_child_vertex (const unsigned int n) const libmesh_override;
 
   /**
    * An optimized method for computing the length of a 3-node edge.
    */
-  virtual Real volume () const;
+  virtual Real volume () const libmesh_override;
 
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
   /**
    * @returns \p false.  This is a finite element.
    */
-  bool infinite () const { return false; }
+  virtual bool infinite () const libmesh_override { return false; }
 
 #endif
+
+  /**
+   * Don't hide Edge::key(side) defined in the base class.
+   */
+  using Edge::key;
+
+  /**
+   * Compute a unique key for this element which is suitable for
+   * hashing (not necessarily unique, but close).  The key is based
+   * solely on the mid-edge node's global id, to be consistent with 2D
+   * elements that have Edge3 sides (Quad9, Quad8, etc.).
+   */
+  virtual dof_id_type key () const libmesh_override;
 
 
 protected:
@@ -170,7 +183,7 @@ protected:
   /**
    * Data for links to nodes
    */
-  Node* _nodelinks_data[3];
+  Node * _nodelinks_data[3];
 
 
 
@@ -179,9 +192,9 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int i,
-                          const unsigned int j,
-                          const unsigned int k) const
+  virtual float embedding_matrix (const unsigned int i,
+                                  const unsigned int j,
+                                  const unsigned int k) const libmesh_override
   { return _embedding_matrix[i][j][k]; }
 
   /**

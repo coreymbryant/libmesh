@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,8 @@ class Elem;
  * images for publications, since I didn't find/don't know of a free
  * visualization program which would do this.
  *
- * @author John W. Peterson, 2008
+ * \author John W. Peterson
+ * \date 2008
  */
 class PostscriptIO : public MeshOutput<MeshBase>
 {
@@ -56,7 +57,7 @@ public:
    * Constructor.
    */
   explicit
-  PostscriptIO (const MeshBase& mesh);
+  PostscriptIO (const MeshBase & mesh);
 
   /**
    * Destructor.
@@ -66,7 +67,7 @@ public:
   /**
    * This method implements writing a mesh to a specified file.
    */
-  virtual void write (const std::string& );
+  virtual void write (const std::string &) libmesh_override;
 
   /**
    * Controls greyscale shading of cells.  By default this value
@@ -89,12 +90,12 @@ public:
   /**
    * Draws an element with Bezier curves
    */
-  void plot_quadratic_elem(const Elem* elem);
+  void plot_quadratic_elem(const Elem * elem);
 
   /**
    * Draws an element with straight lines
    */
-  void plot_linear_elem(const Elem* elem);
+  void plot_linear_elem(const Elem * elem);
 
 private:
   /**
@@ -102,7 +103,7 @@ private:
    * computes the Bezier coefficients.  These may be passed to
    * the Postscript routine "curveto".
    */
-  void _compute_edge_bezier_coeffs(const Elem* elem);
+  void _compute_edge_bezier_coeffs(const Elem * elem);
 
   /**
    * Coefficients of the transformation from physical-space

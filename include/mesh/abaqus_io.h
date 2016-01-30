@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,11 +29,13 @@
 
 namespace libMesh
 {
+
 /**
  * The AbaqusIO class is a preliminary implementation for reading
  * Abaqus mesh files in ASCII format.
  *
- * @author John W. Peterson, 2011.
+ * \author John W. Peterson
+ * \date 2011
  */
 class AbaqusIO : public MeshInput<MeshBase>
 {
@@ -42,7 +44,7 @@ public:
    * Constructor.  Takes a writeable reference to a mesh object.
    */
   explicit
-  AbaqusIO (MeshBase& mesh);
+  AbaqusIO (MeshBase & mesh);
 
   /**
    * Destructor.
@@ -52,7 +54,7 @@ public:
   /**
    * This method implements reading a mesh from a specified file.
    */
-  virtual void read (const std::string& name);
+  virtual void read (const std::string & name) libmesh_override;
 
   /**
    * Default false.  Abaqus files have only nodesets in them by
@@ -104,7 +106,7 @@ private:
    * set of the given name, storing them in the passed map using the
    * name as key.
    */
-  void read_ids(std::string set_name, container_t& container);
+  void read_ids(std::string set_name, container_t & container);
 
   /**
    * This function is called after all the elements have been
@@ -134,7 +136,7 @@ private:
    * by a "*Surface" section in the file, and then a list of element ID
    * and side IDs for the set.
    */
-  void read_sideset(std::string sideset_name, sideset_container_t& container);
+  void read_sideset(std::string sideset_name, sideset_container_t & container);
 
   /**
    * This function assigns boundary IDs to node sets based on the

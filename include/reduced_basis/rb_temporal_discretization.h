@@ -71,17 +71,17 @@ public:
    * Get/set the RHS control.
    */
   Real get_control(const unsigned int k) const;
-  void set_control(const std::vector<Real>& control);
+  void set_control(const std::vector<Real> & control);
 
   /**
    * Read in and initialize parameters from \p parameters_filename.
    */
-  void process_temporal_parameters_file (const std::string& parameters_filename);
+  void process_temporal_parameters_file (const std::string & parameters_filename);
 
   /**
    * Pull the temporal discretization data from \p other.
    */
-  void pull_temporal_discretization_data(RBTemporalDiscretization& other);
+  void pull_temporal_discretization_data(RBTemporalDiscretization & other);
 
 private:
 
@@ -111,7 +111,7 @@ private:
 
   /**
    * The RHS control (scalar function of time).
-   * A function h(t) that is used in the RHS as h(t)*f(x,\mu).
+   * A function h(t) that is used in the RHS as h(t)*f(x,\f$ \mu \f$).
    * See Martin Grepl's thesis
    */
   std::vector<Real> _control;

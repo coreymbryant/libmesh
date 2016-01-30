@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ ParameterVector::ParameterVector(const std::vector<Number *> &params)
 
 
 
-void ParameterVector::deep_copy(ParameterVector &target) const
+void ParameterVector::deep_copy(ParameterVector & target) const
 {
   const unsigned int Np = cast_int<unsigned int>
     (this->_params.size());
@@ -59,7 +59,7 @@ void ParameterVector::deep_copy(ParameterVector &target) const
 
 
 
-void ParameterVector::shallow_copy(ParameterVector &target) const
+void ParameterVector::shallow_copy(ParameterVector & target) const
 {
   target._my_data.clear();
   target._params = this->_params;
@@ -68,7 +68,7 @@ void ParameterVector::shallow_copy(ParameterVector &target) const
 
 
 
-void ParameterVector::value_copy(ParameterVector &target) const
+void ParameterVector::value_copy(ParameterVector & target) const
 {
   const unsigned int Np = cast_int<unsigned int>
     (this->_params.size());
@@ -96,7 +96,7 @@ void ParameterVector::resize(unsigned int s)
 
   for (unsigned int i=old_size; i < s; ++i)
     this->_params[i] =
-      new ParameterPointer<Number>(NULL);
+      new ParameterPointer<Number>(libmesh_nullptr);
 }
 
 
@@ -114,7 +114,7 @@ void ParameterVector::deep_resize(unsigned int s)
 
 
 
-ParameterVector& ParameterVector::operator *= (const Number a)
+ParameterVector & ParameterVector::operator *= (const Number a)
 {
   const unsigned int Np = cast_int<unsigned int>
     (this->_params.size());
@@ -125,7 +125,7 @@ ParameterVector& ParameterVector::operator *= (const Number a)
 
 
 
-ParameterVector& ParameterVector::operator += (const ParameterVector& a)
+ParameterVector & ParameterVector::operator += (const ParameterVector & a)
 {
   const unsigned int Np = cast_int<unsigned int>
     (this->_params.size());

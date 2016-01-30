@@ -3,13 +3,14 @@
 namespace libMesh
 {
 
-SyncNodalPositions::SyncNodalPositions(MeshBase& m)
+SyncNodalPositions::SyncNodalPositions(MeshBase & m)
   : mesh(m)
 {}
 
 
 
-void SyncNodalPositions::gather_data (const std::vector<dof_id_type>& ids, std::vector<datum>& data)
+void SyncNodalPositions::gather_data (const std::vector<dof_id_type> & ids,
+                                      std::vector<datum> & data)
 {
   data.resize(ids.size());
 
@@ -17,9 +18,9 @@ void SyncNodalPositions::gather_data (const std::vector<dof_id_type>& ids, std::
   for (std::size_t i=0; i<ids.size(); ++i)
     {
       // Look for this node in the mesh
-      Node *node = mesh.node_ptr(ids[i]);
+      Node * node = mesh.node_ptr(ids[i]);
 
-      if (node == NULL)
+      if (node == libmesh_nullptr)
         libmesh_error_msg("Error! Mesh returned a NULL node pointer in SyncNodalPosition::gather_data().");
 
       // Store this node's position in the data array.
@@ -30,15 +31,16 @@ void SyncNodalPositions::gather_data (const std::vector<dof_id_type>& ids, std::
 
 
 
-void SyncNodalPositions::act_on_data (const std::vector<dof_id_type>& ids, std::vector<datum>& data)
+void SyncNodalPositions::act_on_data (const std::vector<dof_id_type> & ids,
+                                      std::vector<datum> & data)
 {
   for (std::size_t i=0; i<ids.size(); ++i)
     {
 
       // Get a pointer to the node whose position is to be updated.
-      Node* node = mesh.node_ptr(ids[i]);
+      Node * node = mesh.node_ptr(ids[i]);
 
-      if (node == NULL)
+      if (node == libmesh_nullptr)
         libmesh_error_msg("Error! Mesh returned a NULL node pointer in SyncNodalPosition::act_on_data().");
 
       // Update this node's position.  Should call Point::op=

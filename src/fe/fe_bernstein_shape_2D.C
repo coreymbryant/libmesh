@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ template <>
 Real FE<2,BERNSTEIN>::shape(const ElemType,
                             const Order,
                             const unsigned int,
-                            const Point&)
+                            const Point &)
 {
   libmesh_error_msg("Bernstein polynomials require the element type \nbecause edge orientation is needed.");
   return 0.;
@@ -43,10 +43,10 @@ Real FE<2,BERNSTEIN>::shape(const ElemType,
 
 
 template <>
-Real FE<2,BERNSTEIN>::shape(const Elem* elem,
+Real FE<2,BERNSTEIN>::shape(const Elem * elem,
                             const Order order,
                             const unsigned int i,
-                            const Point& p)
+                            const Point & p)
 {
   libmesh_assert(elem);
 
@@ -386,7 +386,7 @@ Real FE<2,BERNSTEIN>::shape_deriv(const ElemType,
                                   const Order,
                                   const unsigned int,
                                   const unsigned int,
-                                  const Point&)
+                                  const Point &)
 {
   libmesh_error_msg("Bernstein polynomials require the element type \nbecause edge orientation is needed.");
   return 0.;
@@ -395,11 +395,11 @@ Real FE<2,BERNSTEIN>::shape_deriv(const ElemType,
 
 
 template <>
-Real FE<2,BERNSTEIN>::shape_deriv(const Elem* elem,
+Real FE<2,BERNSTEIN>::shape_deriv(const Elem * elem,
                                   const Order order,
                                   const unsigned int i,
                                   const unsigned int j,
-                                  const Point& p)
+                                  const Point & p)
 {
   libmesh_assert(elem);
 
@@ -563,7 +563,7 @@ Real FE<2,BERNSTEIN>::shape_second_deriv(const ElemType,
                                          const Order,
                                          const unsigned int,
                                          const unsigned int,
-                                         const Point&)
+                                         const Point &)
 {
   static bool warning_given = false;
 
@@ -579,11 +579,11 @@ Real FE<2,BERNSTEIN>::shape_second_deriv(const ElemType,
 
 
 template <>
-Real FE<2,BERNSTEIN>::shape_second_deriv(const Elem*,
+Real FE<2,BERNSTEIN>::shape_second_deriv(const Elem *,
                                          const Order,
                                          const unsigned int,
                                          const unsigned int,
-                                         const Point&)
+                                         const Point &)
 {
   static bool warning_given = false;
 

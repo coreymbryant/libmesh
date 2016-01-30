@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -43,16 +43,16 @@ namespace libMesh
 
 //-----------------------------------------------------------------
 // ErrorEstimator implementations
-void ExactErrorEstimator::attach_exact_value (Number fptr(const Point& p,
-                                                          const Parameters& parameters,
-                                                          const std::string& sys_name,
-                                                          const std::string& unknown_name))
+void ExactErrorEstimator::attach_exact_value (Number fptr(const Point & p,
+                                                          const Parameters & parameters,
+                                                          const std::string & sys_name,
+                                                          const std::string & unknown_name))
 {
   libmesh_assert(fptr);
   _exact_value = fptr;
 
   // We're not using a fine grid solution
-  _equation_systems_fine = NULL;
+  _equation_systems_fine = libmesh_nullptr;
 
   // We're not using user-provided functors
   this->clear_functors();
@@ -67,7 +67,7 @@ void ExactErrorEstimator::attach_exact_values (std::vector<FunctionBase<Number> 
     delete (_exact_values[i]);
 
   _exact_values.clear();
-  _exact_values.resize(f.size(), NULL);
+  _exact_values.resize(f.size(), libmesh_nullptr);
 
   // We use clone() to get non-sliced copies of FunctionBase
   // subclasses, but we don't currently put the resulting UniquePtrs
@@ -82,23 +82,23 @@ void ExactErrorEstimator::attach_exact_value (unsigned int sys_num,
                                               FunctionBase<Number> * f)
 {
   if (_exact_values.size() <= sys_num)
-    _exact_values.resize(sys_num+1, NULL);
+    _exact_values.resize(sys_num+1, libmesh_nullptr);
 
   if (f)
     _exact_values[sys_num] = f->clone().release();
 }
 
 
-void ExactErrorEstimator::attach_exact_deriv (Gradient gptr(const Point& p,
-                                                            const Parameters& parameters,
-                                                            const std::string& sys_name,
-                                                            const std::string& unknown_name))
+void ExactErrorEstimator::attach_exact_deriv (Gradient gptr(const Point & p,
+                                                            const Parameters & parameters,
+                                                            const std::string & sys_name,
+                                                            const std::string & unknown_name))
 {
   libmesh_assert(gptr);
   _exact_deriv = gptr;
 
   // We're not using a fine grid solution
-  _equation_systems_fine = NULL;
+  _equation_systems_fine = libmesh_nullptr;
 
   // We're not using user-provided functors
   this->clear_functors();
@@ -113,7 +113,7 @@ void ExactErrorEstimator::attach_exact_derivs (std::vector<FunctionBase<Gradient
     delete (_exact_derivs[i]);
 
   _exact_derivs.clear();
-  _exact_derivs.resize(g.size(), NULL);
+  _exact_derivs.resize(g.size(), libmesh_nullptr);
 
   // We use clone() to get non-sliced copies of FunctionBase
   // subclasses, but we don't currently put the resulting UniquePtrs
@@ -125,10 +125,10 @@ void ExactErrorEstimator::attach_exact_derivs (std::vector<FunctionBase<Gradient
 
 
 void ExactErrorEstimator::attach_exact_deriv (unsigned int sys_num,
-                                              FunctionBase<Gradient>* g)
+                                              FunctionBase<Gradient> * g)
 {
   if (_exact_derivs.size() <= sys_num)
-    _exact_derivs.resize(sys_num+1, NULL);
+    _exact_derivs.resize(sys_num+1, libmesh_nullptr);
 
   if (g)
     _exact_derivs[sys_num] = g->clone().release();
@@ -137,16 +137,16 @@ void ExactErrorEstimator::attach_exact_deriv (unsigned int sys_num,
 
 
 
-void ExactErrorEstimator::attach_exact_hessian (Tensor hptr(const Point& p,
-                                                            const Parameters& parameters,
-                                                            const std::string& sys_name,
-                                                            const std::string& unknown_name))
+void ExactErrorEstimator::attach_exact_hessian (Tensor hptr(const Point & p,
+                                                            const Parameters & parameters,
+                                                            const std::string & sys_name,
+                                                            const std::string & unknown_name))
 {
   libmesh_assert(hptr);
   _exact_hessian = hptr;
 
   // We're not using a fine grid solution
-  _equation_systems_fine = NULL;
+  _equation_systems_fine = libmesh_nullptr;
 
   // We're not using user-provided functors
   this->clear_functors();
@@ -161,7 +161,7 @@ void ExactErrorEstimator::attach_exact_hessians (std::vector<FunctionBase<Tensor
     delete (_exact_hessians[i]);
 
   _exact_hessians.clear();
-  _exact_hessians.resize(h.size(), NULL);
+  _exact_hessians.resize(h.size(), libmesh_nullptr);
 
   // We use clone() to get non-sliced copies of FunctionBase
   // subclasses, but we don't currently put the resulting UniquePtrs
@@ -173,44 +173,44 @@ void ExactErrorEstimator::attach_exact_hessians (std::vector<FunctionBase<Tensor
 
 
 void ExactErrorEstimator::attach_exact_hessian (unsigned int sys_num,
-                                                FunctionBase<Tensor>* h)
+                                                FunctionBase<Tensor> * h)
 {
   if (_exact_hessians.size() <= sys_num)
-    _exact_hessians.resize(sys_num+1, NULL);
+    _exact_hessians.resize(sys_num+1, libmesh_nullptr);
 
   if (h)
     _exact_hessians[sys_num] = h->clone().release();
 }
 
 
-void ExactErrorEstimator::attach_reference_solution (EquationSystems* es_fine)
+void ExactErrorEstimator::attach_reference_solution (EquationSystems * es_fine)
 {
   libmesh_assert(es_fine);
   _equation_systems_fine = es_fine;
 
   // If we're using a fine grid solution, we're not using exact value
   // function pointers or functors.
-  _exact_value = NULL;
-  _exact_deriv = NULL;
-  _exact_hessian = NULL;
+  _exact_value = libmesh_nullptr;
+  _exact_deriv = libmesh_nullptr;
+  _exact_hessian = libmesh_nullptr;
 
   this->clear_functors();
 }
 
 #ifdef LIBMESH_ENABLE_AMR
-void ExactErrorEstimator::estimate_error (const System& system,
-                                          ErrorVector& error_per_cell,
-                                          const NumericVector<Number>* solution_vector,
+void ExactErrorEstimator::estimate_error (const System & system,
+                                          ErrorVector & error_per_cell,
+                                          const NumericVector<Number> * solution_vector,
                                           bool estimate_parent_error)
 #else
-  void ExactErrorEstimator::estimate_error (const System& system,
-                                            ErrorVector& error_per_cell,
-                                            const NumericVector<Number>* solution_vector,
+  void ExactErrorEstimator::estimate_error (const System & system,
+                                            ErrorVector & error_per_cell,
+                                            const NumericVector<Number> * solution_vector,
                                             bool /* estimate_parent_error */ )
 #endif
 {
   // The current mesh
-  const MeshBase& mesh = system.get_mesh();
+  const MeshBase & mesh = system.get_mesh();
 
   // The dimensionality of the mesh
   const unsigned int dim = mesh.mesh_dimension();
@@ -219,7 +219,7 @@ void ExactErrorEstimator::estimate_error (const System& system,
   const unsigned int n_vars = system.n_vars();
 
   // The DofMap for this system
-  const DofMap& dof_map = system.get_dof_map();
+  const DofMap & dof_map = system.get_dof_map();
 
   // Resize the error_per_cell vector to be
   // the number of elements, initialize it to 0.
@@ -230,9 +230,9 @@ void ExactErrorEstimator::estimate_error (const System& system,
   // solution vector if necessary
   if (solution_vector && solution_vector != system.solution.get())
     {
-      NumericVector<Number>* newsol =
-        const_cast<NumericVector<Number>*>(solution_vector);
-      System &sys = const_cast<System&>(system);
+      NumericVector<Number> * newsol =
+        const_cast<NumericVector<Number> *>(solution_vector);
+      System & sys = const_cast<System &>(system);
       newsol->swap(*sys.solution);
       sys.update();
     }
@@ -244,10 +244,10 @@ void ExactErrorEstimator::estimate_error (const System& system,
       if (error_norm.weight(var) == 0.0) continue;
 
       // The (string) name of this variable
-      const std::string& var_name = system.variable_name(var);
+      const std::string & var_name = system.variable_name(var);
 
       // The type of finite element to use for this variable
-      const FEType& fe_type = dof_map.variable_type (var);
+      const FEType & fe_type = dof_map.variable_type (var);
 
       UniquePtr<FEBase> fe (FEBase::build (dim, fe_type));
 
@@ -263,7 +263,7 @@ void ExactErrorEstimator::estimate_error (const System& system,
       UniquePtr<NumericVector<Number> > fine_soln = NumericVector<Number>::build(system.comm());
       if (_equation_systems_fine)
         {
-          const System& fine_system = _equation_systems_fine->get_system(system.name());
+          const System & fine_system = _equation_systems_fine->get_system(system.name());
 
           std::vector<Number> global_soln;
           // FIXME - we're assuming that the fine system solution gets
@@ -328,13 +328,13 @@ void ExactErrorEstimator::estimate_error (const System& system,
       for (;elem_it != elem_end; ++elem_it)
         {
           // e is necessarily an active element on the local processor
-          const Elem* elem = *elem_it;
+          const Elem * elem = *elem_it;
           const dof_id_type e_id = elem->id();
 
 #ifdef LIBMESH_ENABLE_AMR
           // See if the parent of element e has been examined yet;
           // if not, we may want to compute the estimator on it
-          const Elem* parent = elem->parent();
+          const Elem * parent = elem->parent();
 
           // We only can compute and only need to compute on
           // parents with all active children
@@ -416,9 +416,9 @@ void ExactErrorEstimator::estimate_error (const System& system,
   // the current_local_solution
   if (solution_vector && solution_vector != system.solution.get())
     {
-      NumericVector<Number>* newsol =
-        const_cast<NumericVector<Number>*>(solution_vector);
-      System &sys = const_cast<System&>(system);
+      NumericVector<Number> * newsol =
+        const_cast<NumericVector<Number> *>(solution_vector);
+      System & sys = const_cast<System &>(system);
       newsol->swap(*sys.solution);
       sys.update();
     }
@@ -426,34 +426,34 @@ void ExactErrorEstimator::estimate_error (const System& system,
 
 
 
-Real ExactErrorEstimator::find_squared_element_error(const System& system,
-                                                     const std::string& var_name,
-                                                     const Elem *elem,
-                                                     const DenseVector<Number> &Uelem,
-                                                     FEBase *fe,
-                                                     MeshFunction *fine_values) const
+Real ExactErrorEstimator::find_squared_element_error(const System & system,
+                                                     const std::string & var_name,
+                                                     const Elem * elem,
+                                                     const DenseVector<Number> & Uelem,
+                                                     FEBase * fe,
+                                                     MeshFunction * fine_values) const
 {
   // The (string) name of this system
-  const std::string& sys_name = system.name();
+  const std::string & sys_name = system.name();
   const unsigned int sys_num = system.number();
 
   const unsigned int var = system.variable_number(var_name);
   const unsigned int var_component =
     system.variable_scalar_number(var, 0);
 
-  const Parameters& parameters = system.get_equation_systems().parameters;
+  const Parameters & parameters = system.get_equation_systems().parameters;
 
   // reinitialize the element-specific data
   // for the current element
   fe->reinit (elem);
 
   // Get the data we need to compute with
-  const std::vector<Real> &                      JxW          = fe->get_JxW();
-  const std::vector<std::vector<Real> >&         phi_values   = fe->get_phi();
-  const std::vector<std::vector<RealGradient> >& dphi_values  = fe->get_dphi();
-  const std::vector<Point>&                      q_point      = fe->get_xyz();
+  const std::vector<Real> &                       JxW          = fe->get_JxW();
+  const std::vector<std::vector<Real> > &         phi_values   = fe->get_phi();
+  const std::vector<std::vector<RealGradient> > & dphi_values  = fe->get_dphi();
+  const std::vector<Point> &                      q_point      = fe->get_xyz();
 #ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
-  const std::vector<std::vector<RealTensor> >&   d2phi_values = fe->get_d2phi();
+  const std::vector<std::vector<RealTensor> > &   d2phi_values = fe->get_d2phi();
 #endif
 
   // The number of shape functions

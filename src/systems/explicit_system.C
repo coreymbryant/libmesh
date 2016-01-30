@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,11 +29,11 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // ExplicitSystem implementation
-ExplicitSystem::ExplicitSystem (EquationSystems& es,
-                                const std::string& name_in,
+ExplicitSystem::ExplicitSystem (EquationSystems & es,
+                                const std::string & name_in,
                                 const unsigned int number_in) :
   Parent (es, name_in, number_in),
-  rhs(NULL)
+  rhs(libmesh_nullptr)
 
 {
   //rhs = &(this->add_vector ("RHS Vector"));
@@ -56,7 +56,7 @@ void ExplicitSystem::clear ()
 
   // NULL-out the vector.  Note that
   // System::clear() actually deleted it.
-  rhs = NULL;
+  rhs = libmesh_nullptr;
 }
 
 
@@ -86,7 +86,7 @@ void ExplicitSystem::reinit ()
 
 
 
-void ExplicitSystem::assemble_qoi (const QoISet& qoi_indices)
+void ExplicitSystem::assemble_qoi (const QoISet & qoi_indices)
 {
   // The user quantity of interest assembly gets to expect to
   // accumulate on initially zero values
@@ -99,7 +99,7 @@ void ExplicitSystem::assemble_qoi (const QoISet& qoi_indices)
 
 
 
-void ExplicitSystem::assemble_qoi_derivative (const QoISet& qoi_indices,
+void ExplicitSystem::assemble_qoi_derivative (const QoISet & qoi_indices,
                                               bool include_liftfunc,
                                               bool apply_constraints)
 {
@@ -130,12 +130,13 @@ void ExplicitSystem::add_system_rhs ()
 {
   // Possible that we cleared the _vectors but
   // forgot to NULL-out the rhs?
-  if (this->n_vectors() == 0) rhs = NULL;
+  if (this->n_vectors() == 0)
+    rhs = libmesh_nullptr;
 
 
   // Only need to add the rhs if it isn't there
   // already!
-  if (rhs == NULL)
+  if (rhs == libmesh_nullptr)
     rhs = &(this->add_vector ("RHS Vector", false));
 
   libmesh_assert(rhs);

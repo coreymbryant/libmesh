@@ -5,7 +5,7 @@
 
 
 AC_INIT([libmesh], [1.0.0-pre], [libmesh-users@lists.sourceforge.net], [libmesh], [http://libmesh.github.io])
-AC_PREREQ([2.61]) # require autoconf 2.61 - I havent tried anything older
+AC_PREREQ([2.69])
 
 # by default CFLAGS and CXXFLAGS are set to '-g -O2' on systems that support them.
 # this causes a problem if we then declare a different optimization level. So
@@ -21,8 +21,6 @@ top_srcdir=`dirname $0`
 AC_MSG_RESULT(---------------------------------------------)
 AC_MSG_RESULT(----------- Configuring libMesh -------------)
 AC_MSG_RESULT(---------------------------------------------)
-
-AC_REVISION($Revision$)
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -40,7 +38,6 @@ AC_CONFIG_FILES([Makefile
                  contrib/utils/Makefile
                  contrib/utils/Make.common
                  tests/Makefile
-                 tests/base/getpot_test.C
                  contrib/utils/libmesh.pc:contrib/utils/libmesh-opt.pc.in
                  contrib/utils/libmesh-opt.pc
                  contrib/utils/libmesh-dbg.pc
@@ -69,7 +66,7 @@ AX_PREFIX_CONFIG_H(include/libmesh_config.h,LIBMESH,include/libmesh_config.h.tmp
 AC_DEFINE_UNQUOTED(CONFIGURE_INFO, ["$0 $ac_configure_args"], [Configuration information.])
 
 # require automake 1.11 - color tests
-AM_INIT_AUTOMAKE([dist-xz dist-bzip2 tar-ustar color-tests 1.11])
+AM_INIT_AUTOMAKE([dist-xz dist-bzip2 tar-ustar color-tests serial-tests 1.12])
 
 # use silent rules - automake 1.11
 AM_SILENT_RULES(yes)
@@ -169,6 +166,10 @@ LIBMESH_TEST_CXX11_INITIALIZER_LIST
 LIBMESH_TEST_CXX11_VARIADIC_TEMPLATES
 LIBMESH_TEST_CXX11_THREAD
 LIBMESH_TEST_CXX11_TYPE_TRAITS
+LIBMESH_TEST_CXX11_INVERSE_HYPERBOLIC_FUNCS
+LIBMESH_TEST_CXX11_DELETED_FUNCTIONS
+LIBMESH_TEST_CXX11_FINAL
+LIBMESH_TEST_CXX11_NULLPTR
 
 #-----------------------------------------------------
 # Initialize libtool.  By default, we will build

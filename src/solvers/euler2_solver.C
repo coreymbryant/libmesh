@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@ namespace libMesh
 
 
 
-Euler2Solver::Euler2Solver (sys_type& s)
+Euler2Solver::Euler2Solver (sys_type & s)
   : FirstOrderUnsteadySolver(s), theta(1.)
 {
 }
@@ -48,7 +48,7 @@ Real Euler2Solver::error_order() const
 
 
 bool Euler2Solver::element_residual (bool request_jacobian,
-                                     DiffContext &context)
+                                     DiffContext & context)
 {
   return this->_general_residual(request_jacobian,
                                  context,
@@ -61,7 +61,7 @@ bool Euler2Solver::element_residual (bool request_jacobian,
 
 
 bool Euler2Solver::side_residual (bool request_jacobian,
-                                  DiffContext &context)
+                                  DiffContext & context)
 {
   return this->_general_residual(request_jacobian,
                                  context,
@@ -74,7 +74,7 @@ bool Euler2Solver::side_residual (bool request_jacobian,
 
 
 bool Euler2Solver::nonlocal_residual (bool request_jacobian,
-                                      DiffContext &context)
+                                      DiffContext & context)
 {
   return this->_general_residual(request_jacobian,
                                  context,
@@ -87,7 +87,7 @@ bool Euler2Solver::nonlocal_residual (bool request_jacobian,
 
 
 bool Euler2Solver::_general_residual (bool request_jacobian,
-                                      DiffContext &context,
+                                      DiffContext & context,
                                       ResFuncType mass,
                                       ResFuncType time_deriv,
                                       ResFuncType constraint,

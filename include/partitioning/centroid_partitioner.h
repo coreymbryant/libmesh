@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -43,12 +43,10 @@ class Elem;
  * define "less than" differently than if you cared about radial
  * distance.
  *
- * @author John W. Peterson and Benjamin S. Kirk, 2003
+ * \author John W. Peterson
+ * \author Benjamin S. Kirk
+ * \date 2003
  */
-
-
-
-// CentroidPartitioner class definition
 class CentroidPartitioner : public Partitioner
 {
 public:
@@ -76,7 +74,7 @@ public:
    * Creates a new partitioner of this type and returns it in
    * an \p UniquePtr.
    */
-  virtual UniquePtr<Partitioner> clone () const
+  virtual UniquePtr<Partitioner> clone () const libmesh_override
   {
     return UniquePtr<Partitioner>(new CentroidPartitioner(sort_method()));
   }
@@ -97,8 +95,8 @@ protected:
    * Partitions the mesh into n subdomains.  This is
    * a required interface for the class.
    */
-  virtual void _do_partition (MeshBase& mesh,
-                              const unsigned int n);
+  virtual void _do_partition (MeshBase & mesh,
+                              const unsigned int n) libmesh_override;
 
 private:
 
@@ -107,7 +105,7 @@ private:
    * This list will be kept around in case a repartition
    * is desired.
    */
-  void compute_centroids (MeshBase& mesh);
+  void compute_centroids (MeshBase & mesh);
 
   /**
    * Partition the list of centroids based on the
@@ -115,8 +113,8 @@ private:
    * a function which may be passed to the std::sort
    * routine for sorting the elements by centroid.
    */
-  static bool sort_x (const std::pair<Point, Elem*>& lhs,
-                      const std::pair<Point, Elem*>& rhs);
+  static bool sort_x (const std::pair<Point, Elem *> & lhs,
+                      const std::pair<Point, Elem *> & rhs);
 
   /**
    * Partition the list of centroids based on the
@@ -124,8 +122,8 @@ private:
    * a function which may be passed to the std::sort
    * routine for sorting the elements by centroid.
    */
-  static bool sort_y (const std::pair<Point, Elem*>& lhs,
-                      const std::pair<Point, Elem*>& rhs);
+  static bool sort_y (const std::pair<Point, Elem *> & lhs,
+                      const std::pair<Point, Elem *> & rhs);
 
   /**
    * Partition the list of centroids based on the
@@ -133,8 +131,8 @@ private:
    * a function which may be passed to the std::sort
    * routine for sorting the elements by centroid.
    */
-  static bool sort_z (const std::pair<Point, Elem*>& lhs,
-                      const std::pair<Point, Elem*>& rhs);
+  static bool sort_z (const std::pair<Point, Elem *> & lhs,
+                      const std::pair<Point, Elem *> & rhs);
 
 
   /**
@@ -143,8 +141,8 @@ private:
    * a function which may be passed to the std::sort
    * routine for sorting the elements by centroid.
    */
-  static bool sort_radial (const std::pair<Point, Elem*>& lhs,
-                           const std::pair<Point, Elem*>& rhs);
+  static bool sort_radial (const std::pair<Point, Elem *> & lhs,
+                           const std::pair<Point, Elem *> & rhs);
 
   /**
    * Store a flag which tells which type of
@@ -156,7 +154,7 @@ private:
    * Vector which holds pairs of centroids and
    * their respective element pointers.
    */
-  std::vector<std::pair<Point, Elem*> > _elem_centroids;
+  std::vector<std::pair<Point, Elem *> > _elem_centroids;
 };
 
 } // namespace libMesh

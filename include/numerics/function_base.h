@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -31,11 +31,8 @@
 namespace libMesh
 {
 
-
-
 // Forward Declarations
 class Point;
-
 
 /**
  * This is the base class for functor-like classes.  These
@@ -48,7 +45,7 @@ class Point;
  * required input of each derived class thwarts the effective
  * use of the commonly used \p build() member.  But afterwards
  * the virtual members allow the convenient and libMesh-common
- * usage through a \p FunctionBase*. Note that for functor objects
+ * usage through a \p FunctionBase *. Note that for functor objects
  * for vector-valued variables, it is assumed each component is indexed
  * contiguously; i.e. if u_var is index 3, then libMesh expects
  * the x-component of u_var is index 3, the y-component is index 4,
@@ -56,11 +53,9 @@ class Point;
  * spatial dimensions, libMesh is expecting 2 components (i.e.
  * mesh_dimension() number of components).
  *
- * @author Daniel Dreyer, 2003
+ * \author Daniel Dreyer
+ * \date 2003
  */
-
-// ------------------------------------------------------------
-// FunctionBase class definition
 template <typename Output=Number>
 class FunctionBase
 {
@@ -70,7 +65,7 @@ protected:
    * Constructor.  Optionally takes a master.
    */
   explicit
-  FunctionBase (const FunctionBase* master = NULL);
+  FunctionBase (const FunctionBase * master = libmesh_nullptr);
 
 public:
 
@@ -105,7 +100,7 @@ public:
    * Purely virtual, so you have to overload it.
    * Note that this cannot be a const method, check \p MeshFunction.
    */
-  virtual Output operator() (const Point& p,
+  virtual Output operator() (const Point & p,
                              const Real time = 0.) = 0;
 
   /**
@@ -113,8 +108,8 @@ public:
    * Returns in \p output the values of the data at the
    * coordinate \p p.
    */
-  void operator() (const Point& p,
-                   DenseVector<Output>& output);
+  void operator() (const Point & p,
+                   DenseVector<Output> & output);
 
   /**
    * Return function for vectors.
@@ -127,9 +122,9 @@ public:
    * in the set. This is useful in cases where there are multiple
    * dimensioned elements, for example.
    */
-  virtual void operator() (const Point& p,
+  virtual void operator() (const Point & p,
                            const Real time,
-                           DenseVector<Output>& output) = 0;
+                           DenseVector<Output> & output) = 0;
 
   /**
    * @returns the vector component \p i at coordinate
@@ -142,7 +137,7 @@ public:
    * unnecessarily inefficient.
    */
   virtual Output component(unsigned int i,
-                           const Point& p,
+                           const Point & p,
                            Real time=0.);
 
 
@@ -152,6 +147,19 @@ public:
    */
   bool initialized () const;
 
+  /**
+   * Function to set whether this is a time-dependent function or not.
+   * This is intended to be only used by subclasses who cannot natively
+   * determine time-dependence. In such a case, this function should
+   * be used immediately following construction.
+   */
+  void set_is_time_dependent( bool is_time_dependent);
+
+  /**
+   * @returns \p true when the function this object represents
+   * is actually time-dependent, \p false otherwise.
+   */
+  bool is_time_dependent() const;
 
 protected:
 
@@ -161,13 +169,18 @@ protected:
    * but to save memory, one master handles some centralized
    * data.
    */
-  const FunctionBase* _master;
+  const FunctionBase * _master;
 
   /**
    * When \p init() was called so that everything is ready
    * for calls to \p operator() (...), then this \p bool is true.
    */
   bool _initialized;
+
+  /**
+   * Cache whether or not this function is actually time-dependent.
+   */
+  bool _is_time_dependent;
 
 };
 
@@ -177,9 +190,10 @@ protected:
 
 template<typename Output>
 inline
-FunctionBase<Output>::FunctionBase (const FunctionBase* master) :
+FunctionBase<Output>::FunctionBase (const FunctionBase * master) :
   _master             (master),
-  _initialized        (false)
+  _initialized        (false),
+  _is_time_dependent  (true) // Assume we are time-dependent until the user says otherwise
 {
 }
 
@@ -200,12 +214,25 @@ bool FunctionBase<Output>::initialized() const
   return (this->_initialized);
 }
 
+template <typename Output>
+inline
+void FunctionBase<Output>::set_is_time_dependent( bool is_time_dependent )
+{
+  this->_is_time_dependent = is_time_dependent;
+}
+
+template <typename Output>
+inline
+bool FunctionBase<Output>::is_time_dependent() const
+{
+  return (this->_is_time_dependent);
+}
 
 
 template <typename Output>
 inline
 Output FunctionBase<Output>::component (unsigned int i,
-                                        const Point& p,
+                                        const Point & p,
                                         Real time)
 {
   DenseVector<Output> outvec(i+1);
@@ -217,8 +244,8 @@ Output FunctionBase<Output>::component (unsigned int i,
 
 template <typename Output>
 inline
-void FunctionBase<Output>::operator() (const Point& p,
-                                       DenseVector<Output>& output)
+void FunctionBase<Output>::operator() (const Point & p,
+                                       DenseVector<Output> & output)
 {
   // Call the time-dependent function with t=0.
   this->operator()(p, 0., output);

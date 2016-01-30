@@ -1,23 +1,25 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
 
 // <h1>Miscellaneous Example 8 - Meshfree Interpolation Utilities.</h1>
+// \author Benjamin S. Kirk
+// \date 2012
 //
 // LibMesh provides some utilities for pointcloud-type interpolation, as
 // demonstrated in this example.
@@ -31,6 +33,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/tecplot_io.h"
 #include "libmesh/threads.h"
+#include "libmesh/node.h"
 #include "meshless_interpolation_function.h"
 
 // C++ includes
@@ -42,10 +45,10 @@ using namespace libMesh;
 
 
 void create_random_point_cloud (const unsigned int Npts,
-                                std::vector<Point> &pts,
+                                std::vector<Point> & pts,
                                 const Real max_range = 10)
 {
-  std::cout << "Generating "<< Npts << " point cloud...";
+  libMesh::out << "Generating "<< Npts << " point cloud...";
   pts.resize(Npts);
 
   for (size_t i=0;i<Npts;i++)
@@ -54,12 +57,12 @@ void create_random_point_cloud (const unsigned int Npts,
       pts[i](1) = max_range * (std::rand() % 1000) / Real(1000);
       pts[i](2) = max_range * (std::rand() % 1000) / Real(1000);
     }
-  std::cout << "done\n";
+  libMesh::out << "done\n";
 }
 
 
 
-Real exact_solution_u (const Point &p)
+Real exact_solution_u (const Point & p)
 {
   const Real
     x = p(0),
@@ -73,22 +76,22 @@ Real exact_solution_u (const Point &p)
 
 
 
-Real exact_solution_v (const Point &p)
+Real exact_solution_v (const Point & p)
 {
   const Real
     x = p(0),
     y = p(1),
     z = p(2);
 
-  return (x*x   +
+  return (x*x +
           y*y +
           z*z*z);
 }
 
-Number exact_value (const Point& p,
-                    const Parameters&,
-                    const std::string&,
-                    const std::string&)
+Number exact_value (const Point & p,
+                    const Parameters &,
+                    const std::string &,
+                    const std::string &)
 {
   return exact_solution_v(p);
 }
@@ -97,20 +100,20 @@ Number exact_value (const Point& p,
 // initialization routines for the "Convection-Diffusion"
 // system.  This handles things like setting initial
 // conditions and boundary conditions.
-void init_sys(EquationSystems& es,
-              const std::string& system_name)
+void init_sys(EquationSystems & es,
+              const std::string & system_name)
 {
   // Get a reference to the Convection-Diffusion system object.
   System & system =
     es.get_system<System>(system_name);
 
-  system.project_solution(exact_value, NULL, es.parameters);
+  system.project_solution(exact_value, libmesh_nullptr, es.parameters);
 }
 
 
 
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   // Skip this example if we do not meet certain requirements
   libmesh_example_requires(3 <= LIBMESH_DIM, "3D support");
@@ -148,8 +151,8 @@ int main(int argc, char** argv)
 
       // Explicitly set the data values we will interpolate from
       {
-        const std::vector<Point> &src_pts  (idi.get_source_points());
-        std::vector<Number>      &src_vals (idi.get_source_vals());
+        const std::vector<Point> & src_pts  (idi.get_source_points());
+        std::vector<Number>      & src_vals (idi.get_source_vals());
 
         src_vals.clear(); src_vals.reserve(2*src_pts.size());
 
@@ -168,7 +171,7 @@ int main(int argc, char** argv)
       idi.prepare_for_use();
       rbi.prepare_for_use();
 
-      std::cout << idi;
+      libMesh::out << idi;
 
       // Interpolate to some other random points, and evaluate the result
       {
@@ -186,22 +189,22 @@ int main(int argc, char** argv)
                                     tgt_data_rbi);
 
         std::vector<Number>::const_iterator
-          v_idi=tgt_data_idi.begin(),
-          v_rbi=tgt_data_rbi.begin();
+          v_idi = tgt_data_idi.begin(),
+          v_rbi = tgt_data_rbi.begin();
 
-        for (std::vector<Point>::const_iterator  p_it=tgt_pts.begin();
+        for (std::vector<Point>::const_iterator p_it=tgt_pts.begin();
              p_it!=tgt_pts.end(); ++p_it)
           {
-            std::cout << "\nAt target point " << *p_it
-                      << "\n u_interp_idi="   << *v_idi
-                      << ", u_interp_rbi="    << *v_rbi
-                      << ", u_exact="         << exact_solution_u(*p_it);
+            libMesh::out << "\nAt target point " << *p_it
+                         << "\n u_interp_idi="   << *v_idi
+                         << ", u_interp_rbi="    << *v_rbi
+                         << ", u_exact="         << exact_solution_u(*p_it);
             ++v_idi;
             ++v_rbi;
-            std::cout << "\n v_interp_idi=" << *v_idi
-                      << ", v_interp_rbi="  << *v_rbi
-                      << ", v_exact="       << exact_solution_v(*p_it)
-                      << std::endl;
+            libMesh::out << "\n v_interp_idi=" << *v_idi
+                         << ", v_interp_rbi="  << *v_rbi
+                         << ", v_exact="       << exact_solution_v(*p_it)
+                         << std::endl;
             ++v_idi;
             ++v_rbi;
           }
@@ -213,15 +216,15 @@ int main(int argc, char** argv)
     {
       Mesh mesh_a(init.comm()), mesh_b(init.comm());
 
-      mesh_a.read("struct.ucd.gz"); mesh_b.read("unstruct.ucd.gz");
+      mesh_a.read("struct.ucd.gz");
+      mesh_b.read("unstruct.ucd.gz");
 
       // Create equation systems objects.
       EquationSystems
         es_a(mesh_a), es_b(mesh_b);
 
-      System
-        &sys_a = es_a.add_system<System>("src_system"),
-        &sys_b = es_b.add_system<System>("dest_system");
+      System & sys_a = es_a.add_system<System>("src_system");
+      System & sys_b = es_b.add_system<System>("dest_system");
 
       sys_a.add_variable ("Cp", FIRST);
       sys_b.add_variable ("Cp", FIRST);
@@ -238,8 +241,8 @@ int main(int argc, char** argv)
                                            /* power =        */ 2);
       RadialBasisInterpolation<3> rbi (init.comm());
 
-      std::vector<Point>  &src_pts  (idi.get_source_points());
-      std::vector<Number> &src_vals (idi.get_source_vals());
+      std::vector<Point> & src_pts  (idi.get_source_points());
+      std::vector<Number> & src_vals (idi.get_source_vals());
       std::vector<std::string> field_vars;
       field_vars.push_back("Cp");
       idi.set_field_variables(field_vars);
@@ -252,9 +255,9 @@ int main(int argc, char** argv)
 
         for (; nd!=end; ++nd)
           {
-            const Node *node(*nd);
+            const Node * node = *nd;
             src_pts.push_back(*node);
-            src_vals.push_back(sys_a.current_solution(node->dof_number(0,0,0)));
+            src_vals.push_back(sys_a.current_solution(node->dof_number(0, 0, 0)));
           }
 
         rbi.set_field_variables(field_vars);
@@ -297,9 +300,6 @@ int main(int argc, char** argv)
                                                   es_b);
       }
     }
-
-
-
   }
   return 0;
 }

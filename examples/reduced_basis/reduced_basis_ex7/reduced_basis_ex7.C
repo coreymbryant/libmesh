@@ -1,28 +1,35 @@
-/* rbOOmit: An implementation of the Certified Reduced Basis method. */
-/* Copyright (C) 2009, 2010 David J. Knezevic */
-/*     This file is part of rbOOmit. */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* rbOOmit is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* rbOOmit is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+// rbOOmit: An implementation of the Certified Reduced Basis method.
+// Copyright (C) 2009, 2010 David J. Knezevic
+// This file is part of rbOOmit.
+
+
 
 // <h1>Reduced Basis Example 7 - Acoustic Horn</h1>
-
+// \author David Knezevic
+// \date 2012
+//
 // In this example problem we use the Certified Reduced Basis method
 // to solve a complex-valued Helmholtz problem for acoustics. There is only
 // one parameter in this problem: the forcing frequency at the horn inlet.
 // We impose a radiation boundary condition on the outer boundary.
-
+//
 // In the Online stage we write out the reflection coefficient as a function
 // of frequency. The reflection coefficient gives the ratio of the reflected
 // wave to the applied wave at the inlet.
@@ -90,7 +97,7 @@ int main (int argc, char** argv)
   // Read the "online_mode" flag from the command line
   GetPot command_line (argc, argv);
   int online_mode = 0;
-  if ( command_line.search(1, "-online_mode") )
+  if (command_line.search(1, "-online_mode"))
     online_mode = command_line.next(online_mode);
 
   // Create a mesh on the default MPI communicator.
@@ -121,7 +128,7 @@ int main (int argc, char** argv)
   // our RBEvaluation object
   rb_con.set_rb_evaluation(rb_eval);
 
-  if(!online_mode) // Perform the Offline stage of the RB method
+  if (!online_mode) // Perform the Offline stage of the RB method
     {
       // Read in the data that defines this problem from the specified text file
       rb_con.process_parameters_file(parameters_filename);
@@ -137,7 +144,24 @@ int main (int argc, char** argv)
       // Compute the reduced basis space by computing "snapshots", i.e.
       // "truth" solves, at well-chosen parameter values and employing
       // these snapshots as basis functions.
-      rb_con.train_reduced_basis();
+#ifdef LIBMESH_ENABLE_EXCEPTIONS
+      try
+        {
+#endif
+          rb_con.train_reduced_basis();
+#ifdef LIBMESH_ENABLE_EXCEPTIONS
+        }
+      catch (LogicError & e)
+        {
+          libMesh::err << "\n\n"
+                       << "********************************************************************************\n"
+                       << "Training reduced basis failed, this example requires a direct solver.\n"
+                       << "Try running with -ksp_type preonly -pc_type lu instead.\n"
+                       << "********************************************************************************"
+                       << std::endl;
+          return 1;
+        }
+#endif
 
       // Write out the data that will subsequently be required for the Evaluation stage
 #if defined(LIBMESH_HAVE_CAPNPROTO)
@@ -148,7 +172,7 @@ int main (int argc, char** argv)
 #endif
 
       // If requested, write out the RB basis functions for visualization purposes
-      if(store_basis_functions)
+      if (store_basis_functions)
         {
           // Write out the basis functions
           rb_con.get_rb_evaluation().write_out_basis_functions(rb_con);
@@ -178,7 +202,7 @@ int main (int argc, char** argv)
       // Now do the Online solve using the precomputed reduced basis
       rb_eval.rb_solve(rb_eval.get_n_basis_functions());
 
-      if(store_basis_functions)
+      if (store_basis_functions)
         {
           // Read in the basis functions
           rb_eval.read_in_basis_functions(rb_con);
@@ -195,7 +219,7 @@ int main (int argc, char** argv)
 
       Real n_frequencies = infile("n_frequencies", 0.);
       Real delta_f = (rb_eval.get_parameter_max("frequency") - rb_eval.get_parameter_min("frequency")) / (n_frequencies-1);
-      for(unsigned int freq_i=0; freq_i<n_frequencies; freq_i++)
+      for (unsigned int freq_i=0; freq_i<n_frequencies; freq_i++)
         {
           Real frequency = rb_eval.get_parameter_min("frequency") + freq_i * delta_f;
           online_mu.set_value("frequency", frequency);

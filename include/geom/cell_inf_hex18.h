@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -69,7 +69,7 @@ namespace libMesh
  *   0              8              1
  * \endverbatim
  */
-class InfHex18 : public InfHex
+class InfHex18 libmesh_final : public InfHex
 {
 public:
 
@@ -77,86 +77,93 @@ public:
    * Constructor.  By default this element has no parent.
    */
   explicit
-  InfHex18  (Elem* p=NULL);
+  InfHex18 (Elem * p=libmesh_nullptr) :
+    InfHex(InfHex18::n_nodes(), p, _nodelinks_data)
+  {}
 
   /**
    * @returns 18.  The \p InfHex18 has 18 nodes.
    */
-  unsigned int n_nodes() const { return 18; }
+  virtual unsigned int n_nodes() const libmesh_override { return 18; }
 
   /**
    * @returns \p INFHEX18
    */
-  ElemType     type ()   const { return INFHEX18; }
+  virtual ElemType type () const libmesh_override { return INFHEX18; }
 
   /**
    * @returns 4
    */
-  unsigned int n_sub_elem() const { return 4; }
+  virtual unsigned int n_sub_elem() const libmesh_override { return 4; }
 
   /**
    * @returns SECOND
    */
-  Order default_order() const { return SECOND; }
+  virtual Order default_order() const libmesh_override { return SECOND; }
 
   /**
    * @returns true iff the specified (local) node number is a vertex.
    */
-  virtual bool is_vertex(const unsigned int i) const;
+  virtual bool is_vertex(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is an edge.
    */
-  virtual bool is_edge(const unsigned int i) const;
+  virtual bool is_edge(const unsigned int i) const libmesh_override;
 
   /**
    * @returns true iff the specified (local) node number is a face.
    */
-  virtual bool is_face(const unsigned int i) const;
+  virtual bool is_face(const unsigned int i) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified side
    */
   virtual bool is_node_on_side(const unsigned int n,
-                               const unsigned int s) const;
+                               const unsigned int s) const libmesh_override;
 
   /*
    * @returns true iff the specified (local) node number is on the
    * specified edge
    */
   virtual bool is_node_on_edge(const unsigned int n,
-                               const unsigned int e) const;
+                               const unsigned int e) const libmesh_override;
 
   /**
    * Returns a \p QUAD9 built coincident with face 0, an \p INFQUAD6
    * built coincident with faces 1 to 4. Note that the \p UniquePtr<Elem>
    * takes care of freeing memory.
    */
-  UniquePtr<Elem> build_side (const unsigned int i,
-                              bool proxy) const;
+  virtual UniquePtr<Elem> build_side (const unsigned int i,
+                                      bool proxy) const libmesh_override;
 
   /**
    * Returns a \p EDGE3 built coincident with edges 0-3, an \p INFEDGE2
    * built coincident with edges 4 to 11. Note that the \p UniquePtr<Elem>
    * takes care of freeing memory.
    */
-  UniquePtr<Elem> build_edge (const unsigned int i) const;
+  virtual UniquePtr<Elem> build_edge (const unsigned int i) const libmesh_override;
+
+  /**
+   * Don't hide Elem::key() defined in the base class.
+   */
+  using Elem::key;
 
   /**
    * @returns an id associated with the \p s side of this element.
-   * The id is not necessariy unique, but should be close.  This is
+   * The id is not necessarily unique, but should be close.  This is
    * particularly useful in the \p MeshBase::find_neighbors() routine.
    *
    * We reimplemenet this method here for the \p InfHex18 since we can
    * use the center node of the bottom face to provide a perfect (unique)
    * key.
    */
-  dof_id_type key (const unsigned int s) const;
+  virtual dof_id_type key (const unsigned int s) const libmesh_override;
 
   virtual void connectivity(const unsigned int sc,
                             const IOPackage iop,
-                            std::vector<dof_id_type>& conn) const;
+                            std::vector<dof_id_type> & conn) const libmesh_override;
 
   unsigned int vtk_element_type (const unsigned int) const
   { return 12; }
@@ -164,15 +171,15 @@ public:
   /**
    * @returns 2 for all edge nodes, 4 for face nodes
    */
-  unsigned int n_second_order_adjacent_vertices (const unsigned int) const;
+  virtual unsigned int n_second_order_adjacent_vertices (const unsigned int) const libmesh_override;
 
   /**
    * @returns the element-local number of the  \f$ v^{th} \f$ vertex
    * that defines the \f$ n^{th} \f$ second-order node.
    * Note that \p n is counted as depicted above, \f$ 8 \le n < 18 \f$.
    */
-  unsigned short int second_order_adjacent_vertex (const unsigned int n,
-                                                   const unsigned int v) const;
+  virtual unsigned short int second_order_adjacent_vertex (const unsigned int n,
+                                                           const unsigned int v) const libmesh_override;
 
   /**
    * @returns the child number \p c and element-local index \p v of the
@@ -184,7 +191,7 @@ public:
    * \p this->get_node(n)==this->child(c)->get_node(v)
    */
   virtual std::pair<unsigned short int, unsigned short int>
-  second_order_child_vertex (const unsigned int n) const;
+  second_order_child_vertex (const unsigned int n) const libmesh_override;
 
   /**
    * This maps the \f$ j^{th} \f$ node of the \f$ i^{th} \f$ side to
@@ -204,7 +211,7 @@ protected:
   /**
    * Data for links to nodes
    */
-  Node* _nodelinks_data[18];
+  Node * _nodelinks_data[18];
 
 
 
@@ -213,9 +220,9 @@ protected:
   /**
    * Matrix used to create the elements children.
    */
-  float embedding_matrix (const unsigned int i,
-                          const unsigned int j,
-                          const unsigned int k) const
+  virtual float embedding_matrix (const unsigned int i,
+                                  const unsigned int j,
+                                  const unsigned int k) const libmesh_override
   { return _embedding_matrix[i][j][k]; }
 
   /**
@@ -229,17 +236,6 @@ protected:
 #endif // LIBMESH_ENABLE_AMR
 
 };
-
-
-
-// ------------------------------------------------------------
-// InfHex18 class member functions
-inline
-InfHex18::InfHex18(Elem* p) :
-  InfHex(InfHex18::n_nodes(), p, _nodelinks_data)
-{
-}
-
 
 } // namespace libMesh
 

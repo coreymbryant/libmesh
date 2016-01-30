@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,19 +35,19 @@ namespace libMesh
 {
 
 // Forward declarations
-class MeshBase;
-class MeshData;
 class Xdr;
 class Elem;
 
-
 /**
+ * MeshIO class used for writing XDR (eXternal Data Representation)
+ * and XDA mesh files.  XDR/XDA is libmesh's internal data format, and
+ * allows the full refinement tree structure of the mesh to be written
+ * to file.
  *
- * @author Benjamin Kirk, John Peterson, 2004.
+ * \author Benjamin Kirk
+ * \author John Peterson
+ * \date 2004
  */
-
-// ------------------------------------------------------------
-// XdrIO class definition
 class XdrIO : public MeshInput<MeshBase>,
               public MeshOutput<MeshBase>,
               public ParallelObject
@@ -67,7 +67,7 @@ public:
    * files.
    */
   explicit
-  XdrIO (MeshBase&,       const bool=false);
+  XdrIO (MeshBase &, const bool=false);
 
   /**
    * Constructor.  Takes a reference to a constant mesh object.
@@ -77,7 +77,7 @@ public:
    * files.
    */
   explicit
-  XdrIO (const MeshBase&, const bool=false);
+  XdrIO (const MeshBase &, const bool=false);
 
   /**
    * Destructor.
@@ -87,12 +87,12 @@ public:
   /**
    * This method implements reading a mesh from a specified file.
    */
-  virtual void read (const std::string&);
+  virtual void read (const std::string &) libmesh_override;
 
   /**
    * This method implements writing a mesh to a specified file.
    */
-  virtual void write (const std::string&);
+  virtual void write (const std::string &) libmesh_override;
 
   /**
    * Get/Set the flag indicating if we should read/write binary.
@@ -170,32 +170,32 @@ private:
   /**
    * Write subdomain name information - NEW in 0.9.2 format
    */
-  void write_serialized_subdomain_names(Xdr &io) const;
+  void write_serialized_subdomain_names(Xdr & io) const;
 
   /**
    * Write the connectivity for a parallel, distributed mesh
    */
-  void write_serialized_connectivity (Xdr &io, const dof_id_type n_elem) const;
+  void write_serialized_connectivity (Xdr & io, const dof_id_type n_elem) const;
 
   /**
    * Write the nodal locations for a parallel, distributed mesh
    */
-  void write_serialized_nodes (Xdr &io, const dof_id_type n_nodes) const;
+  void write_serialized_nodes (Xdr & io, const dof_id_type n_nodes) const;
 
   /**
    * Write the boundary conditions for a parallel, distributed mesh
    */
-  void write_serialized_bcs (Xdr &io, const header_id_type n_bcs) const;
+  void write_serialized_bcs (Xdr & io, const header_id_type n_bcs) const;
 
   /**
    * Write the boundary conditions for a parallel, distributed mesh
    */
-  void write_serialized_nodesets (Xdr &io, const header_id_type n_nodesets) const;
+  void write_serialized_nodesets (Xdr & io, const header_id_type n_nodesets) const;
 
   /**
    * Write boundary names information (sideset and nodeset) - NEW in 0.9.2 format
    */
-  void write_serialized_bc_names (Xdr &io, const BoundaryInfo & info, bool is_sideset) const;
+  void write_serialized_bc_names (Xdr & io, const BoundaryInfo & info, bool is_sideset) const;
 
 
   //---------------------------------------------------------------------------
@@ -203,44 +203,44 @@ private:
   /**
    * Read subdomain name information - NEW in 0.9.2 format
    */
-  void read_serialized_subdomain_names(Xdr &io);
+  void read_serialized_subdomain_names(Xdr & io);
 
   /**
    * Read the connectivity for a parallel, distributed mesh
    */
   template <typename T>
-  void read_serialized_connectivity (Xdr &io, const dof_id_type n_elem, std::vector<header_id_type> & sizes, T);
+  void read_serialized_connectivity (Xdr & io, const dof_id_type n_elem, std::vector<header_id_type> & sizes, T);
 
   /**
    * Read the nodal locations for a parallel, distributed mesh
    */
-  void read_serialized_nodes (Xdr &io, const dof_id_type n_nodes);
+  void read_serialized_nodes (Xdr & io, const dof_id_type n_nodes);
 
   /**
    * Read the boundary conditions for a parallel, distributed mesh
    * @return the number of bcs read
    */
   template <typename T>
-  void read_serialized_bcs (Xdr &io, T);
+  void read_serialized_bcs (Xdr & io, T);
 
   /**
    * Read the nodeset conditions for a parallel, distributed mesh
    * @return the number of nodesets read
    */
   template <typename T>
-  void read_serialized_nodesets (Xdr &io, T);
+  void read_serialized_nodesets (Xdr & io, T);
 
   /**
    * Read boundary names information (sideset and nodeset) - NEW in 0.9.2 format
    */
-  void read_serialized_bc_names(Xdr &io, BoundaryInfo & info, bool is_sideset);
+  void read_serialized_bc_names(Xdr & io, BoundaryInfo & info, bool is_sideset);
 
   //-------------------------------------------------------------------------
   /**
    * Pack an element into a transfer buffer for parallel communication.
    */
-  void pack_element (std::vector<xdr_id_type> &conn,
-                     const Elem *elem,
+  void pack_element (std::vector<xdr_id_type> & conn,
+                     const Elem * elem,
                      const dof_id_type parent_id  = DofObject::invalid_id,
                      const dof_id_type parent_pid = DofObject::invalid_id) const;
 
@@ -281,7 +281,7 @@ bool XdrIO::write_parallel() const
     return true;
 
   // If we're doing things automatically, check the mesh
-  const MeshBase &mesh = MeshOutput<MeshBase>::mesh();
+  const MeshBase & mesh = MeshOutput<MeshBase>::mesh();
   return !mesh.is_serial();
 }
 

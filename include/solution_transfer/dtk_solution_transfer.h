@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #include "libmesh/solution_transfer.h"
 #include "libmesh/dtk_adapter.h"
@@ -36,29 +36,36 @@
 
 #include <string>
 
-namespace libMesh {
+namespace libMesh
+{
 
 /**
- * Implementation of a SolutionTransfer object that uses the DataTransferKit (https://github.com/CNERG/DataTransferKit) to transfer variables back and forth between systems.
+ * Implementation of a SolutionTransfer object that uses the
+ * DataTransferKit (https://github.com/CNERG/DataTransferKit) to
+ * transfer variables back and forth between systems.
+ *
+ * \author Derek Gaston
+ * \date 2013
  */
 class DTKSolutionTransfer : public SolutionTransfer
 {
 public:
-  DTKSolutionTransfer(const libMesh::Parallel::Communicator &comm
+  DTKSolutionTransfer(const libMesh::Parallel::Communicator & comm
                       LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
   virtual ~DTKSolutionTransfer();
 
   /**
    * Transfer the values of a variable to another.
    *
-   * This is meant for transferring values from one EquationSystems to another
-   * even in the case of having different meshes.
+   * This is meant for transferring values from one EquationSystems to
+   * another even in the case of having different meshes.
    *
-   * Note that the first time this function is called for one combination of EquationSystems
-   * a lot of setup and caching is done.  Subsequent transfers between the same EquationSystems
-   * will be _much_ faster.
+   * Note that the first time this function is called for one
+   * combination of EquationSystems a lot of setup and caching is
+   * done.  Subsequent transfers between the same EquationSystems will
+   * be _much_ faster.
    */
-  virtual void transfer(const Variable & from_var, const Variable & to_var);
+  virtual void transfer(const Variable & from_var, const Variable & to_var) libmesh_override;
 
 protected:
   typedef DataTransferKit::SharedDomainMap<DTKAdapter::MeshContainerType,DTKAdapter::MeshContainerType> shared_domain_map_type;
@@ -75,6 +82,6 @@ protected:
 
 } // namespace libMesh
 
-#endif // #ifdef LIBMESH_HAVE_DTK
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #endif // #define DTKSOLUTIONTRANSFER_H

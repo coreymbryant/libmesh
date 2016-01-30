@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -57,8 +57,8 @@ numeric_index_type SumShellMatrix<T>::n () const
 
 
 template <typename T>
-void SumShellMatrix<T>::vector_mult (NumericVector<T>& dest,
-                                     const NumericVector<T>& arg) const
+void SumShellMatrix<T>::vector_mult (NumericVector<T> & dest,
+                                     const NumericVector<T> & arg) const
 {
   dest.zero();
   this->vector_mult_add(dest,arg);
@@ -67,8 +67,8 @@ void SumShellMatrix<T>::vector_mult (NumericVector<T>& dest,
 
 
 template <typename T>
-void SumShellMatrix<T>::vector_mult_add (NumericVector<T>& dest,
-                                         const NumericVector<T>& arg) const
+void SumShellMatrix<T>::vector_mult_add (NumericVector<T> & dest,
+                                         const NumericVector<T> & arg) const
 {
   for(std::size_t i=matrices.size(); i-->0; )
     {
@@ -79,7 +79,7 @@ void SumShellMatrix<T>::vector_mult_add (NumericVector<T>& dest,
 
 
 template <typename T>
-void SumShellMatrix<T>::get_diagonal (NumericVector<T>& dest) const
+void SumShellMatrix<T>::get_diagonal (NumericVector<T> & dest) const
 {
   UniquePtr<NumericVector<T> > a = dest.clone();
   dest.zero();

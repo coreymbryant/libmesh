@@ -126,9 +126,9 @@ include_HEADERS =  \
         geom/edge_inf_edge2.h \
         geom/elem.h \
         geom/elem_cutter.h \
+        geom/elem_hash.h \
         geom/elem_quality.h \
         geom/elem_range.h \
-        geom/elem_type.h \
         geom/face.h \
         geom/face_inf_quad.h \
         geom/face_inf_quad4.h \
@@ -230,10 +230,13 @@ include_HEADERS =  \
         numerics/function_base.h \
         numerics/numeric_vector.h \
         numerics/parsed_fem_function.h \
+        numerics/parsed_fem_function_parameter.h \
         numerics/parsed_function.h \
+        numerics/parsed_function_parameter.h \
         numerics/petsc_macro.h \
         numerics/petsc_matrix.h \
         numerics/petsc_preconditioner.h \
+        numerics/petsc_solver_exception.h \
         numerics/petsc_vector.h \
         numerics/preconditioner.h \
         numerics/raw_accessor.h \
@@ -290,7 +293,6 @@ include_HEADERS =  \
         quadrature/quadrature_grid.h \
         quadrature/quadrature_jacobi.h \
         quadrature/quadrature_monomial.h \
-        quadrature/quadrature_rules.h \
         quadrature/quadrature_simpson.h \
         quadrature/quadrature_trap.h \
         reduced_basis/rb_assembly_expansion.h \
@@ -333,7 +335,6 @@ include_HEADERS =  \
         solvers/euler2_solver.h \
         solvers/euler_solver.h \
         solvers/first_order_unsteady_solver.h \
-        solvers/linear.h \
         solvers/linear_solver.h \
         solvers/memory_solution_history.h \
         solvers/newmark_solver.h \
@@ -351,7 +352,7 @@ include_HEADERS =  \
         solvers/slepc_eigen_solver.h \
         solvers/slepc_macro.h \
         solvers/solution_history.h \
-        solvers/solver.h \
+        solvers/solver_configuration.h \
         solvers/steady_solver.h \
         solvers/tao_optimization_solver.h \
         solvers/time_solver.h \
@@ -393,6 +394,7 @@ include_HEADERS =  \
         utils/error_vector.h \
         utils/hashword.h \
         utils/ignore_warnings.h \
+        utils/libmesh_nullptr.h \
         utils/location_maps.h \
         utils/mapvector.h \
         utils/null_output_iterator.h \
@@ -407,6 +409,7 @@ include_HEADERS =  \
         utils/point_locator_tree.h \
         utils/pool_allocator.h \
         utils/restore_warnings.h \
+        utils/safe_bool.h \
         utils/statistics.h \
         utils/string_to_enum.h \
         utils/timestamp.h \

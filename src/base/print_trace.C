@@ -54,7 +54,7 @@ namespace
 // determined your compiler supports backtrace(), which is a GLIBC
 // extension.
 #if defined(LIBMESH_HAVE_GLIBC_BACKTRACE)
-std::string process_trace(const char *name)
+std::string process_trace(const char * name)
 {
   std::string fullname = name;
   std::string saved_begin, saved_end;
@@ -108,7 +108,7 @@ std::string process_trace(const char *name)
 // "better" backtrace than what the backtrace() function provides.
 // GDB backtraces are a bit slower, but they provide line numbers in
 // source code, a really helpful feature when debugging something...
-bool gdb_backtrace(std::ostream &out_stream)
+bool gdb_backtrace(std::ostream & out_stream)
 {
 #ifdef LIBMESH_GDB_COMMAND
   // Eventual return value, true if gdb succeeds, false otherwise.
@@ -140,7 +140,7 @@ bool gdb_backtrace(std::ostream &out_stream)
           command << gdb_command
                   << " -p "
                   << this_pid
-                  << " -batch -ex bt 2>/dev/null 1>"
+                  << " -batch -ex bt -ex detach 2>/dev/null 1>"
                   << temp_file;
           exit_status = std::system(command.str().c_str());
         }
@@ -176,14 +176,20 @@ bool gdb_backtrace(std::ostream &out_stream)
 namespace libMesh
 {
 
-void print_trace(std::ostream &out_stream)
+void print_trace(std::ostream & out_stream)
 {
   // First try a GDB backtrace.  They are better than what you get
   // from calling backtrace() because you don't have to do any
   // demangling, and they include line numbers!  If the GDB backtrace
   // fails, for example if your system does not have GDB, fall back to
   // calling backtrace().
-  bool gdb_worked = gdb_backtrace(out_stream);
+  bool gdb_worked = false;
+
+  // Let the user disable GDB backtraces by configuring with
+  // --without-gdb-command or with a command line option.
+  if (std::string(LIBMESH_GDB_COMMAND) != std::string("no") &&
+      !libMesh::on_command_line("--no-gdb-backtrace"))
+    gdb_worked = gdb_backtrace(out_stream);
 
   // This part requires that your compiler at least supports
   // backtraces.  Demangling is also nice, but it will still run
@@ -191,8 +197,8 @@ void print_trace(std::ostream &out_stream)
 #if defined(LIBMESH_HAVE_GLIBC_BACKTRACE)
   if (!gdb_worked)
     {
-      void *addresses[40];
-      char **strings;
+      void * addresses[40];
+      char ** strings;
 
       int size = backtrace(addresses, 40);
       strings = backtrace_symbols(addresses, size);
@@ -224,13 +230,13 @@ void write_traceout()
 // configure determined that your compiler does not support
 // demangling, it simply returns the input string.
 #if defined(LIBMESH_HAVE_GCC_ABI_DEMANGLE)
-std::string demangle(const char *name)
+std::string demangle(const char * name)
 {
   int status = 0;
   std::string ret = name;
 
   // Actually do the demangling
-  char *demangled_name = abi::__cxa_demangle(name, 0, 0, &status);
+  char * demangled_name = abi::__cxa_demangle(name, 0, 0, &status);
 
   // If demangling returns non-NULL, save the result in a string.
   if (demangled_name)
@@ -243,7 +249,7 @@ std::string demangle(const char *name)
   return ret;
 }
 #else
-std::string demangle(const char *name) { return std::string(name); }
+std::string demangle(const char * name) { return std::string(name); }
 #endif
 
 } // namespace libMesh

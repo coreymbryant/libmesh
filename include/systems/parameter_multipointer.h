@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -57,17 +57,21 @@ public:
    * A simple reseater won't work with a multipointer
    */
   virtual ParameterAccessor<T> &
-  operator= (T * /* new_ptr */) { libmesh_error(); return *this; }
+  operator= (T * /* new_ptr */) libmesh_override
+  {
+    libmesh_error();
+    return *this;
+  }
 
   /**
    * Setter: change the value of the parameter we access.
    */
-  virtual void set (const T & new_value)
+  virtual void set (const T & new_value) libmesh_override
   {
     libmesh_assert(!_ptrs.empty());
 #ifndef NDEBUG
     // Compare other values to the last one we'll change
-    T& val = *_ptrs.back();
+    const T & val = *_ptrs.back();
 #endif
     for (unsigned int i=0; i != _ptrs.size(); ++i)
       {
@@ -81,10 +85,10 @@ public:
   /**
    * Getter: get the value of the parameter we access.
    */
-  virtual const T& get () const
+  virtual const T & get () const libmesh_override
   {
     libmesh_assert(!_ptrs.empty());
-    T& val = *_ptrs[0];
+    T & val = *_ptrs[0];
 #ifndef NDEBUG
     // If you're already using inconsistent parameters we can't help
     // you.
@@ -97,14 +101,15 @@ public:
   /**
    * Returns a new copy of the accessor.
    */
-  virtual UniquePtr<ParameterAccessor<T> > clone() const {
-    ParameterMultiPointer *pmp = new ParameterMultiPointer<T>();
+  virtual UniquePtr<ParameterAccessor<T> > clone() const libmesh_override
+  {
+    ParameterMultiPointer * pmp = new ParameterMultiPointer<T>();
     pmp->_ptrs = _ptrs;
 
     return UniquePtr<ParameterAccessor<T> >(pmp);
   }
 
-  void push_back (T* new_ptr) { _ptrs.push_back(new_ptr); }
+  void push_back (T * new_ptr) { _ptrs.push_back(new_ptr); }
 
   /**
    * Returns the number of data associated with this parameter.
@@ -113,7 +118,7 @@ public:
   std::size_t size() const { return _ptrs.size(); }
 
 private:
-  std::vector<T*> _ptrs;
+  std::vector<T *> _ptrs;
 };
 
 } // namespace libMesh

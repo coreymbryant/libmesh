@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,8 @@ namespace libMesh
  * and NumberVectorValue defines a real or complex-valued vector depending
  * on how the library was configured.
  *
- * \author Benjamin S. Kirk, 2003.
+ * \author Benjamin S. Kirk
+ * \date 2003
  */
 template <typename T>
 class VectorValue : public TypeVector<T>
@@ -70,17 +71,31 @@ public:
                boostcopy::enable_if_c<ScalarTraits<Scalar3>::value,
                const Scalar3>::type z = 0);
 
+
   /**
-   * Copy-constructor.
+   * Constructor-from-scalar.  Sets higher dimensional entries to 0.
+   * Necessary because for some reason the constructor-from-scalars
+   * alone is insufficient to let the compiler figure out
+   * VectorValue<Complex> v = 0;
    */
-  template <typename T2>
-  VectorValue (const VectorValue<T2>& p);
+  template <typename Scalar>
+  VectorValue (const Scalar x,
+               typename
+               boostcopy::enable_if_c<ScalarTraits<Scalar>::value,
+               const Scalar>::type * sfinae = libmesh_nullptr);
+
 
   /**
    * Copy-constructor.
    */
   template <typename T2>
-  VectorValue (const TypeVector<T2>& p);
+  VectorValue (const VectorValue<T2> & p);
+
+  /**
+   * Copy-constructor.
+   */
+  template <typename T2>
+  VectorValue (const TypeVector<T2> & p);
 
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
   /**
@@ -88,8 +103,8 @@ public:
    * representing the real and imaginary part as
    * arguments.
    */
-  VectorValue (const TypeVector<Real>& p_re,
-               const TypeVector<Real>& p_im);
+  VectorValue (const TypeVector<Real> & p_re,
+               const TypeVector<Real> & p_im);
 #endif
 
   /**
@@ -98,14 +113,9 @@ public:
   template <typename Scalar>
   typename boostcopy::enable_if_c<
     ScalarTraits<Scalar>::value,
-    VectorValue&>::type
-  operator = (const Scalar& libmesh_dbg_var(p))
+    VectorValue &>::type
+  operator = (const Scalar & libmesh_dbg_var(p))
   { libmesh_assert_equal_to (p, Scalar(0)); this->zero(); return *this; }
-
-
-private:
-
-
 };
 
 
@@ -160,11 +170,21 @@ VectorValue<T>::VectorValue (typename
 }
 
 
+template <typename T>
+template <typename Scalar>
+inline
+VectorValue<T>::VectorValue (const Scalar x,
+                             typename
+                             boostcopy::enable_if_c<ScalarTraits<Scalar>::value,
+                             const Scalar>::type * /*sfinae*/) :
+  TypeVector<T> (x)
+{
+}
 
 template <typename T>
 template <typename T2>
 inline
-VectorValue<T>::VectorValue (const VectorValue<T2>& p) :
+VectorValue<T>::VectorValue (const VectorValue<T2> & p) :
   TypeVector<T> (p)
 {
 }
@@ -174,7 +194,7 @@ VectorValue<T>::VectorValue (const VectorValue<T2>& p) :
 template <typename T>
 template <typename T2>
 inline
-VectorValue<T>::VectorValue (const TypeVector<T2>& p) :
+VectorValue<T>::VectorValue (const TypeVector<T2> & p) :
   TypeVector<T> (p)
 {
 }
@@ -182,8 +202,8 @@ VectorValue<T>::VectorValue (const TypeVector<T2>& p) :
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
 template <typename T>
 inline
-VectorValue<T>::VectorValue (const TypeVector<Real>& p_re,
-                             const TypeVector<Real>& p_im) :
+VectorValue<T>::VectorValue (const TypeVector<Real> & p_re,
+                             const TypeVector<Real> & p_im) :
   TypeVector<T> (Complex (p_re(0), p_im(0)),
                  Complex (p_re(1), p_im(1)),
                  Complex (p_re(2), p_im(2)))

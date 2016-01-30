@@ -34,11 +34,9 @@ namespace libMesh
  * This just requires an extra set of ElemAssembly functors
  * for the time-derivative term.
  *
- * @author David J. Knezevic, 2011
+ * \author David J. Knezevic
+ * \date 2011
  */
-
-// ------------------------------------------------------------
-// TransientRBAssemblyExpansion class definition
 class TransientRBAssemblyExpansion : public RBAssemblyExpansion
 {
 public:
@@ -52,13 +50,13 @@ public:
    * Perform the specified M interior assembly.
    */
   void perform_M_interior_assembly(unsigned int q,
-                                   FEMContext& context);
+                                   FEMContext & context);
 
   /**
    * Perform the specified M boundary assembly.
    */
   void perform_M_boundary_assembly(unsigned int q,
-                                   FEMContext& context);
+                                   FEMContext & context);
 
   /**
    * Get Q_m, the number of terms in the affine
@@ -70,12 +68,12 @@ public:
    * Attach ElemAssembly object for the time-derivative
    * (both interior and boundary assembly).
    */
-  void attach_M_assembly(ElemAssembly* A_q_assembly);
+  void attach_M_assembly(ElemAssembly * A_q_assembly);
 
   /**
    * Return a reference to the specified M_assembly object.
    */
-  ElemAssembly& get_M_assembly(unsigned int q);
+  ElemAssembly & get_M_assembly(unsigned int q);
 
 private:
 
@@ -84,8 +82,7 @@ private:
    * routines for the time-derivative operators, both interior and boundary
    * assembly.
    */
-  std::vector<ElemAssembly*> _M_assembly_vector;
-
+  std::vector<ElemAssembly *> _M_assembly_vector;
 };
 
 }

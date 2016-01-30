@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -105,6 +105,56 @@ class Request;
 class Status;
 
 #ifdef LIBMESH_HAVE_MPI
+
+/**
+ * Macros to test MPI return values
+ */
+#ifndef NDEBUG
+#define libmesh_assert_mpi_success(error_code)                          \
+  do                                                                    \
+    {                                                                   \
+      if (error_code != MPI_SUCCESS)                                    \
+        {                                                               \
+          char libmesh_mpi_error_string[MPI_MAX_ERROR_STRING+1];        \
+          int libmesh_mpi_error_string_len;                             \
+          MPI_Error_string(error_code, libmesh_mpi_error_string,        \
+                           &libmesh_mpi_error_string_len);              \
+          libmesh_assert_equal_to_msg(error_code, MPI_SUCCESS,          \
+                                      libmesh_mpi_error_string);        \
+        }                                                               \
+    }                                                                   \
+  while(0)
+
+#else
+
+#define libmesh_assert_mpi_success(error_code)  ((void) 0)
+
+#endif
+
+
+
+// Only catch MPI return values when asserts are active.
+#ifndef NDEBUG
+#define libmesh_call_mpi(mpi_call)                              \
+  do                                                            \
+    {                                                           \
+      unsigned int libmesh_mpi_error_code = mpi_call;           \
+      libmesh_assert_mpi_success (libmesh_mpi_error_code);      \
+    }                                                           \
+  while(0)
+
+#else
+
+#define libmesh_call_mpi(mpi_call)              \
+  do                                            \
+    {                                           \
+      mpi_call;                                 \
+    }                                           \
+  while(0)
+#endif
+
+
+
 //-------------------------------------------------------------------
 /**
  * Data types for communication
@@ -184,13 +234,13 @@ public:
    * as tags.  Communicator::get_unique_tag is recommended instead.
    */
   explicit MessageTag(int tagvalue = invalid_tag)
-    : _tagvalue(tagvalue), _comm(NULL) {}
+    : _tagvalue(tagvalue), _comm(libmesh_nullptr) {}
 
   /**
    * Copy constructor.  Helps Communicator do reference counting on
    * unique tags
    */
-  MessageTag(const MessageTag& other);
+  MessageTag(const MessageTag & other);
 
   /**
    * Destructor.  Helps Communicator do reference counting on unique
@@ -204,10 +254,10 @@ public:
 
 private:
   int _tagvalue;
-  const Communicator *_comm;
+  const Communicator * _comm;
 
   // Constructor for reference-counted unique tags
-  MessageTag(int tagvalue, const Communicator *comm)
+  MessageTag(int tagvalue, const Communicator * comm)
     : _tagvalue(tagvalue), _comm(comm) {}
 
   // Let Communicator handle the reference counting
@@ -237,17 +287,19 @@ class DataType
 public:
   DataType () : _datatype() {}
 
-  DataType (const DataType &other) :
+  DataType (const DataType & other) :
     _datatype(other._datatype)
   {}
 
-  DataType (const data_type &type) :
+  DataType (const data_type & type) :
     _datatype(type)
   {}
 
 #ifdef LIBMESH_HAVE_MPI
-  DataType (const DataType &other, unsigned int count)
+  DataType (const DataType & other, unsigned int count)
   {
+    // FIXME - if we nest an inner type here will we run into bug
+    // https://github.com/libMesh/libmesh/issues/631 again?
     MPI_Type_contiguous(count, other._datatype, &_datatype);
     this->commit();
   }
@@ -257,10 +309,10 @@ public:
   }
 #endif
 
-  DataType & operator = (const DataType &other)
+  DataType & operator = (const DataType & other)
   { _datatype = other._datatype; return *this; }
 
-  DataType & operator = (const data_type &type)
+  DataType & operator = (const data_type & type)
   { _datatype = type; return *this; }
 
   operator const data_type & () const
@@ -336,7 +388,7 @@ class StandardType : public DataType
    * form.
    */
 private:
-  StandardType(const T* example = NULL);
+  StandardType(const T * example = libmesh_nullptr);
 };
 
 /*
@@ -349,8 +401,8 @@ template<typename T>
 struct Attributes
 {
   static const bool has_min_max = false;
-  static void set_lowest(T&) {}
-  static void set_highest(T&) {}
+  static void set_lowest(T &) {}
+  static void set_highest(T &) {}
 };
 
 
@@ -365,17 +417,17 @@ class Status
 public:
   Status ();
 
-  explicit Status (const data_type &type);
+  explicit Status (const data_type & type);
 
-  explicit Status (const status &status);
+  explicit Status (const status & status);
 
-  Status (const status    &status,
-          const data_type &type);
+  Status (const status    & status,
+          const data_type & type);
 
-  Status (const Status &status);
+  Status (const Status & status);
 
-  Status (const Status    &status,
-          const data_type &type);
+  Status (const Status    & status,
+          const data_type & type);
 
   status * get() { return &_status; }
 
@@ -385,11 +437,11 @@ public:
 
   int tag () const;
 
-  data_type& datatype () { return _datatype; }
+  data_type & datatype () { return _datatype; }
 
-  const data_type& datatype () const { return _datatype; }
+  const data_type & datatype () const { return _datatype; }
 
-  unsigned int size (const data_type &type) const;
+  unsigned int size (const data_type & type) const;
 
   unsigned int size () const;
 
@@ -421,31 +473,31 @@ class Request
 public:
   Request ();
 
-  Request (const request &r);
+  Request (const request & r);
 
-  Request (const Request &other);
+  Request (const Request & other);
 
   void cleanup();
 
-  Request & operator = (const Request &other);
+  Request & operator = (const Request & other);
 
-  Request & operator = (const request &r);
+  Request & operator = (const request & r);
 
   ~Request ();
 
-  request* get() { return &_request; }
+  request * get() { return &_request; }
 
-  const request* get() const { return &_request; }
+  const request * get() const { return &_request; }
 
   Status wait ();
 
   bool test ();
 
-  bool test (status &status);
+  bool test (status & status);
 
-  void add_prior_request(const Request& req);
+  void add_prior_request(const Request & req);
 
-  void add_post_wait_work(PostWaitWork* work);
+  void add_post_wait_work(PostWaitWork * work);
 
 private:
   request _request;
@@ -458,113 +510,88 @@ private:
   // finishes; post_wait_work->second is a reference count so that
   // Request objects will behave roughly like a shared_ptr and be
   // usable in STL containers
-  std::pair<std::vector <PostWaitWork* >, unsigned int>* post_wait_work;
+  std::pair<std::vector <PostWaitWork * >, unsigned int> * post_wait_work;
 };
 
 /**
  * Wait for a non-blocking send or receive to finish
  */
-inline Status wait (Request &r) { return r.wait(); }
+inline Status wait (Request & r) { return r.wait(); }
 
 /**
  * Wait for a non-blocking send or receive to finish
  */
-inline void wait (std::vector<Request> &r)
+inline void wait (std::vector<Request> & r)
 { for (unsigned int i=0; i<r.size(); i++) r[i].wait(); }
 
 
 /**
- * Define the data type to be used for data arrays whne encoding
- * a potentially-variable-size object of type T.
+ * Define data types and (un)serialization functions for use when
+ * encoding a potentially-variable-size object of type T.
+ *
+ * Users will need to specialize this class for their particular data
+ * types.
  */
 template <typename T>
-struct BufferType;
+class Packing {
+public:
+  // Should be an MPI sendable type in specializations, e.g.
+  // typedef char buffer_type;
+  // typedef unsigned int buffer_type;
 
-/**
- * Encoding non-const T* always uses the same buffer type as
- * encoding const T*, so other classes only have to specialize the
- * latter.
- */
-template <typename T>
-struct BufferType<T*> {
-  typedef typename BufferType<const T*>::type type;
+  // Should copy an encoding of the provided object into the provided
+  // output iterator (which is of type buffer_type)
+  template <typename OutputIter, typename Context>
+  static void pack(const T & object,
+                   OutputIter data_out,
+                   const Context * context);
+
+  // Should return the number of array entries (of type buffer_type)
+  // required to encode the provided object
+  template <typename Context>
+  static unsigned int packable_size(const T & object,
+                                    const Context * context);
+
+  // Should return the number of array entries which were used to
+  // encode the provided serialization of an object which begins at
+  // \p iter
+  template <typename BufferIter>
+  static unsigned int packed_size(BufferIter iter);
+
+  // Decode a potentially-variable-size object from a subsequence of a
+  // data array, returning a heap-allocated pointer to the result.
+  template <typename BufferIter, typename Context>
+  static T unpack(BufferIter in, Context * ctx);
 };
 
-/**
- * Encode a potentially-variable-size object at the end of a data
- * array.
- *
- * Parallel::pack() has no default implementation, and must be
- * specialized for each class which is to be communicated via packed
- * ranges.
- */
-template <typename T, typename buffertype, typename Context>
-void pack(const T* object,
-          typename std::vector<buffertype>& data,
-          const Context* context);
-
-/**
- * Output the number of integers required to encode a
- * potentially-variable-size object into a data array.
- *
- * Parallel::packable_size() has no default implementation, and must
- * be specialized for each class which is to be communicated via
- * packed ranges.
- */
-template <typename T, typename Context>
-unsigned int packable_size(const T*, const Context*);
-
-/**
- * Output the number of integers that were used to encode the next
- * variable-size object in the data array.
- *
- * Parallel::packed_size() has no default implementation, and must
- * be specialized for each class which is to be communicated via
- * packed ranges.
- *
- * The output of this method should be based *only* on the data
- * array; the T* argument is solely for function specialization.
- */
-template <typename T, typename BufferIter>
-unsigned int packed_size(const T*,
-                         BufferIter);
-
-/**
- * Decode a potentially-variable-size object from a subsequence of a
- * data array.
- *
- * Parallel::unpack() has no default implementation, and must be
- * specialized for each class which is to be communicated via packed
- * ranges.
- */
-template <typename T, typename BufferIter, typename Context>
-void unpack(BufferIter in, T** out, Context* ctx);
 
 /**
  * Decode a range of potentially-variable-size objects from a data
  * array.
  */
-template <typename Context, typename buffertype, typename OutputIter>
-inline void unpack_range (const typename std::vector<buffertype>& buffer,
-                          Context *context,
-                          OutputIter out);
+template <typename Context, typename buffertype,
+          typename OutputIter, typename T>
+inline void unpack_range (const typename std::vector<buffertype> & buffer,
+                          Context * context,
+                          OutputIter out,
+                          const T * output_type /* used only to infer T */);
 
 /**
  * Encode a range of potentially-variable-size objects to a data
  * array.
  */
 template <typename Context, typename buffertype, typename Iter>
-inline Iter pack_range (const Context *context,
+inline Iter pack_range (const Context * context,
                         Iter range_begin,
                         const Iter range_end,
-                        typename std::vector<buffertype>& buffer);
+                        typename std::vector<buffertype> & buffer);
 
 /**
  * Return the total buffer size needed to encode a range of
  * potentially-variable-size objects to a data array.
  */
 template <typename Context, typename Iter>
-inline std::size_t packed_range_size (const Context *context,
+inline std::size_t packed_range_size (const Context * context,
                                       Iter range_begin,
                                       const Iter range_end);
 
@@ -589,7 +616,7 @@ public:
   /*
    * Constructor from MPI_Comm
    */
-  explicit Communicator (const communicator &comm);
+  explicit Communicator (const communicator & comm);
 
   /*
    * NON-VIRTUAL destructor
@@ -599,21 +626,21 @@ public:
   /*
    * Create a new communicator between some subset of \p this
    */
-  void split(int color, int key, Communicator &target) const;
+  void split(int color, int key, Communicator & target) const;
 
   /*
    * Create a new duplicate of \p this communicator
    */
-  void duplicate(const Communicator &comm);
+  void duplicate(const Communicator & comm);
 
   /*
    * Create a new duplicate of an MPI communicator
    */
-  void duplicate(const communicator &comm);
+  void duplicate(const communicator & comm);
 
-  communicator& get() { return _communicator; }
+  communicator & get() { return _communicator; }
 
-  const communicator& get() const { return _communicator; }
+  const communicator & get() const { return _communicator; }
 
   /**
    * Get a tag that is unique to this Communicator.  Note that if
@@ -640,7 +667,7 @@ public:
    */
   void clear();
 
-  Communicator& operator= (const communicator &comm);
+  Communicator & operator= (const communicator & comm);
 
   unsigned int rank() const { return _rank; }
 
@@ -662,7 +689,7 @@ private:
    * Utility function for setting our member variables from an MPI
    * communicator
    */
-  void assign(const communicator &comm);
+  void assign(const communicator & comm);
 
   communicator  _communicator;
   unsigned int  _rank, _size;
@@ -696,7 +723,7 @@ public:
    * Containers must have the same value in every entry.
    */
   template <typename T>
-  bool verify(const T &r) const;
+  bool verify(const T & r) const;
 
   /**
    * Verify that a local pointer points to the same value on all
@@ -704,14 +731,14 @@ public:
    * Containers must have the same value in every entry.
    */
   template <typename T>
-  bool semiverify(const T *r) const;
+  bool semiverify(const T * r) const;
 
   /**
    * Take a local variable and replace it with the minimum of it's values
    * on all processors.  Containers are replaced element-wise.
    */
   template <typename T>
-  void min(T &r) const;
+  void min(T & r) const;
 
   /**
    * Take a local variable and replace it with the minimum of it's values
@@ -719,8 +746,8 @@ public:
    * which originally held the minimum value.
    */
   template <typename T>
-  void minloc(T &r,
-              unsigned int &min_id) const;
+  void minloc(T & r,
+              unsigned int & min_id) const;
 
   /**
    * Take a vector of local variables and replace each entry with the minimum
@@ -728,15 +755,15 @@ public:
    * the minimum rank where a corresponding minimum was found.
    */
   template <typename T>
-  void minloc(std::vector<T> &r,
-              std::vector<unsigned int> &min_id) const;
+  void minloc(std::vector<T> & r,
+              std::vector<unsigned int> & min_id) const;
 
   /**
    * Take a local variable and replace it with the maximum of it's values
    * on all processors.  Containers are replaced element-wise.
    */
   template <typename T>
-  void max(T &r) const;
+  void max(T & r) const;
 
   /**
    * Take a local variable and replace it with the maximum of it's values
@@ -744,8 +771,8 @@ public:
    * which originally held the maximum value.
    */
   template <typename T>
-  void maxloc(T &r,
-              unsigned int &max_id) const;
+  void maxloc(T & r,
+              unsigned int & max_id) const;
 
   /**
    * Take a vector of local variables and replace each entry with the maximum
@@ -753,15 +780,15 @@ public:
    * the minimum rank where a corresponding maximum was found.
    */
   template <typename T>
-  void maxloc(std::vector<T> &r,
-              std::vector<unsigned int> &max_id) const;
+  void maxloc(std::vector<T> & r,
+              std::vector<unsigned int> & max_id) const;
 
   /**
    * Take a local variable and replace it with the sum of it's values
    * on all processors.  Containers are replaced element-wise.
    */
   template <typename T>
-  void sum(T &r) const;
+  void sum(T & r) const;
 
   /**
    * Take a container of local variables on each processor, and
@@ -769,93 +796,93 @@ public:
    * processor 0.
    */
   template <typename T>
-  void set_union(T &data, const unsigned int root_id) const;
+  void set_union(T & data, const unsigned int root_id) const;
 
   /**
    * Take a container of local variables on each processor, and
    * replace it with their union over all processors.
    */
   template <typename T>
-  void set_union(T &data) const;
+  void set_union(T & data) const;
 
   /**
    * Blocking message probe.  Allows information about a message to be
    * examined before the message is actually received.
    */
   status probe (const unsigned int src_processor_id,
-                const MessageTag &tag=any_tag) const;
+                const MessageTag & tag=any_tag) const;
 
   /**
    * Blocking-send to one processor with data-defined type.
    */
   template <typename T>
   void send (const unsigned int dest_processor_id,
-             T &buf,
-             const MessageTag &tag=no_tag) const;
+             T & buf,
+             const MessageTag & tag=no_tag) const;
 
   /**
    * Nonblocking-send to one processor with data-defined type.
    */
   template <typename T>
   void send (const unsigned int dest_processor_id,
-             T &buf,
-             Request &req,
-             const MessageTag &tag=no_tag) const;
+             T & buf,
+             Request & req,
+             const MessageTag & tag=no_tag) const;
 
   /**
    * Blocking-send to one processor with user-defined type.
    */
   template <typename T>
   void send (const unsigned int dest_processor_id,
-             T &buf,
-             const DataType &type,
-             const MessageTag &tag=no_tag) const;
+             T & buf,
+             const DataType & type,
+             const MessageTag & tag=no_tag) const;
 
   /**
    * Nonblocking-send to one processor with user-defined type.
    */
   template <typename T>
   void send (const unsigned int dest_processor_id,
-             T &buf,
-             const DataType &type,
-             Request &req,
-             const MessageTag &tag=no_tag) const;
+             T & buf,
+             const DataType & type,
+             Request & req,
+             const MessageTag & tag=no_tag) const;
 
   /**
    * Blocking-receive from one processor with data-defined type.
    */
   template <typename T>
   Status receive (const unsigned int dest_processor_id,
-                  T &buf,
-                  const MessageTag &tag=any_tag) const;
+                  T & buf,
+                  const MessageTag & tag=any_tag) const;
 
   /**
    * Nonblocking-receive from one processor with data-defined type.
    */
   template <typename T>
   void receive (const unsigned int dest_processor_id,
-                T &buf,
-                Request &req,
-                const MessageTag &tag=any_tag) const;
+                T & buf,
+                Request & req,
+                const MessageTag & tag=any_tag) const;
 
   /**
    * Blocking-receive from one processor with user-defined type.
    */
   template <typename T>
   Status receive (const unsigned int dest_processor_id,
-                  T &buf,
-                  const DataType &type,
-                  const MessageTag &tag=any_tag) const;
+                  T & buf,
+                  const DataType & type,
+                  const MessageTag & tag=any_tag) const;
 
   /**
    * Nonblocking-receive from one processor with user-defined type.
    */
   template <typename T>
   void receive (const unsigned int dest_processor_id,
-                T &buf,
-                const DataType &type,
-                Request &req,
-                const MessageTag &tag=any_tag) const;
+                T & buf,
+                const DataType & type,
+                Request & req,
+                const MessageTag & tag=any_tag) const;
 
   /**
    * Blocking-send range-of-pointers to one processor.  This
@@ -863,19 +890,19 @@ public:
    * new objects at the other end whose contents match the objects
    * pointed to by the sender.
    *
-   * void Parallel::pack(const T*, vector<int>& data, const Context*)
+   * void Parallel::pack(const T *, vector<int> & data, const Context *)
    * is used to serialize type T onto the end of a data vector.
    *
-   * unsigned int Parallel::packable_size(const T*, const Context*) is
+   * unsigned int Parallel::packable_size(const T *, const Context *) is
    * used to allow data vectors to reserve memory, and for additional
    * error checking
    */
   template <typename Context, typename Iter>
   void send_packed_range (const unsigned int dest_processor_id,
-                          const Context *context,
+                          const Context * context,
                           Iter range_begin,
                           const Iter range_end,
-                          const MessageTag &tag=no_tag) const;
+                          const MessageTag & tag=no_tag) const;
 
   /**
    * Nonblocking-send range-of-pointers to one processor.  This
@@ -883,20 +910,20 @@ public:
    * new objects at the other end whose contents match the objects
    * pointed to by the sender.
    *
-   * void Parallel::pack(const T*, vector<int>& data, const Context*)
+   * void Parallel::pack(const T *, vector<int> & data, const Context *)
    * is used to serialize type T onto the end of a data vector.
    *
-   * unsigned int Parallel::packable_size(const T*, const Context*) is
+   * unsigned int Parallel::packable_size(const T *, const Context *) is
    * used to allow data vectors to reserve memory, and for additional
    * error checking
    */
   template <typename Context, typename Iter>
   void send_packed_range (const unsigned int dest_processor_id,
-                          const Context *context,
+                          const Context * context,
                           Iter range_begin,
                           const Iter range_end,
-                          Request &req,
-                          const MessageTag &tag=no_tag) const;
+                          Request & req,
+                          const MessageTag & tag=no_tag) const;
 
   /**
    * Blocking-receive range-of-pointers from one processor.  This
@@ -916,19 +943,20 @@ public:
    * A future version of this method should be created to preallocate
    * memory when receiving vectors...
    *
-   * void Parallel::unpack(vector<int>::iterator in, T** out, Context*)
+   * void Parallel::unpack(vector<int>::iterator in, T ** out, Context *)
    * is used to unserialize type T, typically into a new
    * heap-allocated object whose pointer is returned as *out.
    *
-   * unsigned int Parallel::packed_size(const T*,
+   * unsigned int Parallel::packed_size(const T *,
    *                                    vector<int>::const_iterator)
    * is used to advance to the beginning of the next object's data.
    */
-  template <typename Context, typename OutputIter>
+  template <typename Context, typename OutputIter, typename T>
   void receive_packed_range (const unsigned int dest_processor_id,
-                             Context *context,
+                             Context * context,
                              OutputIter out,
-                             const MessageTag &tag=any_tag) const;
+                             const T * output_type, // used only to infer T
+                             const MessageTag & tag=any_tag) const;
 
   /**
    * Nonblocking-receive range-of-pointers from one processor.
@@ -936,10 +964,10 @@ public:
    */
   // template <typename Context, typename OutputIter>
   // void receive_packed_range (const unsigned int dest_processor_id,
-  //                            Context *context,
+  //                            Context * context,
   //                            OutputIter out,
-  //                            Request &req,
-  //                            const MessageTag &tag=any_tag) const;
+  //                            Request & req,
+  //                            const MessageTag & tag=any_tag) const;
 
   /**
    * Send data \p send to one processor while simultaneously receiving
@@ -947,11 +975,11 @@ public:
    */
   template <typename T1, typename T2>
   void send_receive(const unsigned int dest_processor_id,
-                    T1 &send,
+                    T1 & send,
                     const unsigned int source_processor_id,
-                    T2 &recv,
-                    const MessageTag &send_tag = no_tag,
-                    const MessageTag &recv_tag = any_tag) const;
+                    T2 & recv,
+                    const MessageTag & send_tag = no_tag,
+                    const MessageTag & recv_tag = any_tag) const;
 
   /**
    * Send a range-of-pointers to one processor while simultaneously receiving
@@ -965,7 +993,7 @@ public:
    * being received will be of type
    * T2 = iterator_traits<OutputIter>::value_type
    *
-   * void Parallel::pack(const T1*, vector<int>& data, const Context1*)
+   * void Parallel::pack(const T1*, vector<int> & data, const Context1*)
    * is used to serialize type T1 onto the end of a data vector.
    *
    * Using std::back_inserter as the output iterator allows
@@ -977,7 +1005,7 @@ public:
    * A future version of this method should be created to preallocate
    * memory when receiving vectors...
    *
-   * void Parallel::unpack(vector<int>::iterator in, T2** out, Context*)
+   * void Parallel::unpack(vector<int>::iterator in, T2** out, Context *)
    * is used to unserialize type T2, typically into a new
    * heap-allocated object whose pointer is returned as *out.
    *
@@ -989,16 +1017,18 @@ public:
    *                                    vector<int>::const_iterator)
    * is used to advance to the beginning of the next object's data.
    */
-  template <typename Context1, typename RangeIter, typename Context2, typename OutputIter>
+  template <typename Context1, typename RangeIter, typename Context2,
+            typename OutputIter, typename T>
   void send_receive_packed_range(const unsigned int dest_processor_id,
-                                 const Context1* context1,
+                                 const Context1 * context1,
                                  RangeIter send_begin,
                                  const RangeIter send_end,
                                  const unsigned int source_processor_id,
-                                 Context2* context2,
+                                 Context2 * context2,
                                  OutputIter out,
-                                 const MessageTag &send_tag = no_tag,
-                                 const MessageTag &recv_tag = any_tag) const;
+                                 const T * output_type, // used only to infer T
+                                 const MessageTag & send_tag = no_tag,
+                                 const MessageTag & recv_tag = any_tag) const;
 
   /**
    * Send data \p send to one processor while simultaneously receiving
@@ -1007,13 +1037,13 @@ public:
    */
   template <typename T1, typename T2>
   void send_receive(const unsigned int dest_processor_id,
-                    T1 &send,
-                    const DataType &type1,
+                    T1 & send,
+                    const DataType & type1,
                     const unsigned int source_processor_id,
-                    T2 &recv,
-                    const DataType &type2,
-                    const MessageTag &send_tag = no_tag,
-                    const MessageTag &recv_tag = any_tag) const;
+                    T2 & recv,
+                    const DataType & type2,
+                    const MessageTag & send_tag = no_tag,
+                    const MessageTag & recv_tag = any_tag) const;
 
   /**
    * Take a vector of length comm.size(), and on processor root_id fill in
@@ -1022,7 +1052,7 @@ public:
   template <typename T>
   inline void gather(const unsigned int root_id,
                      T send,
-                     std::vector<T> &recv) const;
+                     std::vector<T> & recv) const;
 
   /**
    * Take a vector of local variables and expand it on processor root_id
@@ -1048,7 +1078,7 @@ public:
    */
   template <typename T>
   inline void gather(const unsigned int root_id,
-                     std::vector<T> &r) const;
+                     std::vector<T> & r) const;
 
   /**
    * Take a vector of length \p this->size(), and fill in
@@ -1056,7 +1086,7 @@ public:
    */
   template <typename T>
   inline void allgather(T send,
-                        std::vector<T> &recv) const;
+                        std::vector<T> & recv) const;
 
 
   /**
@@ -1084,7 +1114,7 @@ public:
    * must be called by all processors in the Communicator.
    */
   template <typename T>
-  inline void allgather(std::vector<T> &r,
+  inline void allgather(std::vector<T> & r,
                         const bool identical_buffer_sizes = false) const;
 
   //-------------------------------------------------------------------
@@ -1094,7 +1124,7 @@ public:
    */
   template <typename Context, typename Iter, typename OutputIter>
   inline void gather_packed_range (const unsigned int root_id,
-                                   Context *context,
+                                   Context * context,
                                    Iter range_begin,
                                    const Iter range_end,
                                    OutputIter out) const;
@@ -1104,7 +1134,7 @@ public:
    * processors, and write the output to the output iterator.
    */
   template <typename Context, typename Iter, typename OutputIter>
-  inline void allgather_packed_range (Context *context,
+  inline void allgather_packed_range (Context * context,
                                       Iter range_begin,
                                       const Iter range_end,
                                       OutputIter out) const;
@@ -1115,7 +1145,7 @@ public:
    * from processor j.
    */
   template <typename T>
-  inline void alltoall(std::vector<T> &r) const;
+  inline void alltoall(std::vector<T> & r) const;
 
   /**
    * Take a local value and broadcast it to all processors.
@@ -1126,7 +1156,7 @@ public:
    * of strings.
    */
   template <typename T>
-  inline void broadcast(T &data, const unsigned int root_id=0) const;
+  inline void broadcast(T & data, const unsigned int root_id=0) const;
 
   /**
    * Blocking-broadcast range-of-pointers to one processor.  This
@@ -1134,22 +1164,22 @@ public:
    * new objects at the other end whose contents match the objects
    * pointed to by the sender.
    *
-   * void Parallel::pack(const T*, vector<int>& data, const Context*)
+   * void Parallel::pack(const T *, vector<int> & data, const Context *)
    * is used to serialize type T onto the end of a data vector.
    *
-   * unsigned int Parallel::packable_size(const T*, const Context*) is
+   * unsigned int Parallel::packable_size(const T *, const Context *) is
    * used to allow data vectors to reserve memory, and for additional
    * error checking
    *
-   * unsigned int Parallel::packed_size(const T*,
+   * unsigned int Parallel::packed_size(const T *,
    *                                    vector<int>::const_iterator)
    * is used to advance to the beginning of the next object's data.
    */
   template <typename Context, typename OutputContext, typename Iter, typename OutputIter>
-  inline void broadcast_packed_range (const Context *context1,
+  inline void broadcast_packed_range (const Context * context1,
                                       Iter range_begin,
                                       const Iter range_end,
-                                      OutputContext *context2,
+                                      OutputContext * context2,
                                       OutputIter out,
                                       const unsigned int root_id = 0) const;
 
@@ -1167,7 +1197,7 @@ public:
 // FakeCommunicator for debugging inappropriate CommWorld uses
 class FakeCommunicator
 {
-  operator Communicator& ()
+  operator Communicator & ()
   {
     libmesh_not_implemented();
     static Communicator temp;
@@ -1179,27 +1209,30 @@ class FakeCommunicator
 // output containers
 template <typename Container, typename OutputIter>
 struct PostWaitCopyBuffer : public PostWaitWork {
-  PostWaitCopyBuffer(const Container& buffer, const OutputIter out)
+  PostWaitCopyBuffer(const Container & buffer, const OutputIter out)
     : _buf(buffer), _out(out) {}
 
-  virtual void run() { std::copy(_buf.begin(), _buf.end(), _out); }
+  virtual void run() libmesh_override { std::copy(_buf.begin(), _buf.end(), _out); }
 
 private:
-  const Container& _buf;
+  const Container & _buf;
   OutputIter _out;
 };
 
 // PostWaitWork specialization for unpacking received buffers.
-template <typename Container, typename Context, typename OutputIter>
+template <typename Container, typename Context, typename OutputIter,
+          typename T>
 struct PostWaitUnpackBuffer : public PostWaitWork {
-  PostWaitUnpackBuffer(const Container& buffer, Context *context, OutputIter out) :
+  PostWaitUnpackBuffer(const Container & buffer, Context * context, OutputIter out) :
     _buf(buffer), _context(context), _out(out) {}
 
-  virtual void run() { Parallel::unpack_range(_buf, _context, _out); }
+  virtual void run() libmesh_override {
+    Parallel::unpack_range(_buf, _context, _out, (T*)libmesh_nullptr);
+  }
 
 private:
-  const Container& _buf;
-  Context *_context;
+  const Container & _buf;
+  Context * _context;
   OutputIter _out;
 };
 
@@ -1207,12 +1240,12 @@ private:
 // PostWaitWork specialization for freeing no-longer-needed buffers.
 template <typename Container>
 struct PostWaitDeleteBuffer : public PostWaitWork {
-  PostWaitDeleteBuffer(Container* buffer) : _buf(buffer) {}
+  PostWaitDeleteBuffer(Container * buffer) : _buf(buffer) {}
 
-  virtual void run() { delete _buf; }
+  virtual void run() libmesh_override { delete _buf; }
 
 private:
-  Container* _buf;
+  Container * _buf;
 };
 
 } // namespace Parallel

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@ class SolutionTransfer : public ParallelObject
 {
 public:
 
-  SolutionTransfer(const libMesh::Parallel::Communicator &comm_in
+  SolutionTransfer(const libMesh::Parallel::Communicator & comm_in
                    LIBMESH_CAN_DEFAULT_TO_COMMWORLD) :
     ParallelObject(comm_in)
   {}

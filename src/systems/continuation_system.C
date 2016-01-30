@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -26,11 +26,11 @@
 namespace libMesh
 {
 
-ContinuationSystem::ContinuationSystem (EquationSystems& es,
-                                        const std::string& name_in,
+ContinuationSystem::ContinuationSystem (EquationSystems & es,
+                                        const std::string & name_in,
                                         const unsigned int number_in) :
   Parent(es, name_in, number_in),
-  continuation_parameter(NULL),
+  continuation_parameter(libmesh_nullptr),
   quiet(true),
   continuation_parameter_tolerance(1.e-6),
   solution_tolerance(1.e-6),
@@ -49,7 +49,7 @@ ContinuationSystem::ContinuationSystem (EquationSystems& es,
   rhs_mode(Residual),
   linear_solver(LinearSolver<Number>::build(es.comm())),
   tangent_initialized(false),
-  newton_solver(NULL),
+  newton_solver(libmesh_nullptr),
   dlambda_ds(0.707),
   ds(0.1),
   ds_current(0.1),
@@ -385,7 +385,7 @@ void ContinuationSystem::continuation_solve()
 
   // Set pointer to underlying Newton solver
   if (!newton_solver)
-    newton_solver = cast_ptr<NewtonSolver*> (this->time_solver->diff_solver().get());
+    newton_solver = cast_ptr<NewtonSolver *> (this->time_solver->diff_solver().get());
 
   // A pair for catching return values from linear system solves.
   std::pair<unsigned int, Real> rval;
@@ -961,7 +961,7 @@ void ContinuationSystem::solve_tangent()
   // Set pointer to underlying Newton solver
   if (!newton_solver)
     newton_solver =
-      cast_ptr<NewtonSolver*> (this->time_solver->diff_solver().get());
+      cast_ptr<NewtonSolver *> (this->time_solver->diff_solver().get());
 
   // Assemble the system matrix AND rhs, with rhs = G_{\lambda}
   this->rhs_mode = G_Lambda;

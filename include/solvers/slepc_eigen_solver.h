@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ public:
   /**
    *  Constructor. Initializes Petsc data structures
    */
-  SlepcEigenSolver(const Parallel::Communicator &comm_in
+  SlepcEigenSolver(const Parallel::Communicator & comm_in
                    LIBMESH_CAN_DEFAULT_TO_COMMWORLD);
 
 
@@ -69,13 +69,13 @@ public:
   /**
    * Release all memory and clear data structures.
    */
-  void clear();
+  virtual void clear() libmesh_override;
 
 
   /**
    * Initialize data structures if not done so already.
    */
-  void init();
+  virtual void init() libmesh_override;
 
 
   /**
@@ -88,21 +88,23 @@ public:
    * number of the iterations carried out by the eigen
    * solver.
    */
-  std::pair<unsigned int, unsigned int>  solve_standard (SparseMatrix<T> &matrix_A,
-                                                         int nev,
-                                                         int ncv,
-                                                         const double tol,
-                                                         const unsigned int m_its);
+  virtual std::pair<unsigned int, unsigned int>
+  solve_standard (SparseMatrix<T> & matrix_A,
+                  int nev,
+                  int ncv,
+                  const double tol,
+                  const unsigned int m_its) libmesh_override;
 
   /**
    * Same as above except that matrix_A is a ShellMatrix
    * in this case.
    */
-  std::pair<unsigned int, unsigned int>  solve_standard (ShellMatrix<T> &shell_matrix,
-                                                         int nev,
-                                                         int ncv,
-                                                         const double tol,
-                                                         const unsigned int m_its);
+  virtual std::pair<unsigned int, unsigned int>
+  solve_standard (ShellMatrix<T> & shell_matrix,
+                  int nev,
+                  int ncv,
+                  const double tol,
+                  const unsigned int m_its) libmesh_override;
 
 
   /**
@@ -117,23 +119,25 @@ public:
    * number of the iterations carried out by the eigen
    * solver.
    */
-  std::pair<unsigned int, unsigned int>  solve_generalized(SparseMatrix<T> &matrix_A,
-                                                           SparseMatrix<T> &matrix_B,
-                                                           int nev,
-                                                           int ncv,
-                                                           const double tol,
-                                                           const unsigned int m_its);
+  virtual std::pair<unsigned int, unsigned int>
+  solve_generalized(SparseMatrix<T> & matrix_A,
+                    SparseMatrix<T> & matrix_B,
+                    int nev,
+                    int ncv,
+                    const double tol,
+                    const unsigned int m_its) libmesh_override;
 
   /**
    * Solve generalized eigenproblem when matrix_A is of
    * type ShellMatrix, matrix_B is of type SparseMatrix.
    */
-  std::pair<unsigned int, unsigned int>  solve_generalized(ShellMatrix<T> &matrix_A,
-                                                           SparseMatrix<T> &matrix_B,
-                                                           int nev,
-                                                           int ncv,
-                                                           const double tol,
-                                                           const unsigned int m_its);
+  virtual std::pair<unsigned int, unsigned int>
+  solve_generalized(ShellMatrix<T> & matrix_A,
+                    SparseMatrix<T> & matrix_B,
+                    int nev,
+                    int ncv,
+                    const double tol,
+                    const unsigned int m_its) libmesh_override;
 
   /**
    * Solve generalized eigenproblem when matrix_A is of
@@ -145,12 +149,13 @@ public:
    * -st_ksp_type gmres -st_pc_type jacobi
    * or similar.
    */
-  std::pair<unsigned int, unsigned int>  solve_generalized(SparseMatrix<T> &matrix_A,
-                                                           ShellMatrix<T> &matrix_B,
-                                                           int nev,
-                                                           int ncv,
-                                                           const double tol,
-                                                           const unsigned int m_its);
+  virtual std::pair<unsigned int, unsigned int>
+  solve_generalized(SparseMatrix<T> & matrix_A,
+                    ShellMatrix<T> & matrix_B,
+                    int nev,
+                    int ncv,
+                    const double tol,
+                    const unsigned int m_its) libmesh_override;
 
   /**
    * Solve generalized eigenproblem when both matrix_A and
@@ -162,12 +167,13 @@ public:
    * -st_ksp_type gmres -st_pc_type jacobi
    * or similar.
    */
-  std::pair<unsigned int, unsigned int>  solve_generalized(ShellMatrix<T> &matrix_A,
-                                                           ShellMatrix<T> &matrix_B,
-                                                           int nev,
-                                                           int ncv,
-                                                           const double tol,
-                                                           const unsigned int m_its);
+  virtual std::pair<unsigned int, unsigned int>
+  solve_generalized(ShellMatrix<T> & matrix_A,
+                    ShellMatrix<T> & matrix_B,
+                    int nev,
+                    int ncv,
+                    const double tol,
+                    const unsigned int m_its) libmesh_override;
 
 
 
@@ -177,13 +183,15 @@ public:
    * solution vector. Note that also in case of purely real matrix
    * entries the eigenpair may be complex values.
    */
-  std::pair<Real, Real> get_eigenpair (unsigned int i,
-                                       NumericVector<T> &solution_in);
+  virtual std::pair<Real, Real>
+  get_eigenpair (unsigned int i,
+                 NumericVector<T> & solution_in) libmesh_override;
 
   /**
    * Same as above, but does not copy the eigenvector.
    */
-  std::pair<Real, Real> get_eigenvalue (unsigned int i);
+  virtual std::pair<Real, Real>
+  get_eigenvalue (unsigned int i) libmesh_override;
 
   /**
    * @returns the relative error ||A*x-lambda*x||/|lambda*x|
@@ -194,28 +202,33 @@ public:
   /**
    * Attach a deflation space defined by a single vector.
    */
-  void attach_deflation_space(NumericVector<T>& deflation_vector);
+  virtual void attach_deflation_space(NumericVector<T> & deflation_vector) libmesh_override;
+
+  /**
+   * Returns the raw SLEPc eps context pointer.
+   */
+  EPS eps() { this->init(); return _eps; }
 
 private:
 
   /**
    * Helper function that actually performs the standard eigensolve.
    */
-  std::pair<unsigned int, unsigned int>  _solve_standard_helper (Mat mat,
-                                                                 int nev,
-                                                                 int ncv,
-                                                                 const double tol,
-                                                                 const unsigned int m_its);
+  std::pair<unsigned int, unsigned int> _solve_standard_helper (Mat mat,
+                                                                int nev,
+                                                                int ncv,
+                                                                const double tol,
+                                                                const unsigned int m_its);
 
   /**
    * Helper function that actually performs the generalized eigensolve.
    */
-  std::pair<unsigned int, unsigned int>  _solve_generalized_helper (Mat mat_A,
-                                                                    Mat mat_B,
-                                                                    int nev,
-                                                                    int ncv,
-                                                                    const double tol,
-                                                                    const unsigned int m_its);
+  std::pair<unsigned int, unsigned int> _solve_generalized_helper (Mat mat_A,
+                                                                   Mat mat_B,
+                                                                   int nev,
+                                                                   int ncv,
+                                                                   const double tol,
+                                                                   const unsigned int m_its);
 
   /**
    * Tells Slepc to use the user-specified solver stored in
@@ -260,7 +273,7 @@ private:
 /*----------------------- inline functions ----------------------------------*/
 template <typename T>
 inline
-SlepcEigenSolver<T>::SlepcEigenSolver (const Parallel::Communicator &comm_in) :
+SlepcEigenSolver<T>::SlepcEigenSolver (const Parallel::Communicator & comm_in) :
   EigenSolver<T>(comm_in)
 {
   this->_eigen_solver_type  = ARNOLDI;

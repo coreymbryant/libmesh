@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -21,12 +21,10 @@
 
 // Local includes
 #include "libmesh/libmesh_common.h"
-#include "libmesh/parallel_bin_sorter.h"
-#include "libmesh/parallel_histogram.h"
-#ifdef LIBMESH_HAVE_LIBHILBERT
-#  include "hilbert.h"
-#endif
 #include "libmesh/parallel.h"
+#include "libmesh/parallel_bin_sorter.h"
+#include "libmesh/parallel_hilbert.h"
+#include "libmesh/parallel_histogram.h"
 #include "libmesh/parallel_conversion_utils.h"
 
 namespace libMesh
@@ -37,8 +35,8 @@ namespace libMesh
 namespace Parallel {
 
 template <typename KeyType, typename IdxType>
-BinSorter<KeyType,IdxType>::BinSorter (const Parallel::Communicator &comm_in,
-                                       const std::vector<KeyType>& d) :
+BinSorter<KeyType,IdxType>::BinSorter (const Parallel::Communicator & comm_in,
+                                       const std::vector<KeyType> & d) :
   ParallelObject(comm_in),
   data(d)
 {
@@ -66,7 +64,7 @@ void BinSorter<KeyType,IdxType>::binsort (const IdxType nbins,
   phist.make_histogram (nbins*50, max, min);
   phist.build_histogram ();
 
-  const std::vector<IdxType>& histogram =
+  const std::vector<IdxType> & histogram =
     phist.get_histogram();
 
 
@@ -126,8 +124,10 @@ void BinSorter<KeyType,IdxType>::binsort (const IdxType nbins,
 
           // Set the upper bound of the bin
           bin_bounds[b+1] = phist.upper_bound (current_histogram_bin);
-          bin_iters[b+1]  = std::lower_bound(bin_iters[b], data.end(),
-                                             Parallel::Utils::to_key_type<KeyType>(bin_bounds[b+1]));
+          bin_iters[b+1] =
+            std::lower_bound(bin_iters[b], data.end(),
+                             Parallel::Utils::Convert<KeyType>::to_key_type
+                               (bin_bounds[b+1]));
         }
 
       // Just be sure the last boundary points to the right place
@@ -145,7 +145,7 @@ void BinSorter<KeyType,IdxType>::binsort (const IdxType nbins,
 template class Parallel::BinSorter<int, unsigned int>;
 template class Parallel::BinSorter<double, unsigned int>;
 #ifdef LIBMESH_HAVE_LIBHILBERT
-template class Parallel::BinSorter<Hilbert::HilbertIndices, unsigned int>;
+template class Parallel::BinSorter<Parallel::DofObjectKey, unsigned int>;
 #endif
 
 } // namespace libMesh

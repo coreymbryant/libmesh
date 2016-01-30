@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@
 #include "libmesh/mesh_subdivision_support.h"
 #include "libmesh/dense_matrix.h"
 #include "libmesh/dense_vector.h"
+#include "libmesh/tensor_value.h"
 
 namespace libMesh
 {
@@ -59,8 +60,8 @@ UniquePtr<FEMap> FEMap::build( FEType fe_type )
 
 
 template<unsigned int Dim>
-void FEMap::init_reference_to_physical_map( const std::vector<Point>& qp,
-                                            const Elem* elem)
+void FEMap::init_reference_to_physical_map( const std::vector<Point> & qp,
+                                            const Elem * elem)
 {
   // Start logging the reference->physical map initialization
   START_LOG("init_reference_to_physical_map()", "FEMap");
@@ -312,10 +313,10 @@ void FEMap::init_reference_to_physical_map( const std::vector<Point>& qp,
 
 
 void FEMap::compute_single_point_map(const unsigned int dim,
-                                     const std::vector<Real>& qw,
-                                     const Elem* elem,
+                                     const std::vector<Real> & qw,
+                                     const Elem * elem,
                                      unsigned int p,
-                                     const std::vector<Node*>& elem_nodes,
+                                     const std::vector<Node *> & elem_nodes,
                                      bool compute_second_derivatives)
 {
   libmesh_assert(elem);
@@ -353,7 +354,7 @@ void FEMap::compute_single_point_map(const unsigned int dim,
             // Reference to the point, helps eliminate
             // exessive temporaries in the inner loop
             libmesh_assert(elem_nodes[i]);
-            const Point& elem_point = *elem_nodes[i];
+            const Point & elem_point = *elem_nodes[i];
 
             xyz[p].add_scaled          (elem_point, phi_map[i][p]    );
             dxyzdxi_map[p].add_scaled  (elem_point, dphidxi_map[i][p]);
@@ -564,7 +565,7 @@ void FEMap::compute_single_point_map(const unsigned int dim,
             // Reference to the point, helps eliminate
             // exessive temporaries in the inner loop
             libmesh_assert(elem_nodes[i]);
-            const Point& elem_point = *elem_nodes[i];
+            const Point & elem_point = *elem_nodes[i];
 
             xyz[p].add_scaled          (elem_point, phi_map[i][p]     );
 
@@ -841,7 +842,7 @@ void FEMap::compute_single_point_map(const unsigned int dim,
             // Reference to the point, helps eliminate
             // exessive temporaries in the inner loop
             libmesh_assert(elem_nodes[i]);
-            const Point& elem_point = *elem_nodes[i];
+            const Point & elem_point = *elem_nodes[i];
 
             xyz[p].add_scaled           (elem_point, phi_map[i][p]      );
             dxyzdxi_map[p].add_scaled   (elem_point, dphidxi_map[i][p]  );
@@ -999,8 +1000,8 @@ void FEMap::resize_quadrature_map_vectors(const unsigned int dim, unsigned int n
 
 
 void FEMap::compute_affine_map( const unsigned int dim,
-                                const std::vector<Real>& qw,
-                                const Elem* elem )
+                                const std::vector<Real> & qw,
+                                const Elem * elem )
 {
   // Start logging the map computation.
   START_LOG("compute_affine_map()", "FEMap");
@@ -1013,7 +1014,7 @@ void FEMap::compute_affine_map( const unsigned int dim,
   this->resize_quadrature_map_vectors(dim, n_qp);
 
   // Determine the nodes contributing to element elem
-  std::vector<Node*> elem_nodes(elem->n_nodes(), NULL);
+  std::vector<Node *> elem_nodes(elem->n_nodes(), libmesh_nullptr);
   for (unsigned int i=0; i<elem->n_nodes(); i++)
     elem_nodes[i] = elem->get_node(i);
 
@@ -1072,7 +1073,7 @@ void FEMap::compute_affine_map( const unsigned int dim,
 
 
 void FEMap::compute_null_map( const unsigned int dim,
-                              const std::vector<Real>& qw)
+                              const std::vector<Real> & qw)
 {
   // Start logging the map computation.
   START_LOG("compute_null_map()", "FEMap");
@@ -1127,8 +1128,8 @@ void FEMap::compute_null_map( const unsigned int dim,
 
 
 void FEMap::compute_map(const unsigned int dim,
-                        const std::vector<Real>& qw,
-                        const Elem* elem,
+                        const std::vector<Real> & qw,
+                        const Elem * elem,
                         bool calculate_d2phi)
 {
   if (!elem)
@@ -1154,18 +1155,18 @@ void FEMap::compute_map(const unsigned int dim,
   this->resize_quadrature_map_vectors(dim, n_qp);
 
   // Determine the nodes contributing to element elem
-  std::vector<Node*> elem_nodes;
+  std::vector<Node *> elem_nodes;
   if (elem->type() == TRI3SUBDIVISION)
     {
       // Subdivision surface FE require the 1-ring around elem
       libmesh_assert_equal_to (dim, 2);
-      const Tri3Subdivision* sd_elem = static_cast<const Tri3Subdivision*>(elem);
+      const Tri3Subdivision * sd_elem = static_cast<const Tri3Subdivision *>(elem);
       MeshTools::Subdivision::find_one_ring(sd_elem, elem_nodes);
     }
   else
     {
       // All other FE use only the nodes of elem itself
-      elem_nodes.resize(elem->n_nodes(), NULL);
+      elem_nodes.resize(elem->n_nodes(), libmesh_nullptr);
       for (unsigned int i=0; i<elem->n_nodes(); i++)
         elem_nodes[i] = elem->get_node(i);
     }
@@ -1180,7 +1181,7 @@ void FEMap::compute_map(const unsigned int dim,
 
 
 
-void FEMap::print_JxW(std::ostream& os) const
+void FEMap::print_JxW(std::ostream & os) const
 {
   for (unsigned int i=0; i<JxW.size(); ++i)
     os << " [" << i << "]: " <<  JxW[i] << std::endl;
@@ -1188,7 +1189,7 @@ void FEMap::print_JxW(std::ostream& os) const
 
 
 
-void FEMap::print_xyz(std::ostream& os) const
+void FEMap::print_xyz(std::ostream & os) const
 {
   for (unsigned int i=0; i<xyz.size(); ++i)
     os << " [" << i << "]: " << xyz[i];
@@ -1316,8 +1317,8 @@ void FEMap::compute_inverse_map_second_derivs(unsigned p)
 
 // TODO: PB: We should consider moving this to the FEMap class
 template <unsigned int Dim, FEFamily T>
-Point FE<Dim,T>::inverse_map (const Elem* elem,
-                              const Point& physical_point,
+Point FE<Dim,T>::inverse_map (const Elem * elem,
+                              const Point & physical_point,
                               const Real tolerance,
                               const bool secure)
 {
@@ -1655,7 +1656,7 @@ Point FE<Dim,T>::inverse_map (const Elem* elem,
           libmesh_here();
           libMesh::err << "WARNING:  inverse_map of physical point "
                        << physical_point
-                       << "is not on element." << '\n';
+                       << " is not on element." << '\n';
           elem->print_info(libMesh::err);
         }
     }
@@ -1674,9 +1675,9 @@ Point FE<Dim,T>::inverse_map (const Elem* elem,
 
 // TODO: PB: We should consider moving this to the FEMap class
 template <unsigned int Dim, FEFamily T>
-void FE<Dim,T>::inverse_map (const Elem* elem,
-                             const std::vector<Point>& physical_points,
-                             std::vector<Point>&       reference_points,
+void FE<Dim,T>::inverse_map (const Elem * elem,
+                             const std::vector<Point> & physical_points,
+                             std::vector<Point> &       reference_points,
                              const Real tolerance,
                              const bool secure)
 {
@@ -1699,8 +1700,8 @@ void FE<Dim,T>::inverse_map (const Elem* elem,
 
 // TODO: PB: We should consider moving this to the FEMap class
 template <unsigned int Dim, FEFamily T>
-Point FE<Dim,T>::map (const Elem* elem,
-                      const Point& reference_point)
+Point FE<Dim,T>::map (const Elem * elem,
+                      const Point & reference_point)
 {
   libmesh_assert(elem);
 
@@ -1726,8 +1727,8 @@ Point FE<Dim,T>::map (const Elem* elem,
 
 // TODO: PB: We should consider moving this to the FEMap class
 template <unsigned int Dim, FEFamily T>
-Point FE<Dim,T>::map_xi (const Elem* elem,
-                         const Point& reference_point)
+Point FE<Dim,T>::map_xi (const Elem * elem,
+                         const Point & reference_point)
 {
   libmesh_assert(elem);
 
@@ -1754,8 +1755,8 @@ Point FE<Dim,T>::map_xi (const Elem* elem,
 
 // TODO: PB: We should consider moving this to the FEMap class
 template <unsigned int Dim, FEFamily T>
-Point FE<Dim,T>::map_eta (const Elem* elem,
-                          const Point& reference_point)
+Point FE<Dim,T>::map_eta (const Elem * elem,
+                          const Point & reference_point)
 {
   libmesh_assert(elem);
 
@@ -1782,8 +1783,8 @@ Point FE<Dim,T>::map_eta (const Elem* elem,
 
 // TODO: PB: We should consider moving this to the FEMap class
 template <unsigned int Dim, FEFamily T>
-Point FE<Dim,T>::map_zeta (const Elem* elem,
-                           const Point& reference_point)
+Point FE<Dim,T>::map_zeta (const Elem * elem,
+                           const Point & reference_point)
 {
   libmesh_assert(elem);
 
@@ -1809,10 +1810,10 @@ Point FE<Dim,T>::map_zeta (const Elem* elem,
 
 
 // Explicit instantiation of FEMap member functions
-template void FEMap::init_reference_to_physical_map<0>( const std::vector<Point>&, const Elem*);
-template void FEMap::init_reference_to_physical_map<1>( const std::vector<Point>&, const Elem*);
-template void FEMap::init_reference_to_physical_map<2>( const std::vector<Point>&, const Elem*);
-template void FEMap::init_reference_to_physical_map<3>( const std::vector<Point>&, const Elem*);
+template void FEMap::init_reference_to_physical_map<0>( const std::vector<Point> &, const Elem *);
+template void FEMap::init_reference_to_physical_map<1>( const std::vector<Point> &, const Elem *);
+template void FEMap::init_reference_to_physical_map<2>( const std::vector<Point> &, const Elem *);
+template void FEMap::init_reference_to_physical_map<3>( const std::vector<Point> &, const Elem *);
 
 //--------------------------------------------------------------
 // Explicit instantiations using the macro from fe_macro.h

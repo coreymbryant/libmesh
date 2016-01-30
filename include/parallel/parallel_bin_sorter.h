@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -49,8 +49,8 @@ public:
 
   // Constructor
   explicit
-  BinSorter (const Parallel::Communicator &comm,
-             const std::vector<KeyType>& d);
+  BinSorter (const Parallel::Communicator & comm,
+             const std::vector<KeyType> & d);
 
   // The actual function which sorts the data into
   // nbins.  Currently based on the global min and
@@ -65,7 +65,7 @@ public:
 
 private:
 
-  const std::vector<KeyType>& data;
+  const std::vector<KeyType> & data;
   std::vector<IterType>       bin_iters;   // Iterators to the bin boundaries
                                            //  in data
 };

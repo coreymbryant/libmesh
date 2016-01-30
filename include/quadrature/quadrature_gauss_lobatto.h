@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,11 @@ namespace libMesh
  * .) Include the "end-points" of the domain (have points on edges/faces in 2D/3D).
  * .) Rules with n points can exactly integrate polynomials of degree 2n-3.
  * http://en.wikipedia.org/wiki/Gaussian_quadrature#Gauss.E2.80.93Lobatto_rules
+ *
+ * \author John W. Peterson
+ * \date 2014
  */
-class QGaussLobatto : public QBase
+class QGaussLobatto libmesh_final : public QBase
 {
 public:
 
@@ -51,21 +54,18 @@ public:
   /**
    * @returns \p QGAUSS
    */
-  QuadratureType type() const { return QGAUSS_LOBATTO; }
+  virtual QuadratureType type() const libmesh_override { return QGAUSS_LOBATTO; }
 
 private:
 
-  void init_1D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-  void init_2D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-  void init_3D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+  virtual void init_1D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
+  virtual void init_2D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
+  virtual void init_3D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 };
 
-
 } // namespace libMesh
-
-
 
 #endif // LIBMESH_QUADRATURE_GAUSS_LOBATTO_H

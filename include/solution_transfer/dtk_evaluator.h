@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -23,11 +23,9 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
-#include "libmesh/equation_systems.h"
 #include "libmesh/mesh.h"
-#include "libmesh/system.h"
 
 #include <DTK_MeshContainer.hpp>
 #include <DTK_FieldEvaluator.hpp>
@@ -38,18 +36,35 @@
 
 #include <string>
 
-namespace libMesh {
+namespace libMesh
+{
 
+// Forward declarations
+class EquationSystems;
+class System;
+class DofMap;
+class MeshBase;
+class FEType;
+
+template <typename T> class NumericVector;
+
+/**
+ * Implements the evaluate() function to compute FE solution values at
+ * points requested by DTK.
+ *
+ * \author Derek Gaston
+ * \date 2013
+ */
 class DTKEvaluator : public DataTransferKit::FieldEvaluator<int,DataTransferKit::FieldContainer<double> >
 {
 public:
-  typedef DataTransferKit::MeshContainer<int>      MeshContainerType;
-  typedef DataTransferKit::FieldContainer<Number>     FieldContainerType;
+  typedef DataTransferKit::MeshContainer<int> MeshContainerType;
+  typedef DataTransferKit::FieldContainer<Number> FieldContainerType;
 
   DTKEvaluator(System & in_sys, std::string var_name);
 
-  FieldContainerType evaluate( const Teuchos::ArrayRCP<int>& elements,
-                               const Teuchos::ArrayRCP<double>& coords );
+  virtual FieldContainerType evaluate(const Teuchos::ArrayRCP<int> & elements,
+                                      const Teuchos::ArrayRCP<double> & coords) libmesh_override;
 
 protected:
   System & sys;
@@ -59,11 +74,11 @@ protected:
   unsigned int dim;
   DofMap & dof_map;
   unsigned int var_num;
-  const FEType& fe_type;
+  const FEType & fe_type;
 };
 
 } // namespace libMesh
 
-#endif // #ifdef LIBMESH_HAVE_DTK
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #endif // #define DTKEVALUATOR_H

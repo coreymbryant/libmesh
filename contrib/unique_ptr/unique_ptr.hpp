@@ -16,10 +16,21 @@
 #ifndef UNIQUE_PTR_HPP
 #define UNIQUE_PTR_HPP
 
+// Consider the rest of the current header to be a "system header".
+// All warnings are suppressed while GCC is processing a system
+// header.
+#pragma GCC system_header
+
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/mpl/if.hpp>
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wunused-local-typedef"
+#endif
 
 namespace boost
 {
@@ -531,5 +542,9 @@ operator>=(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y)
 }
 
 }  // boost
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #endif  // UNIQUE_PTR_HPP

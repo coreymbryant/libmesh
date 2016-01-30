@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -71,12 +71,12 @@ protected:
   /**
    * Copy-constructor.
    */
-  DofObject (const DofObject&);
+  DofObject (const DofObject &);
 
   /**
    * Deep-copying assignment operator
    */
-  DofObject& operator= (const DofObject& dof_obj);
+  DofObject & operator= (const DofObject & dof_obj);
 
 public:
 
@@ -86,10 +86,10 @@ public:
    * This object on the last mesh.  Useful for projecting
    * solutions from one mesh to another.
    */
-  DofObject* old_dof_object;
+  DofObject * old_dof_object;
 
   /**
-   * Sets the \p old_dof_object to NULL
+   * Sets the \p old_dof_object to libmesh_nullptr
    */
   void clear_old_dof_object ();
 
@@ -186,7 +186,7 @@ public:
    * @returns the processor that this DofObject belongs to as a
    * writeable reference.
    */
-  processor_id_type& processor_id ();
+  processor_id_type & processor_id ();
 
   /**
    * Sets the \p processor_id for this \p DofObject.
@@ -242,7 +242,7 @@ public:
    * to 0 even when called even with (nvg == this->n_var_groups(s)).
    */
   void set_n_vars_per_group(const unsigned int s,
-                            const std::vector<unsigned int> &nvpg);
+                            const std::vector<unsigned int> & nvpg);
 
   /**
    * @returns the number of components for variable \p var
@@ -496,7 +496,7 @@ private:
   // methods only available for unit testing
 #ifdef LIBMESH_IS_UNIT_TESTING
 public:
-  void set_buffer (const std::vector<dof_id_type> &buf)
+  void set_buffer (const std::vector<dof_id_type> & buf)
   { _idx_buf = buf; }
 #endif
 };
@@ -508,7 +508,7 @@ public:
 inline
 DofObject::DofObject () :
 #ifdef LIBMESH_ENABLE_AMR
-  old_dof_object(NULL),
+  old_dof_object(libmesh_nullptr),
 #endif
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
   _unique_id (invalid_unique_id),
@@ -686,7 +686,7 @@ processor_id_type DofObject::processor_id () const
 
 
 inline
-processor_id_type& DofObject::processor_id ()
+processor_id_type & DofObject::processor_id ()
 {
   return _processor_id;
 }

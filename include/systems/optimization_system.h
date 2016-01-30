@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -36,11 +36,10 @@ template<typename T> class OptimizationSolver;
 /**
  * This System subclass enables us to assemble an objective function,
  * gradient, Hessian and bounds for optimization problems.
+ *
+ * \author David Knezevic
+ * \date 2015
  */
-
-// ------------------------------------------------------------
-// OptimizationSystem class definition
-
 class OptimizationSystem : public ImplicitSystem
 {
 public:
@@ -49,8 +48,8 @@ public:
    * Constructor.  Optionally initializes required
    * data structures.
    */
-  OptimizationSystem (EquationSystems& es,
-                      const std::string& name,
+  OptimizationSystem (EquationSystems & es,
+                      const std::string & name,
                       const unsigned int number);
 
   /**
@@ -83,8 +82,8 @@ public:
      * derived class. @return the value of the objective function at
      * the iterate \p X.
      */
-    virtual Number objective (const NumericVector<Number>& X,
-                              sys_type& S) = 0;
+    virtual Number objective (const NumericVector<Number> & X,
+                              sys_type & S) = 0;
   };
 
 
@@ -103,9 +102,9 @@ public:
      * a derived class. Set \p grad_f to be the gradient at the
      * iterate \p X.
      */
-    virtual void gradient (const NumericVector<Number>& X,
-                           NumericVector<Number>& grad_f,
-                           sys_type& S) = 0;
+    virtual void gradient (const NumericVector<Number> & X,
+                           NumericVector<Number> & grad_f,
+                           sys_type & S) = 0;
   };
 
 
@@ -124,9 +123,9 @@ public:
      * user in a derived class. Set \p H_f to be the gradient
      * at the iterate \p X.
      */
-    virtual void hessian (const NumericVector<Number>& X,
-                          SparseMatrix<Number>& H_f,
-                          sys_type& S) = 0;
+    virtual void hessian (const NumericVector<Number> & X,
+                          SparseMatrix<Number> & H_f,
+                          sys_type & S) = 0;
   };
 
   /**
@@ -141,9 +140,9 @@ public:
      * This function will be called to evaluate the equality constraints
      * vector C_eq(X). This will impose the constraints C_eq(X) = 0.
      */
-    virtual void equality_constraints (const NumericVector<Number>& X,
-                                       NumericVector<Number>& C_eq,
-                                       sys_type& S) = 0;
+    virtual void equality_constraints (const NumericVector<Number> & X,
+                                       NumericVector<Number> & C_eq,
+                                       sys_type & S) = 0;
   };
 
   /**
@@ -158,9 +157,9 @@ public:
     /**
      * This function will be called to evaluate the Jacobian of C_eq(X).
      */
-    virtual void equality_constraints_jacobian (const NumericVector<Number>& X,
-                                                SparseMatrix<Number>& C_eq_jac,
-                                                sys_type& S) = 0;
+    virtual void equality_constraints_jacobian (const NumericVector<Number> & X,
+                                                SparseMatrix<Number> & C_eq_jac,
+                                                sys_type & S) = 0;
   };
 
   /**
@@ -175,9 +174,9 @@ public:
      * This function will be called to evaluate the equality constraints
      * vector C_ineq(X). This will impose the constraints C_ineq(X) >= 0.
      */
-    virtual void inequality_constraints (const NumericVector<Number>& X,
-                                         NumericVector<Number>& C_ineq,
-                                         sys_type& S) = 0;
+    virtual void inequality_constraints (const NumericVector<Number> & X,
+                                         NumericVector<Number> & C_ineq,
+                                         sys_type & S) = 0;
   };
 
   /**
@@ -192,9 +191,9 @@ public:
     /**
      * This function will be called to evaluate the Jacobian of C_ineq(X).
      */
-    virtual void inequality_constraints_jacobian (const NumericVector<Number>& X,
-                                                  SparseMatrix<Number>& C_ineq_jac,
-                                                  sys_type& S) = 0;
+    virtual void inequality_constraints_jacobian (const NumericVector<Number> & X,
+                                                  SparseMatrix<Number> & C_ineq_jac,
+                                                  sys_type & S) = 0;
   };
 
   /**
@@ -211,7 +210,7 @@ public:
      *   this->get_vector("lower_bounds"),
      *   this->get_vector("upper_bounds").
      */
-    virtual void lower_and_upper_bounds (sys_type& S) = 0;
+    virtual void lower_and_upper_bounds (sys_type & S) = 0;
   };
 
   /**
@@ -223,23 +222,23 @@ public:
    * Clear all the data structures associated with
    * the system.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Initializes new data members of the system.
    */
-  virtual void init_data ();
+  virtual void init_data () libmesh_override;
 
   /**
    * Reinitializes the member data fields associated with
    * the system, so that, e.g., \p assemble() may be used.
    */
-  virtual void reinit ();
+  virtual void reinit () libmesh_override;
 
   /**
    * Solves the optimization problem.
    */
-  virtual void solve ();
+  virtual void solve () libmesh_override;
 
   /**
    * Initialize storage for the equality constraints, and the
@@ -248,19 +247,19 @@ public:
    * and n_dofs_per_constraint[i] gives the indices that are non-zero
    * in row i of the Jacobian.
    */
-  void initialize_equality_constraints_storage(const std::vector< std::set<numeric_index_type> >& constraint_jac_sparsity);
+  void initialize_equality_constraints_storage(const std::vector< std::set<numeric_index_type> > & constraint_jac_sparsity);
 
   /**
    * Initialize storage for the inequality constraints, as per
    * initialize_equality_constraints_storage.
    */
-  void initialize_inequality_constraints_storage(const std::vector< std::set<numeric_index_type> >& constraint_jac_sparsity);
+  void initialize_inequality_constraints_storage(const std::vector< std::set<numeric_index_type> > & constraint_jac_sparsity);
 
   /**
    * @returns \p "Optimization".  Helps in identifying
    * the system type in an equation system file.
    */
-  virtual std::string system_type () const { return "Optimization"; }
+  virtual std::string system_type () const libmesh_override { return "Optimization"; }
 
   /**
    * The \p OptimizationSolver that is used for performing the optimization.
@@ -300,21 +299,8 @@ public:
    */
   std::vector< std::set<numeric_index_type> > eq_constraint_jac_sparsity;
   std::vector< std::set<numeric_index_type> > ineq_constraint_jac_sparsity;
-
-private:
-
-  /**
-   * Boolean to indicate whether or not the lower and upper bounds
-   * should be applied.
-   */
-  // bool _apply_bounds;
-
 };
 
-
-
 } // namespace libMesh
-
-
 
 #endif // LIBMESH_OPTIMIZATION_SYSTEM_H

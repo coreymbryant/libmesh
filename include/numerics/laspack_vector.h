@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -40,21 +40,19 @@
 namespace libMesh
 {
 
-
 // Forward declarations
 template <typename T> class LaspackLinearSolver;
 template <typename T> class SparseMatrix;
-
 
 /**
  * Laspack vector.  Provides a nice interface to the
  * Laspack C-based data structures for serial vectors.
  *
- * @author Benjamin S. Kirk, 2002
+ * \author Benjamin S. Kirk
+ * \date 2002
  */
-
 template <typename T>
-class LaspackVector : public NumericVector<T>
+class LaspackVector libmesh_final : public NumericVector<T>
 {
 public:
 
@@ -62,14 +60,14 @@ public:
    *  Dummy-Constructor. Dimension=0
    */
   explicit
-  LaspackVector (const Parallel::Communicator &comm,
+  LaspackVector (const Parallel::Communicator & comm,
                  const ParallelType = AUTOMATIC);
 
   /**
    * Constructor. Set dimension to \p n and initialize all elements with zero.
    */
   explicit
-  LaspackVector (const Parallel::Communicator &comm,
+  LaspackVector (const Parallel::Communicator & comm,
                  const numeric_index_type n,
                  const ParallelType = AUTOMATIC);
 
@@ -77,7 +75,7 @@ public:
    * Constructor. Set local dimension to \p n_local, the global dimension
    * to \p n, and initialize all elements with zero.
    */
-  LaspackVector (const Parallel::Communicator &comm,
+  LaspackVector (const Parallel::Communicator & comm,
                  const numeric_index_type n,
                  const numeric_index_type n_local,
                  const ParallelType = AUTOMATIC);
@@ -87,10 +85,10 @@ public:
    * dimension to \p n, but additionally reserve memory for the
    * indices specified by the \p ghost argument.
    */
-  LaspackVector (const Parallel::Communicator &comm,
+  LaspackVector (const Parallel::Communicator & comm,
                  const numeric_index_type N,
                  const numeric_index_type n_local,
-                 const std::vector<numeric_index_type>& ghost,
+                 const std::vector<numeric_index_type> & ghost,
                  const ParallelType = AUTOMATIC);
 
   /**
@@ -102,30 +100,30 @@ public:
   /**
    * Call the assemble functions
    */
-  void close ();
+  virtual void close () libmesh_override;
 
   /**
    * @returns the \p LaspackVector to a pristine state.
    */
-  void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Set all entries to zero. Equivalent to \p v = 0, but more obvious and
    * faster.
    */
-  void zero ();
+  virtual void zero () libmesh_override;
 
   /**
    * Creates a vector which has the same type, size and partitioning
    * as this vector, but whose data is all zero.  Returns it in an \p
    * UniquePtr.
    */
-  virtual UniquePtr<NumericVector<T> > zero_clone () const;
+  virtual UniquePtr<NumericVector<T> > zero_clone () const libmesh_override;
 
   /**
    * Creates a copy of this vector and returns it in an \p UniquePtr.
    */
-  UniquePtr<NumericVector<T> > clone () const;
+  virtual UniquePtr<NumericVector<T> > clone () const libmesh_override;
 
   /**
    * Change the dimension of the vector to \p N. The reserved memory for
@@ -139,94 +137,93 @@ public:
    * On \p fast==false, the vector is filled by
    * zeros.
    */
-
-  void init (const numeric_index_type N,
-             const numeric_index_type n_local,
-             const bool         fast=false,
-             const ParallelType ptype=AUTOMATIC);
+  virtual void init (const numeric_index_type N,
+                     const numeric_index_type n_local,
+                     const bool         fast=false,
+                     const ParallelType ptype=AUTOMATIC) libmesh_override;
 
   /**
    * call init with n_local = N,
    */
-  void init (const numeric_index_type N,
-             const bool         fast=false,
-             const ParallelType ptype=AUTOMATIC);
+  virtual void init (const numeric_index_type N,
+                     const bool         fast=false,
+                     const ParallelType ptype=AUTOMATIC) libmesh_override;
 
   /**
    * Create a vector that holds tha local indices plus those specified
    * in the \p ghost argument.
    */
-  void init (const numeric_index_type /*N*/,
-             const numeric_index_type /*n_local*/,
-             const std::vector<numeric_index_type>& /*ghost*/,
-             const bool /*fast*/ = false,
-             const ParallelType = AUTOMATIC);
+  virtual void init (const numeric_index_type /*N*/,
+                     const numeric_index_type /*n_local*/,
+                     const std::vector<numeric_index_type> & /*ghost*/,
+                     const bool /*fast*/ = false,
+                     const ParallelType = AUTOMATIC) libmesh_override;
 
   /**
    * Creates a vector that has the same dimension and storage type as
    * \p other, including ghost dofs.
    */
-  virtual void init (const NumericVector<T>& other,
-                     const bool fast = false);
+  virtual void init (const NumericVector<T> & other,
+                     const bool fast = false) libmesh_override;
 
   /**
    * \f$U(0-N) = s\f$: fill all components.
    */
-  NumericVector<T> & operator= (const T s);
+  virtual NumericVector<T> & operator= (const T s) libmesh_override;
 
   /**
    *  \f$U = V\f$: copy all components.
    */
-  NumericVector<T> & operator= (const NumericVector<T> &V);
+  virtual NumericVector<T> & operator= (const NumericVector<T> & v) libmesh_override;
 
   /**
    *  \f$U = V\f$: copy all components.
    */
-  LaspackVector<T> & operator= (const LaspackVector<T> &V);
+  LaspackVector<T> & operator= (const LaspackVector<T> & v);
 
   /**
    *  \f$U = V\f$: copy all components.
    */
-  NumericVector<T> & operator= (const std::vector<T> &v);
+  virtual NumericVector<T> & operator= (const std::vector<T> & v) libmesh_override;
 
   /**
    * @returns the minimum element in the vector.
    * In case of complex numbers, this returns the minimum
    * Real part.
    */
-  Real min () const;
+  virtual Real min () const libmesh_override;
 
   /**
    * @returns the maximum element in the vector.
    * In case of complex numbers, this returns the maximum
    * Real part.
    */
-  Real max () const;
+  virtual Real max () const libmesh_override;
 
   /**
    * @returns the sum of values in a vector
    */
-  T sum () const;
+  virtual T sum () const libmesh_override;
 
   /**
    * @returns the \f$l_1\f$-norm of the vector, i.e.
    * the sum of the absolute values.
    */
-  Real l1_norm () const;
+  virtual Real l1_norm () const libmesh_override;
 
   /**
    * @returns the \f$l_2\f$-norm of the vector, i.e.
    * the square root of the sum of the
    * squares of the elements.
    */
-  Real l2_norm () const;
+  virtual Real l2_norm () const libmesh_override;
 
   /**
    * @returns the maximum absolute value of the
    * elements of this vector, which is the
    * \f$l_\infty\f$-norm of a vector.
    */
-  Real linfty_norm () const;
+  virtual Real linfty_norm () const libmesh_override;
 
   /**
    * @returns dimension of the vector. This
@@ -235,89 +232,89 @@ public:
    * closer to the C++ standard library's
    * \p std::vector container.
    */
-  numeric_index_type size () const;
+  virtual numeric_index_type size () const libmesh_override;
 
   /**
    * @returns the local size of the vector
    * (index_stop-index_start)
    */
-  numeric_index_type local_size() const;
+  virtual numeric_index_type local_size() const libmesh_override;
 
   /**
    * @returns the index of the first vector element
    * actually stored on this processor
    */
-  numeric_index_type first_local_index() const;
+  virtual numeric_index_type first_local_index() const libmesh_override;
 
   /**
    * @returns the index of the last vector element
    * actually stored on this processor
    */
-  numeric_index_type last_local_index() const;
+  virtual numeric_index_type last_local_index() const libmesh_override;
 
   /**
    * Access components, returns \p U(i).
    */
-  T operator() (const numeric_index_type i) const;
+  virtual T operator() (const numeric_index_type i) const libmesh_override;
 
   /**
    * Addition operator.
    * Fast equivalent to \p U.add(1, V).
    */
-  NumericVector<T> & operator += (const NumericVector<T> &V);
+  virtual NumericVector<T> & operator += (const NumericVector<T> & v) libmesh_override;
 
   /**
    * Subtraction operator.
    * Fast equivalent to \p U.add(-1, V).
    */
-  NumericVector<T> & operator -= (const NumericVector<T> &V);
+  virtual NumericVector<T> & operator -= (const NumericVector<T> & v) libmesh_override;
 
   /**
    * Pointwise Division operator. ie divide every entry in this vector by the entry in v
    */
-  virtual NumericVector<T> & operator /= (NumericVector<T> & v);
+  virtual NumericVector<T> & operator /= (NumericVector<T> & v) libmesh_override;
 
   /**
    * Replace each entry v_i of this vector by its reciprocal, 1/v_i.
    */
-  virtual void reciprocal();
+  virtual void reciprocal() libmesh_override;
 
   /**
    * Replace each entry v_i = real(v_i) + imag(v_i)
    * of this vector by its complex conjugate, real(v_i) - imag(v_i)
    */
-  virtual void conjugate();
+  virtual void conjugate() libmesh_override;
 
   /**
    * v(i) = value
    */
-  void set (const numeric_index_type i, const T value);
+  virtual void set (const numeric_index_type i, const T value) libmesh_override;
 
   /**
    * v(i) += value
    */
-  void add (const numeric_index_type i, const T value);
+  virtual void add (const numeric_index_type i, const T value) libmesh_override;
 
   /**
    * \f$U(0-LIBMESH_DIM)+=s\f$.
    * Addition of \p s to all components. Note
    * that \p s is a scalar and not a vector.
    */
-  void add (const T s);
+  virtual void add (const T s) libmesh_override;
 
   /**
    * \f$ U+=V \f$.
    * Simple vector addition, equal to the
    * \p operator +=.
    */
-  void add (const NumericVector<T>& V);
+  virtual void add (const NumericVector<T> & V) libmesh_override;
 
   /**
    * \f$ U+=a*V \f$.
    * Simple vector addition, equal to the
    * \p operator +=.
    */
-  void add (const T a, const NumericVector<T>& v);
+  virtual void add (const T a, const NumericVector<T> & v) libmesh_override;
 
   /**
    * We override one NumericVector<T>::add_vector() method but don't
@@ -329,60 +326,60 @@ public:
    * \f$U+=A*V\f$, add the product of a \p SparseMatrix \p A
    * and a \p NumericVector \p V to \p this, where \p this=U.
    */
-  void add_vector (const NumericVector<T> &,
-                   const SparseMatrix<T> &);
+  virtual void add_vector (const NumericVector<T> &,
+                           const SparseMatrix<T> &) libmesh_override;
 
   /**
    * \f$U+=A^T*V\f$, add the product of the transpose of a \p SparseMatrix \p A_trans
    * and a \p NumericVector \p V to \p this, where \p this=U.
    */
-  void add_vector_transpose (const NumericVector<T> &,
-                             const SparseMatrix<T> &);
+  virtual void add_vector_transpose (const NumericVector<T> &,
+                                     const SparseMatrix<T> &) libmesh_override;
 
   /**
    * Scale each element of the
    * vector by the given factor.
    */
-  void scale (const T factor);
+  virtual void scale (const T factor) libmesh_override;
 
   /**
    * v = abs(v)... that is, each entry in v is replaced
    * by its absolute value.
    */
-  virtual void abs();
+  virtual void abs() libmesh_override;
 
   /**
    * Computes the dot product, p = U.V
    */
-  virtual T dot(const NumericVector<T>& V) const;
+  virtual T dot(const NumericVector<T> & V) const libmesh_override;
 
   /**
    * Creates a copy of the global vector in the
    * local vector \p v_local.
    */
-  void localize (std::vector<T>& v_local) const;
+  virtual void localize (std::vector<T> & v_local) const libmesh_override;
 
   /**
    * Same, but fills a \p NumericVector<T> instead of
    * a \p std::vector.
    */
-  void localize (NumericVector<T>& v_local) const;
+  virtual void localize (NumericVector<T> & v_local) const libmesh_override;
 
   /**
    * Creates a local vector \p v_local containing
    * only information relevant to this processor, as
    * defined by the \p send_list.
    */
-  void localize (NumericVector<T>& v_local,
-                 const std::vector<numeric_index_type>& send_list) const;
+  virtual void localize (NumericVector<T> & v_local,
+                         const std::vector<numeric_index_type> & send_list) const libmesh_override;
 
   /**
    * Updates a local vector with selected values from neighboring
    * processors, as defined by \p send_list.
    */
-  void localize (const numeric_index_type first_local_idx,
-                 const numeric_index_type last_local_idx,
-                 const std::vector<numeric_index_type>& send_list);
+  virtual void localize (const numeric_index_type first_local_idx,
+                         const numeric_index_type last_local_idx,
+                         const std::vector<numeric_index_type> & send_list) libmesh_override;
 
 
   /**
@@ -391,20 +388,20 @@ public:
    * default the data is sent to processor 0.  This method
    * is useful for outputting data from one processor.
    */
-  void localize_to_one (std::vector<T>& v_local,
-                        const processor_id_type proc_id=0) const;
+  virtual void localize_to_one (std::vector<T> & v_local,
+                                const processor_id_type proc_id=0) const libmesh_override;
 
   /**
    * Computes the pointwise (i.e. component-wise) product of \p vec1
    * and \p vec2 and stores the result in \p *this.
    */
-  virtual void pointwise_mult (const NumericVector<T>& vec1,
-                               const NumericVector<T>& vec2);
+  virtual void pointwise_mult (const NumericVector<T> & vec1,
+                               const NumericVector<T> & vec2) libmesh_override;
 
   /**
    * Swaps the raw QVector contents.
    */
-  virtual void swap (NumericVector<T> &v);
+  virtual void swap (NumericVector<T> & v) libmesh_override;
 
 private:
 
@@ -426,7 +423,7 @@ private:
 // LaspackVector inline methods
 template <typename T>
 inline
-LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
+LaspackVector<T>::LaspackVector (const Parallel::Communicator & comm,
                                  const ParallelType ptype)
   : NumericVector<T>(comm, ptype)
 {
@@ -437,7 +434,7 @@ LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
 
 template <typename T>
 inline
-LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
+LaspackVector<T>::LaspackVector (const Parallel::Communicator & comm,
                                  const numeric_index_type n,
                                  const ParallelType ptype)
   : NumericVector<T>(comm, ptype)
@@ -449,7 +446,7 @@ LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
 
 template <typename T>
 inline
-LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
+LaspackVector<T>::LaspackVector (const Parallel::Communicator & comm,
                                  const numeric_index_type n,
                                  const numeric_index_type n_local,
                                  const ParallelType ptype)
@@ -462,10 +459,10 @@ LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
 
 template <typename T>
 inline
-LaspackVector<T>::LaspackVector (const Parallel::Communicator &comm,
+LaspackVector<T>::LaspackVector (const Parallel::Communicator & comm,
                                  const numeric_index_type N,
                                  const numeric_index_type n_local,
-                                 const std::vector<numeric_index_type>& ghost,
+                                 const std::vector<numeric_index_type> & ghost,
                                  const ParallelType ptype)
   : NumericVector<T>(comm, ptype)
 {
@@ -506,7 +503,7 @@ void LaspackVector<T>::init (const numeric_index_type n,
   char foo[80];
   std::sprintf(foo,  "Vec-%d", cnt++);
 
-  V_Constr(&_vec, const_cast<char*>(foo), n, Normal, _LPTrue);
+  V_Constr(&_vec, const_cast<char *>(foo), n, Normal, _LPTrue);
 
   this->_is_initialized = true;
 #ifndef NDEBUG
@@ -536,7 +533,7 @@ template <typename T>
 inline
 void LaspackVector<T>::init (const numeric_index_type n,
                              const numeric_index_type n_local,
-                             const std::vector<numeric_index_type>& libmesh_dbg_var(ghost),
+                             const std::vector<numeric_index_type> & libmesh_dbg_var(ghost),
                              const bool fast,
                              const ParallelType ptype)
 {
@@ -549,7 +546,7 @@ void LaspackVector<T>::init (const numeric_index_type n,
 /* Default implementation for solver packages for which ghosted
    vectors are not yet implemented.  */
 template <class T>
-void LaspackVector<T>::init (const NumericVector<T>& other,
+void LaspackVector<T>::init (const NumericVector<T> & other,
                              const bool fast)
 {
   this->init(other.size(),other.local_size(),fast,other.type());
@@ -718,9 +715,9 @@ T LaspackVector<T>::operator() (const numeric_index_type i) const
 
 template <typename T>
 inline
-void LaspackVector<T>::swap (NumericVector<T> &other)
+void LaspackVector<T>::swap (NumericVector<T> & other)
 {
-  LaspackVector<T>& v = cast_ref<LaspackVector<T>&>(other);
+  LaspackVector<T> & v = cast_ref<LaspackVector<T> &>(other);
 
   // This is all grossly dependent on Laspack version...
 

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -30,18 +30,13 @@
 namespace libMesh
 {
 
-
-
-
-
-
-
 /**
  * This class is an error indicator based on laplacian jumps between
  * elements.
  * See the JumpErrorEstimator class for most user APIs
  *
- * @author Roy H. Stogner, 2005
+ * \author Roy H. Stogner
+ * \date 2005
  */
 class LaplacianErrorEstimator : public JumpErrorEstimator
 {
@@ -60,7 +55,7 @@ public:
    */
   ~LaplacianErrorEstimator() {}
 
-  virtual ErrorEstimatorType type() const
+  virtual ErrorEstimatorType type() const libmesh_override
   { return LAPLACIAN;}
 
 protected:
@@ -69,13 +64,13 @@ protected:
    * An initialization function, for requesting specific data from the FE
    * objects
    */
-  virtual void init_context(FEMContext &c);
+  virtual void init_context(FEMContext & c) libmesh_override;
 
   /**
    * The function which calculates a laplacian jump based error
    * term on an internal side
    */
-  virtual void internal_side_integration();
+  virtual void internal_side_integration() libmesh_override;
 };
 
 

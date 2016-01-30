@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -40,9 +40,9 @@ namespace libMesh
 //
 
 // Constructor
-TriangleInterface::TriangleInterface(UnstructuredMesh& mesh)
+TriangleInterface::TriangleInterface(UnstructuredMesh & mesh)
   : _mesh(mesh),
-    _holes(NULL),
+    _holes(libmesh_nullptr),
     _elem_type(TRI3),
     _desired_area(0.1),
     _minimum_angle(20.0),
@@ -59,7 +59,7 @@ TriangleInterface::TriangleInterface(UnstructuredMesh& mesh)
 void TriangleInterface::triangulate()
 {
   // Will the triangulation have holes?
-  const bool have_holes = ((_holes != NULL) && (!_holes->empty()));
+  const bool have_holes = ((_holes != libmesh_nullptr) && (!_holes->empty()));
 
   // If the initial PSLG is really simple, e.g. an L-shaped domain or
   // a square/rectangle, the resulting triangulation may be very
@@ -146,7 +146,7 @@ void TriangleInterface::triangulate()
   // Allocate space for the segments (2 int per segment)
   if (initial.numberofsegments > 0)
     {
-      initial.segmentlist = static_cast<int*> (std::malloc(initial.numberofsegments * 2 * sizeof(int)));
+      initial.segmentlist = static_cast<int *> (std::malloc(initial.numberofsegments * 2 * sizeof(int)));
     }
 
 
@@ -190,7 +190,7 @@ void TriangleInterface::triangulate()
         dof_id_type index = 2*hole_offset + ctr;
 
         // Get pointer to the current node
-        Node* node = *it;
+        Node * node = *it;
 
         // Set x,y values in pointlist
         initial.pointlist[index] = (*node)(0);
@@ -320,10 +320,10 @@ void TriangleInterface::triangulate()
     flags << _extra_flags;
 
   // Refine the initial output to conform to the area constraint
-  TriangleWrapper::triangulate(const_cast<char*>(flags.str().c_str()),
+  TriangleWrapper::triangulate(const_cast<char *>(flags.str().c_str()),
                                &initial,
                                &final,
-                               NULL); // voronoi ouput -- not used
+                               libmesh_nullptr); // voronoi ouput -- not used
 
 
   // Send the information computed by Triangle to the Mesh.

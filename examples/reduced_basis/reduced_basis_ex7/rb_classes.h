@@ -17,12 +17,13 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef __rb_classes_h__
-#define __rb_classes_h__
+#ifndef RB_CLASSES_H
+#define RB_CLASSES_H
 
 #include "libmesh/rb_construction.h"
 #include "libmesh/fe_base.h"
 #include "libmesh/auto_ptr.h"
+#include "libmesh/rb_evaluation.h"
 
 // local include
 #include "assembly.h"
@@ -51,7 +52,7 @@ public:
   /**
    * Constructor. Just set the theta expansion.
    */
-  SimpleRBEvaluation(const libMesh::Parallel::Communicator& comm_in)
+  SimpleRBEvaluation(const libMesh::Parallel::Communicator & comm_in)
     : RBEvaluation(comm_in)
   {
     set_rb_theta_expansion(acoustics_rb_theta_expansion);
@@ -77,8 +78,8 @@ class SimpleRBConstruction : public RBConstruction
 {
 public:
 
-  SimpleRBConstruction (EquationSystems& es,
-                        const std::string& name_in,
+  SimpleRBConstruction (EquationSystems & es,
+                        const std::string & name_in,
                         const unsigned int number_in)
     : Parent(es, name_in, number_in)
   {}
@@ -120,19 +121,19 @@ public:
   /**
    * Pre-request all relevant element data.
    */
-  virtual void init_context(FEMContext &c)
+  virtual void init_context(FEMContext & c)
   {
     // For efficiency, we should prerequest all
     // the data we will need to build the
     // linear system before doing an element loop.
-    FEBase* elem_fe = NULL;
-    c.get_element_fe( p_var, elem_fe );
+    FEBase * elem_fe = libmesh_nullptr;
+    c.get_element_fe(p_var, elem_fe);
     elem_fe->get_JxW();
     elem_fe->get_phi();
     elem_fe->get_dphi();
 
-    FEBase* side_fe = NULL;
-    c.get_side_fe( p_var, side_fe );
+    FEBase * side_fe = libmesh_nullptr;
+    c.get_side_fe(p_var, side_fe);
     side_fe->get_JxW();
     side_fe->get_phi();
   }
@@ -147,8 +148,7 @@ public:
    * i.e. the objects that define how to assemble the set of parameter-independent
    * operators in the affine expansion of the PDE.
    */
-  AcousticsRBAssemblyExpansion* acoustics_rb_assembly_expansion;
-
+  AcousticsRBAssemblyExpansion * acoustics_rb_assembly_expansion;
 };
 
 #endif

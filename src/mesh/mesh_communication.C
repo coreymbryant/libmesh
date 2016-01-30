@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -47,15 +47,15 @@ namespace {
 using namespace libMesh;
 
 /**
- * Specific weak ordering for Elem*'s to be used in a set.
+ * Specific weak ordering for Elem *'s to be used in a set.
  * We use the id, but first sort by level.  This guarantees
  * when traversing the set from beginning to end the lower
  * level (parent) elements are encountered first.
  */
 struct CompareElemIdsByLevel
 {
-  bool operator()(const Elem *a,
-                  const Elem *b) const
+  bool operator()(const Elem * a,
+                  const Elem * b) const
   {
     libmesh_assert (a);
     libmesh_assert (b);
@@ -72,14 +72,14 @@ struct SyncNeighbors
 {
   typedef std::vector<dof_id_type> datum;
 
-  SyncNeighbors(MeshBase &_mesh) :
+  SyncNeighbors(MeshBase & _mesh) :
     mesh(_mesh) {}
 
-  MeshBase &mesh;
+  MeshBase & mesh;
 
   // Find the neighbor ids for each requested element
-  void gather_data (const std::vector<dof_id_type>& ids,
-                    std::vector<datum>& neighbors)
+  void gather_data (const std::vector<dof_id_type> & ids,
+                    std::vector<datum> & neighbors)
   {
     neighbors.resize(ids.size());
 
@@ -87,14 +87,14 @@ struct SyncNeighbors
       {
         // Look for this element in the mesh
         // We'd better find every element we're asked for
-        const Elem *elem = mesh.elem(ids[i]);
+        const Elem * elem = mesh.elem(ids[i]);
 
         // Return the element's neighbors
         const unsigned int n_neigh = elem->n_neighbors();
         neighbors[i].resize(n_neigh);
         for (unsigned int n = 0; n != n_neigh; ++n)
           {
-            const Elem *neigh = elem->neighbor(n);
+            const Elem * neigh = elem->neighbor(n);
             if (neigh)
               {
                 libmesh_assert_not_equal_to(neigh, remote_elem);
@@ -106,14 +106,14 @@ struct SyncNeighbors
       }
   }
 
-  void act_on_data (const std::vector<dof_id_type>& ids,
-                    std::vector<datum>& neighbors)
+  void act_on_data (const std::vector<dof_id_type> & ids,
+                    std::vector<datum> & neighbors)
   {
     for (std::size_t i=0; i != ids.size(); ++i)
       {
-        Elem *elem = mesh.elem(ids[i]);
+        Elem * elem = mesh.elem(ids[i]);
 
-        datum &new_neigh = neighbors[i];
+        datum & new_neigh = neighbors[i];
 
         const unsigned int n_neigh = elem->n_neighbors();
         libmesh_assert_equal_to (n_neigh, new_neigh.size());
@@ -121,7 +121,7 @@ struct SyncNeighbors
         for (unsigned int n = 0; n != n_neigh; ++n)
           {
             const dof_id_type new_neigh_id = new_neigh[n];
-            const Elem *old_neigh = elem->neighbor(n);
+            const Elem * old_neigh = elem->neighbor(n);
             if (old_neigh && old_neigh != remote_elem)
               {
                 libmesh_assert_equal_to(old_neigh->id(), new_neigh_id);
@@ -132,11 +132,11 @@ struct SyncNeighbors
               }
             else
               {
-                Elem *neigh = mesh.query_elem(new_neigh_id);
+                Elem * neigh = mesh.query_elem(new_neigh_id);
                 if (neigh)
                   elem->set_neighbor(n, neigh);
                 else
-                  elem->set_neighbor(n, const_cast<RemoteElem*>(remote_elem));
+                  elem->set_neighbor(n, const_cast<RemoteElem *>(remote_elem));
               }
           }
       }
@@ -168,7 +168,7 @@ void MeshCommunication::redistribute (ParallelMesh &) const
 }
 #else
 // ------------------------------------------------------------
-void MeshCommunication::redistribute (ParallelMesh &mesh) const
+void MeshCommunication::redistribute (ParallelMesh & mesh) const
 {
   // This method will be called after a new partitioning has been
   // assigned to the elements.  This partitioning was defined in
@@ -218,28 +218,28 @@ void MeshCommunication::redistribute (ParallelMesh &mesh) const
         // We will certainly send all the elements assigned to this processor,
         // but we will also ship off any other elements which touch
         // their nodes.
-        std::set<const Node*> connected_nodes;
+        std::set<const Node *> connected_nodes;
         {
           MeshBase::const_element_iterator       elem_it  = mesh.pid_elements_begin(pid);
           const MeshBase::const_element_iterator elem_end = mesh.pid_elements_end(pid);
 
           for (; elem_it!=elem_end; ++elem_it)
             {
-              const Elem* elem = *elem_it;
+              const Elem * elem = *elem_it;
 
               for (unsigned int n=0; n<elem->n_nodes(); n++)
                 connected_nodes.insert (elem->get_node(n));
             }
         }
 
-        std::set<const Elem*, CompareElemIdsByLevel> elements_to_send;
+        std::set<const Elem *, CompareElemIdsByLevel> elements_to_send;
         {
           MeshBase::const_element_iterator       elem_it  = mesh.elements_begin();
           const MeshBase::const_element_iterator elem_end = mesh.elements_end();
 
           for (; elem_it!=elem_end; ++elem_it)
             {
-              const Elem* elem = *elem_it;
+              const Elem * elem = *elem_it;
 
               for (unsigned int n=0; n<elem->n_nodes(); n++)
                 if (connected_nodes.count(elem->get_node(n)))
@@ -250,7 +250,7 @@ void MeshCommunication::redistribute (ParallelMesh &mesh) const
                     // elements' ancestors, and it's possible that
                     // they might not all be connected to the remote
                     // processor's nodes.
-                    for (const Elem* parent = elem->parent(); parent;
+                    for (const Elem * parent = elem->parent(); parent;
                          parent = parent->parent())
                       elements_to_send.insert(parent);
                   }
@@ -259,13 +259,13 @@ void MeshCommunication::redistribute (ParallelMesh &mesh) const
 
         connected_nodes.clear();
         {
-          std::set<const Elem*, CompareElemIdsByLevel>::iterator
+          std::set<const Elem *, CompareElemIdsByLevel>::iterator
             elem_it  = elements_to_send.begin(),
             elem_end = elements_to_send.end();
 
           for (; elem_it!=elem_end; ++elem_it)
             {
-              const Elem* elem = *elem_it;
+              const Elem * elem = *elem_it;
 
               for (unsigned int n=0; n<elem->n_nodes(); n++)
                 connected_nodes.insert(elem->get_node(n));
@@ -359,6 +359,7 @@ void MeshCommunication::redistribute (ParallelMesh &mesh) const
     mesh.comm().receive_packed_range (Parallel::any_source,
                                       &mesh,
                                       mesh_inserter_iterator<Node>(mesh),
+                                      (Node**)libmesh_nullptr,
                                       nodestag);
 
   // Receive elements.
@@ -368,6 +369,7 @@ void MeshCommunication::redistribute (ParallelMesh &mesh) const
     mesh.comm().receive_packed_range (Parallel::any_source,
                                       &mesh,
                                       mesh_inserter_iterator<Elem>(mesh),
+                                      (Elem**)libmesh_nullptr,
                                       elemstag);
 
   // Wait for all sends to complete
@@ -396,7 +398,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &) const
 }
 #else
 // ------------------------------------------------------------
-void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
+void MeshCommunication::gather_neighboring_elements (ParallelMesh & mesh) const
 {
   // Don't need to do anything if there is
   // only one processor.
@@ -467,7 +469,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
   // For simplicity, we will use a set to build the list, then transfer
   // it to a vector for communication.
   std::vector<dof_id_type> my_interface_node_list;
-  std::vector<const Elem*>  my_interface_elements;
+  std::vector<const Elem *>  my_interface_elements;
   {
     std::set<dof_id_type> my_interface_node_set;
 
@@ -485,7 +487,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
             my_interface_elements.push_back(elem); // add the element, but only once, even
             // if there are multiple NULL neighbors
             for (unsigned int s=0; s<elem->n_sides(); s++)
-              if (elem->neighbor(s) == NULL)
+              if (elem->neighbor(s) == libmesh_nullptr)
                 {
                   UniquePtr<Elem> side(elem->build_side(s));
 
@@ -605,8 +607,8 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
           // We also ship any nodes connected to these elements.  Note
           // some of these nodes and elements may be replicated from
           // other processors, but that is OK.
-          std::set<const Elem*, CompareElemIdsByLevel> elements_to_send;
-          std::set<const Node*> connected_nodes;
+          std::set<const Elem *, CompareElemIdsByLevel> elements_to_send;
+          std::set<const Node *> connected_nodes;
 
           // Check for quick return?
           if (common_interface_node_list.empty())
@@ -636,7 +638,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
           // otherwise, this really *is* an adjacent processor.
           adjacent_processors.push_back(source_pid_idx);
 
-          std::vector<const Elem*> family_tree;
+          std::vector<const Elem *> family_tree;
 
           for (dof_id_type e=0, n_shared_nodes=0; e<my_interface_elements.size(); e++, n_shared_nodes=0)
             {
@@ -715,6 +717,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
           mesh.comm().receive_packed_range (source_pid_idx,
                                             &mesh,
                                             mesh_inserter_iterator<Node>(mesh),
+                                            (Node**)libmesh_nullptr,
                                             element_neighbors_tag);
         }
       //------------------------------------------------------------------
@@ -726,6 +729,7 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
           mesh.comm().receive_packed_range (source_pid_idx,
                                             &mesh,
                                             mesh_inserter_iterator<Elem>(mesh),
+                                            (Elem**)libmesh_nullptr,
                                             element_neighbors_tag);
         }
       //------------------------------------------------------------------
@@ -761,14 +765,14 @@ void MeshCommunication::gather_neighboring_elements (ParallelMesh &mesh) const
 
 #ifndef LIBMESH_HAVE_MPI // avoid spurious gcc warnings
 // ------------------------------------------------------------
-void MeshCommunication::broadcast (MeshBase&) const
+void MeshCommunication::broadcast (MeshBase &) const
 {
   // no MPI == one processor, no need for this method...
   return;
 }
 #else
 // ------------------------------------------------------------
-void MeshCommunication::broadcast (MeshBase& mesh) const
+void MeshCommunication::broadcast (MeshBase & mesh) const
 {
   // Don't need to do anything if there is
   // only one processor.
@@ -827,14 +831,14 @@ void MeshCommunication::broadcast (MeshBase& mesh) const
 
 #ifndef LIBMESH_HAVE_MPI // avoid spurious gcc warnings
 // ------------------------------------------------------------
-void MeshCommunication::gather (const processor_id_type, ParallelMesh&) const
+void MeshCommunication::gather (const processor_id_type, ParallelMesh &) const
 {
   // no MPI == one processor, no need for this method...
   return;
 }
 #else
 // ------------------------------------------------------------
-void MeshCommunication::gather (const processor_id_type root_id, ParallelMesh& mesh) const
+void MeshCommunication::gather (const processor_id_type root_id, ParallelMesh & mesh) const
 {
   // The mesh should know it's about to be serialized
   libmesh_assert (mesh.is_serial());
@@ -913,37 +917,80 @@ struct SyncIds
   typedef dof_id_type datum;
   typedef void (MeshBase::*renumber_obj)(dof_id_type, dof_id_type);
 
-  SyncIds(MeshBase &_mesh, renumber_obj _renumberer) :
+  SyncIds(MeshBase & _mesh, renumber_obj _renumberer) :
     mesh(_mesh),
     renumber(_renumberer) {}
 
-  MeshBase &mesh;
+  MeshBase & mesh;
   renumber_obj renumber;
-  // renumber_obj &renumber;
+  // renumber_obj & renumber;
 
   // Find the id of each requested DofObject -
   // Parallel::sync_* already did the work for us
-  void gather_data (const std::vector<dof_id_type>& ids,
-                    std::vector<datum>& ids_out)
+  void gather_data (const std::vector<dof_id_type> & ids,
+                    std::vector<datum> & ids_out)
   {
     ids_out = ids;
   }
 
-  void act_on_data (const std::vector<dof_id_type>& old_ids,
-                    std::vector<datum>& new_ids)
+  void act_on_data (const std::vector<dof_id_type> & old_ids,
+                    std::vector<datum> & new_ids)
   {
     for (unsigned int i=0; i != old_ids.size(); ++i)
       if (old_ids[i] != new_ids[i])
         (mesh.*renumber)(old_ids[i], new_ids[i]);
   }
 };
+
+#ifdef LIBMESH_ENABLE_UNIQUE_ID
+template <typename DofObjSubclass>
+struct SyncUniqueIds
+{
+  typedef unique_id_type datum;
+  typedef DofObjSubclass* (MeshBase::*query_obj)(const dof_id_type);
+
+  SyncUniqueIds(MeshBase &_mesh, query_obj _querier) :
+    mesh(_mesh),
+    query(_querier) {}
+
+  MeshBase &mesh;
+  query_obj query;
+
+  // Find the id of each requested DofObject -
+  // Parallel::sync_* already did the work for us
+  void gather_data (const std::vector<dof_id_type>& ids,
+                    std::vector<datum>& ids_out)
+  {
+    ids_out.reserve(ids.size());
+
+    for (unsigned int i=0; i != ids.size(); ++i)
+      {
+        DofObjSubclass *d = (mesh.*query)(ids[i]);
+        libmesh_assert(d);
+
+        ids_out.push_back(d->unique_id());
+      }
+  }
+
+  void act_on_data (const std::vector<dof_id_type>& ids,
+                    std::vector<datum>& unique_ids)
+  {
+    for (unsigned int i=0; i != ids.size(); ++i)
+      {
+        DofObjSubclass *d = (mesh.*query)(ids[i]);
+        libmesh_assert(d);
+
+        d->set_unique_id() = unique_ids[i];
+      }
+  }
+};
+#endif // LIBMESH_ENABLE_UNIQUE_ID
 }
 
 
 
 // ------------------------------------------------------------
-void MeshCommunication::make_node_ids_parallel_consistent
-(MeshBase &mesh)
+void MeshCommunication::make_node_ids_parallel_consistent (MeshBase & mesh)
 {
   // This function must be run on all processors at once
   libmesh_parallel_only(mesh.comm());
@@ -959,8 +1006,29 @@ void MeshCommunication::make_node_ids_parallel_consistent
 
 
 
+void MeshCommunication::make_node_unique_ids_parallel_consistent
+(MeshBase &mesh)
+{
+  // This function must be run on all processors at once
+  libmesh_parallel_only(mesh.comm());
+
+#ifdef LIBMESH_ENABLE_UNIQUE_ID
+  START_LOG ("make_node_unique_ids_parallel_consistent()", "MeshCommunication");
+
+  SyncUniqueIds<Node> syncuniqueids(mesh, &MeshBase::query_node_ptr);
+  Parallel::sync_dofobject_data_by_id
+    (mesh.comm(), mesh.nodes_begin(), mesh.nodes_end(),
+     syncuniqueids);
+
+  STOP_LOG ("make_node_unique_ids_parallel_consistent()", "MeshCommunication");
+#endif
+}
+
+
+
+
 // ------------------------------------------------------------
-void MeshCommunication::make_elems_parallel_consistent(MeshBase &mesh)
+void MeshCommunication::make_elems_parallel_consistent(MeshBase & mesh)
 {
   // This function must be run on all processors at once
   libmesh_parallel_only(mesh.comm());
@@ -971,6 +1039,13 @@ void MeshCommunication::make_elems_parallel_consistent(MeshBase &mesh)
   Parallel::sync_element_data_by_parent_id
     (mesh, mesh.active_elements_begin(),
      mesh.active_elements_end(), syncids);
+
+#ifdef LIBMESH_ENABLE_UNIQUE_ID
+  SyncUniqueIds<Elem> syncuniqueids(mesh, &MeshBase::query_elem);
+  Parallel::sync_dofobject_data_by_id
+    (mesh.comm(), mesh.active_elements_begin(),
+     mesh.active_elements_end(), syncuniqueids);
+#endif
 
   STOP_LOG ("make_elems_parallel_consistent()", "MeshCommunication");
 }
@@ -984,13 +1059,13 @@ struct SyncProcIds
 {
   typedef processor_id_type datum;
 
-  SyncProcIds(MeshBase &_mesh) : mesh(_mesh) {}
+  SyncProcIds(MeshBase & _mesh) : mesh(_mesh) {}
 
-  MeshBase &mesh;
+  MeshBase & mesh;
 
   // ------------------------------------------------------------
-  void gather_data (const std::vector<dof_id_type>& ids,
-                    std::vector<datum>& data)
+  void gather_data (const std::vector<dof_id_type> & ids,
+                    std::vector<datum> & data)
   {
     // Find the processor id of each requested node
     data.resize(ids.size());
@@ -999,7 +1074,7 @@ struct SyncProcIds
       {
         // Look for this point in the mesh
         // We'd better find every node we're asked for
-        Node *node = mesh.node_ptr(ids[i]);
+        Node * node = mesh.node_ptr(ids[i]);
 
         // Return the node's correct processor id,
         data[i] = node->processor_id();
@@ -1007,13 +1082,13 @@ struct SyncProcIds
   }
 
   // ------------------------------------------------------------
-  void act_on_data (const std::vector<dof_id_type>& ids,
+  void act_on_data (const std::vector<dof_id_type> & ids,
                     std::vector<datum> proc_ids)
   {
     // Set the ghost node processor ids we've now been informed of
     for (std::size_t i=0; i != ids.size(); ++i)
       {
-        Node *node = mesh.node_ptr(ids[i]);
+        Node * node = mesh.node_ptr(ids[i]);
         node->processor_id() = proc_ids[i];
       }
   }
@@ -1023,8 +1098,7 @@ struct SyncProcIds
 
 
 // ------------------------------------------------------------
-void MeshCommunication::make_node_proc_ids_parallel_consistent
-(MeshBase& mesh)
+void MeshCommunication::make_node_proc_ids_parallel_consistent(MeshBase & mesh)
 {
   START_LOG ("make_node_proc_ids_parallel_consistent()", "MeshCommunication");
 
@@ -1055,8 +1129,7 @@ void MeshCommunication::make_node_proc_ids_parallel_consistent
 
 
 // ------------------------------------------------------------
-void MeshCommunication::make_nodes_parallel_consistent
-(MeshBase &mesh)
+void MeshCommunication::make_nodes_parallel_consistent (MeshBase & mesh)
 {
   // This function must be run on all processors at once
   libmesh_parallel_only(mesh.comm());
@@ -1087,6 +1160,9 @@ void MeshCommunication::make_nodes_parallel_consistent
   // Second, sync up dofobject ids.
   this->make_node_ids_parallel_consistent(mesh);
 
+  // Third, sync up dofobject unique_ids if applicable.
+  this->make_node_unique_ids_parallel_consistent(mesh);
+
   // Finally, correct the processor ids to make DofMap happy
   MeshTools::correct_node_proc_ids(mesh);
 }
@@ -1094,7 +1170,7 @@ void MeshCommunication::make_nodes_parallel_consistent
 
 
 // ------------------------------------------------------------
-void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::set<Elem *> & extra_ghost_elem_ids) const
+void MeshCommunication::delete_remote_elements(ParallelMesh & mesh, const std::set<Elem *> & extra_ghost_elem_ids) const
 {
   // The mesh should know it's about to be parallelized
   libmesh_assert (!mesh.is_serial());
@@ -1135,7 +1211,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
     l_end     = mesh.local_elements_end();
   for (; l_elem_it != l_end; ++l_elem_it)
     {
-      const Elem *elem = *l_elem_it;
+      const Elem * elem = *l_elem_it;
       for (unsigned int n=0; n != elem->n_nodes(); ++n)
         {
           dof_id_type nodeid = elem->node(n);
@@ -1145,7 +1221,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
 
       for (unsigned int s=0; s != elem->n_sides(); ++s)
         {
-          const Elem *neighbor = elem->neighbor(s);
+          const Elem * neighbor = elem->neighbor(s);
           if (neighbor)
             semilocal_elems[neighbor->id()] = true;
         }
@@ -1159,7 +1235,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
           for (unsigned int n=0; n != elem->n_nodes(); ++n)
             semilocal_nodes[elem->node(n)] = true;
 
-          const Elem *parent = elem->parent();
+          const Elem * parent = elem->parent();
           // Don't proceed from a boundary mesh to an interior mesh
           if (parent && parent->dim() != elem->dim())
             break;
@@ -1176,7 +1252,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
 
   for (; u_elem_it != u_end; ++u_elem_it)
     {
-      const Elem *elem = *u_elem_it;
+      const Elem * elem = *u_elem_it;
       for (unsigned int n=0; n != elem->n_nodes(); ++n)
         local_nodes[elem->node(n)] = true;
       while (elem)
@@ -1186,7 +1262,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
           for (unsigned int n=0; n != elem->n_nodes(); ++n)
             semilocal_nodes[elem->node(n)] = true;
 
-          const Elem *parent = elem->parent();
+          const Elem * parent = elem->parent();
           // Don't proceed from a boundary mesh to an interior mesh
           if (parent && parent->dim() != elem->dim())
             break;
@@ -1201,7 +1277,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
     nl_end     = mesh.not_local_elements_end();
   for (; nl_elem_it != nl_end; ++nl_elem_it)
     {
-      const Elem *elem = *nl_elem_it;
+      const Elem * elem = *nl_elem_it;
       for (unsigned int n=0; n != elem->n_nodes(); ++n)
         if (local_nodes[elem->node(n)])
           {
@@ -1212,7 +1288,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
                 for (unsigned int nn=0; nn != elem->n_nodes(); ++nn)
                   semilocal_nodes[elem->node(nn)] = true;
 
-                const Elem *parent = elem->parent();
+                const Elem * parent = elem->parent();
                 // Don't proceed from a boundary mesh to an interior mesh
                 if (parent && parent->dim() != elem->dim())
                   break;
@@ -1228,7 +1304,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
       it != extra_ghost_elem_ids.end();
       ++it)
     {
-      const Elem *elem = *it;
+      const Elem * elem = *it;
       semilocal_elems[elem->id()] = true;
       for (unsigned int n=0; n != elem->n_nodes(); ++n)
         semilocal_nodes[elem->node(n)] = true;
@@ -1245,7 +1321,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
         lev_end     = mesh.level_elements_end(l);
       for (; lev_elem_it != lev_end; ++lev_elem_it)
         {
-          Elem *elem = *lev_elem_it;
+          Elem * elem = *lev_elem_it;
           libmesh_assert (elem);
           // Make sure we don't leave any invalid pointers
           if (!semilocal_elems[elem->id()])
@@ -1254,7 +1330,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
           // Subactive neighbor pointers aren't preservable here
           if (elem->subactive())
             for (unsigned int s=0; s != elem->n_sides(); ++s)
-              elem->set_neighbor(s, NULL);
+              elem->set_neighbor(s, libmesh_nullptr);
 
           // delete_elem doesn't currently invalidate element
           // iterators... that had better not change
@@ -1268,7 +1344,7 @@ void MeshCommunication::delete_remote_elements(ParallelMesh& mesh, const std::se
     node_end = mesh.nodes_end();
   for (node_it = mesh.nodes_begin(); node_it != node_end; ++node_it)
     {
-      Node *node = *node_it;
+      Node * node = *node_it;
       libmesh_assert(node);
       if (!semilocal_nodes[node->id()])
         mesh.delete_node(node);

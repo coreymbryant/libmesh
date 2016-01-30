@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,24 +29,18 @@
 namespace libMesh
 {
 
-
-
-
 /**
  * Defines an abstract dense vector base class for use in
  * Finite Element-type computations. Specialized dense vectors,
  * for example DenseSubVectors, can be derived from this class.
  *
- * @author John W. Peterson, 2003
+ * \author John W. Peterson
+ * \date 2003
  */
-
-// ------------------------------------------------------------
-// DenseVectorBase class definition
 template<typename T>
 class DenseVectorBase
 {
 public:
-
   /**
    * Constructor.  Empty.
    */
@@ -87,13 +81,13 @@ public:
   /**
    * Pretty-print the vector to \p stdout.
    */
-  void print(std::ostream& os) const;
+  void print(std::ostream & os) const;
 
   /**
    * Same as above, but allows you to print using the
    * usual stream syntax.
    */
-  friend std::ostream& operator << (std::ostream& os, const DenseVectorBase<T>& v)
+  friend std::ostream & operator << (std::ostream & os, const DenseVectorBase<T> & v)
   {
     v.print(os);
     return os;
@@ -103,17 +97,9 @@ public:
    * Prints the entries of the vector with additional
    * decimal places in scientific notation.
    */
-  void print_scientific(std::ostream& os) const;
+  void print_scientific(std::ostream & os, unsigned precision=8) const;
 
 };
-
-
-
-// ------------------------------------------------------------
-// DenseVectorBase member functions
-
-
-
 
 } // namespace libMesh
 

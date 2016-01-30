@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -18,12 +18,13 @@
 #include "libmesh/fe_transformation_base.h"
 #include "libmesh/h1_fe_transformation.h"
 #include "libmesh/hcurl_fe_transformation.h"
+#include "libmesh/fe_type.h"
 
 namespace libMesh
 {
 
 template< typename OutputShape >
-UniquePtr<FETransformationBase<OutputShape> > FETransformationBase<OutputShape>::build( const FEType& fe_type )
+UniquePtr<FETransformationBase<OutputShape> > FETransformationBase<OutputShape>::build( const FEType & fe_type )
 {
   switch (fe_type.family)
     {

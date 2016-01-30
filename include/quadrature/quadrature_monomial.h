@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,6 @@
 namespace libMesh
 {
 
-
-
-
 /**
  * This class defines alternate quadrature rules on
  * "tensor-product" elements (QUADs and HEXes) which can be
@@ -58,11 +55,10 @@ namespace libMesh
  * We also provide the original reference for each rule, as available,
  * in the source code file.
  *
- * @author John W. Peterson, 2008
+ * \author John W. Peterson
+ * \date 2008
  */
-
-
-class QMonomial : public QBase
+class QMonomial libmesh_final : public QBase
 {
 public:
 
@@ -80,7 +76,7 @@ public:
   /**
    * @returns \p QMONOMIAL
    */
-  QuadratureType type() const { return QMONOMIAL; }
+  virtual QuadratureType type() const libmesh_override { return QMONOMIAL; }
 
 
 private:
@@ -88,20 +84,20 @@ private:
   /**
    * Just uses a Gauss rule in 1D.
    */
-  void init_1D (const ElemType,
-                unsigned int =0);
+  virtual void init_1D (const ElemType,
+                        unsigned int =0) libmesh_override;
 
   /**
    * More efficient rules for QUADs
    */
-  void init_2D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+  virtual void init_2D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 
   /**
    * More efficient rules for HEXes
    */
-  void init_3D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+  virtual void init_3D (const ElemType _type=INVALID_ELEM,
+                        unsigned int p_level=0) libmesh_override;
 
 
 
@@ -141,7 +137,7 @@ private:
    * quadrature rules and later authors certainly built upon his work.
    */
   void stroud_rule(const Real rule_data[][3],
-                   const unsigned int* rule_symmetry,
+                   const unsigned int * rule_symmetry,
                    const unsigned int n_pts);
 
   /**
@@ -182,16 +178,10 @@ private:
    * the unique permutations of G^{rot} were computed by me [JWP] using Maple.
    */
   void kim_rule(const Real rule_data[][4],
-                const unsigned int* rule_id,
+                const unsigned int * rule_id,
                 const unsigned int n_pts);
 };
 
-
-
 } // namespace libMesh
-
-
-
-
 
 #endif // LIBMESH_QUADRATURE_MONOMIAL_H

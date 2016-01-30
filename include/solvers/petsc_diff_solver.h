@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -46,11 +46,9 @@ namespace libMesh
  * which is still experimental.  Users of this framework should
  * beware of bugs and future API changes.
  *
- * @author Roy H. Stogner 2008
+ * \author Roy H. Stogner
+ * \date 2008
  */
-
-// ------------------------------------------------------------
-// Solver class definition
 class PetscDiffSolver : public DiffSolver
 {
 public:
@@ -59,7 +57,7 @@ public:
    * to be solved.
    */
   explicit
-  PetscDiffSolver (sys_type& system);
+  PetscDiffSolver (sys_type & system);
 
   /**
    * Destructor.
@@ -72,13 +70,13 @@ public:
    * The reinitialization function.  This method is used after
    * changes in the mesh.
    */
-  virtual void reinit ();
+  virtual void reinit () libmesh_override;
 
   /**
    * The initialization function.  solve() calls this to create
    * a new SNES context.
    */
-  void init ();
+  virtual void init () libmesh_override;
 
   /**
    * The clear function.  solve() calls this to destroy
@@ -91,7 +89,7 @@ public:
    * this method will depend on the PETSc SNES settings.
    * See the PETSc documentation for more details.
    */
-  virtual unsigned int solve ();
+  virtual unsigned int solve () libmesh_override;
 
 protected:
 

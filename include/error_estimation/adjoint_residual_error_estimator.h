@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,8 @@ namespace libMesh
  * misimplementation will be the fault of Roy Stogner.  It's also
  * Roy's fault there's no literature reference here yet.
  *
- * @author Roy H. Stogner, 2009.
+ * \author Roy H. Stogner
+ * \date 2009
  */
 class AdjointResidualErrorEstimator : public ErrorEstimator
 {
@@ -70,25 +71,25 @@ public:
    * Access to the "subestimator" (default: PatchRecovery) to use on
    * the primal/forward solution
    */
-  UniquePtr<ErrorEstimator> &primal_error_estimator() { return _primal_error_estimator; }
+  UniquePtr<ErrorEstimator> & primal_error_estimator() { return _primal_error_estimator; }
 
   /**
    * Access to the "subestimator" (default: PatchRecovery) to use on
    * the dual/adjoint solution
    */
-  UniquePtr<ErrorEstimator> &dual_error_estimator() { return _dual_error_estimator; }
+  UniquePtr<ErrorEstimator> & dual_error_estimator() { return _dual_error_estimator; }
 
   /**
    * Access to the QoISet (default: weight all QoIs equally) to use
    * when computing errors
    */
-  QoISet &qoi_set() { return _qoi_set; }
+  QoISet & qoi_set() { return _qoi_set; }
 
   /**
    * Access to the QoISet (default: weight all QoIs equally) to use
    * when computing errors
    */
-  const QoISet &qoi_set() const { return _qoi_set; }
+  const QoISet & qoi_set() const { return _qoi_set; }
 
   /**
    * To aid in investigating error estimator behavior, set this string
@@ -107,12 +108,12 @@ public:
    * functional.  The primal and dual subestimator error_norm values
    * are used, and should be chosen appropriately for your model.
    */
-  void estimate_error (const System& system,
-                       ErrorVector& error_per_cell,
-                       const NumericVector<Number>* solution_vector = NULL,
-                       bool estimate_parent_error = false);
+  virtual void estimate_error (const System & system,
+                               ErrorVector & error_per_cell,
+                               const NumericVector<Number> * solution_vector = libmesh_nullptr,
+                               bool estimate_parent_error = false) libmesh_override;
 
-  virtual ErrorEstimatorType type() const
+  virtual ErrorEstimatorType type() const libmesh_override
   { return ADJOINT_RESIDUAL;}
 
 protected:

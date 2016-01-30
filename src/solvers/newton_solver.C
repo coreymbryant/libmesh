@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -37,9 +37,9 @@ T SIGN(T a, T b)
 
 Real NewtonSolver::line_search(Real tol,
                                Real last_residual,
-                               Real &current_residual,
-                               NumericVector<Number> &newton_iterate,
-                               const NumericVector<Number> &linear_solution)
+                               Real & current_residual,
+                               NumericVector<Number> & newton_iterate,
+                               const NumericVector<Number> & linear_solution)
 {
   // Take a full step if we got a residual reduction or if we
   // aren't substepping
@@ -49,7 +49,7 @@ Real NewtonSolver::line_search(Real tol,
     return 1.;
 
   // The residual vector
-  NumericVector<Number> &rhs = *(_system.rhs);
+  NumericVector<Number> & rhs = *(_system.rhs);
 
   Real ax = 0.;  // First abscissa, don't take negative steps
   Real cx = 1.;  // Second abscissa, don't extrapolate steps
@@ -229,7 +229,7 @@ Real NewtonSolver::line_search(Real tol,
 }
 
 
-NewtonSolver::NewtonSolver (sys_type& s)
+NewtonSolver::NewtonSolver (sys_type & s)
   : Parent(s),
     require_residual_reduction(true),
     require_finite_residual(true),
@@ -281,11 +281,11 @@ unsigned int NewtonSolver::solve()
   // Reset any prior solve result
   _solve_result = INVALID_SOLVE_RESULT;
 
-  NumericVector<Number> &newton_iterate = *(_system.solution);
+  NumericVector<Number> & newton_iterate = *(_system.solution);
 
   UniquePtr<NumericVector<Number> > linear_solution_ptr = newton_iterate.zero_clone();
-  NumericVector<Number> &linear_solution = *linear_solution_ptr;
-  NumericVector<Number> &rhs = *(_system.rhs);
+  NumericVector<Number> & linear_solution = *linear_solution_ptr;
+  NumericVector<Number> & rhs = *(_system.rhs);
 
   newton_iterate.close();
   linear_solution.close();
@@ -295,7 +295,7 @@ unsigned int NewtonSolver::solve()
   _system.get_dof_map().enforce_constraints_exactly(_system);
 #endif
 
-  SparseMatrix<Number> &matrix = *(_system.matrix);
+  SparseMatrix<Number> & matrix = *(_system.matrix);
 
   // Set starting linear tolerance
   Real current_linear_tolerance = initial_linear_tolerance;
@@ -324,24 +324,29 @@ unsigned int NewtonSolver::solve()
           continue;
         }
 
-      if (current_residual == 0)
+      if (current_residual <= absolute_residual_tolerance)
         {
           if (verbose)
-            libMesh::out << "Linear solve unnecessary; residual = 0"
+            libMesh::out << "Linear solve unnecessary; residual "
+                         << current_residual
+                         << " meets absolute tolerance "
+                         << absolute_residual_tolerance
                          << std::endl;
 
           // We're not doing a solve, but other code may reuse this
           // matrix.
           matrix.close();
 
-          if (absolute_residual_tolerance > 0)
-            _solve_result |= CONVERGED_ABSOLUTE_RESIDUAL;
-          if (relative_residual_tolerance > 0)
-            _solve_result |= CONVERGED_RELATIVE_RESIDUAL;
-          if (absolute_step_tolerance > 0)
-            _solve_result |= CONVERGED_ABSOLUTE_STEP;
-          if (relative_step_tolerance > 0)
-            _solve_result |= CONVERGED_RELATIVE_STEP;
+          _solve_result |= CONVERGED_ABSOLUTE_RESIDUAL;
+          if (current_residual == 0)
+            {
+              if (relative_residual_tolerance > 0)
+                _solve_result |= CONVERGED_RELATIVE_RESIDUAL;
+              if (absolute_step_tolerance > 0)
+                _solve_result |= CONVERGED_ABSOLUTE_STEP;
+              if (relative_step_tolerance > 0)
+                _solve_result |= CONVERGED_RELATIVE_STEP;
+            }
 
           break;
         }
@@ -370,6 +375,9 @@ unsigned int NewtonSolver::solve()
         {
           current_linear_tolerance = minimum_linear_tolerance;
         }
+
+      // If starting the nonlinear solve with a really good initial guess, we dont want to set an absurd linear tolerance
+      current_linear_tolerance = std::max(current_linear_tolerance, absolute_residual_tolerance / current_residual / 10.0);
 
       // At this point newton_iterate is the current guess, and
       // linear_solution is now about to become the NEGATIVE of the next

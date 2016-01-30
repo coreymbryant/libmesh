@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -200,42 +200,12 @@ UniquePtr<Elem> Quad8::build_side (const unsigned int i,
 
   else
     {
-      Elem* edge = new Edge3;
+      Elem * edge = new Edge3;
       edge->subdomain_id() = this->subdomain_id();
 
-      switch (i)
-        {
-        case 0:
-          {
-            edge->set_node(0) = this->get_node(0);
-            edge->set_node(1) = this->get_node(1);
-            edge->set_node(2) = this->get_node(4);
-            break;
-          }
-        case 1:
-          {
-            edge->set_node(0) = this->get_node(1);
-            edge->set_node(1) = this->get_node(2);
-            edge->set_node(2) = this->get_node(5);
-            break;
-          }
-        case 2:
-          {
-            edge->set_node(0) = this->get_node(2);
-            edge->set_node(1) = this->get_node(3);
-            edge->set_node(2) = this->get_node(6);
-            break;
-          }
-        case 3:
-          {
-            edge->set_node(0) = this->get_node(3);
-            edge->set_node(1) = this->get_node(0);
-            edge->set_node(2) = this->get_node(7);
-            break;
-          }
-        default:
-          libmesh_error_msg("Invalid side i = " << i);
-        }
+      // Set the nodes
+      for (unsigned n=0; n<edge->n_nodes(); ++n)
+        edge->set_node(n) = this->get_node(Quad8::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -251,7 +221,7 @@ UniquePtr<Elem> Quad8::build_side (const unsigned int i,
 
 void Quad8::connectivity(const unsigned int sf,
                          const IOPackage iop,
-                         std::vector<dof_id_type>& conn) const
+                         std::vector<dof_id_type> & conn) const
 {
   libmesh_assert_less (sf, this->n_sub_elem());
   libmesh_assert_not_equal_to (iop, INVALID_IO_PACKAGE);
@@ -393,6 +363,51 @@ void Quad8::connectivity(const unsigned int sf,
     }
 }
 
+
+
+Real Quad8::volume () const
+{
+  // Make copies of our points.  It makes the subsequent calculations a bit
+  // shorter and avoids dereferencing the same pointer multiple times.
+  Point
+    x0 = point(0),
+    x1 = point(1),
+    x2 = point(2),
+    x3 = point(3),
+    x4 = point(4),
+    x5 = point(5),
+    x6 = point(6),
+    x7 = point(7);
+
+  // Construct constant data vectors.
+  // \vec{x}_{\xi}  = \vec{a1}*eta**2 + \vec{b1}*xi*eta + \vec{c1}*xi + \vec{d1}*eta + \vec{e1}
+  // \vec{x}_{\eta} = \vec{a2}*xi**2 + \vec{b2}*xi*eta + \vec{c2}*xi + \vec{d2}*eta + \vec{e2}
+  // This is copy-pasted directly from the output of a Python script.
+  Point
+    a1 = -x0/4 + x1/4 + x2/4 - x3/4 - x5/2 + x7/2,
+    b1 = -x0/2 - x1/2 + x2/2 + x3/2 + x4 - x6,
+    c1 = x0/2 + x1/2 + x2/2 + x3/2 - x4 - x6,
+    d1 = x0/4 - x1/4 + x2/4 - x3/4,
+    e1 = x5/2 - x7/2,
+    a2 = -x0/4 - x1/4 + x2/4 + x3/4 + x4/2 - x6/2,
+    b2 = -x0/2 + x1/2 + x2/2 - x3/2 - x5 + x7,
+    c2 = x0/4 - x1/4 + x2/4 - x3/4,
+    d2 = x0/2 + x1/2 + x2/2 + x3/2 - x5 - x7,
+    e2 = -x4/2 + x6/2;
+
+  // 3x3 quadrature, exact for bi-quintics
+  const unsigned int N = 3;
+  const Real q[N] = {-std::sqrt(15)/5., 0., std::sqrt(15)/5.};
+  const Real w[N] = {5./9, 8./9, 5./9};
+
+  Real vol=0.;
+  for (unsigned int i=0; i<N; ++i)
+    for (unsigned int j=0; j<N; ++j)
+      vol += (q[j]*q[j]*a1 + q[i]*q[j]*b1 + q[i]*c1 + q[j]*d1 + e1).
+        cross(q[i]*q[i]*a2 + q[i]*q[j]*b2 + q[i]*c2 + q[j]*d2 + e2).size() * w[i] * w[j];
+
+  return vol;
+}
 
 
 

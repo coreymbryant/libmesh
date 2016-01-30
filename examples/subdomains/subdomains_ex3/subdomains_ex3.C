@@ -1,24 +1,25 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2013  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
 
- // <h1>Subdomains Example 3 - Integrating discontinuous data that cuts the mesh</h1>
- //
+// <h1>Subdomains Example 3 - Integrating discontinuous data that cuts the mesh</h1>
+// \author Benjamin S. Kirk
+// \date 2013
 
 
 // C++ include files that we need
@@ -34,23 +35,24 @@
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/quadrature_composite.h"
 #include "libmesh/fe.h"
+#include "libmesh/elem.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;
 
 // declare the functions we will use
-void integrate_function (const MeshBase &mesh);
+void integrate_function (const MeshBase & mesh);
 
 // signed distance function
 const Real radius = 0.5;
 
-Real distance (const Point &p)
+Real distance (const Point & p)
 {
   Point cent(0.8, 0.9);
   return ((p-cent).size() - radius);
 }
 
-Real integrand (const Point &p)
+Real integrand (const Point & p)
 {
   return (distance(p) < 0) ? 10. : 1.;
 }
@@ -58,7 +60,7 @@ Real integrand (const Point &p)
 
 
 // Begin the main program.
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   // Initialize libMesh and any dependent libaries, like in example 2.
   LibMeshInit init (argc, argv);
@@ -115,7 +117,7 @@ int main (int argc, char** argv)
 
 
 
-void integrate_function (const MeshBase &mesh)
+void integrate_function (const MeshBase & mesh)
 {
 #if defined(LIBMESH_HAVE_TRIANGLE) && defined(LIBMESH_HAVE_TETGEN)
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
@@ -130,12 +132,12 @@ void integrate_function (const MeshBase &mesh)
 
   Real int_val=0.;
 
-  const std::vector<Point> &q_points = fe->get_xyz();
-  const std::vector<Real>  &JxW      = fe->get_JxW();
+  const std::vector<Point> & q_points = fe->get_xyz();
+  const std::vector<Real>  & JxW      = fe->get_JxW();
 
   for (; el!=end_el; ++el)
     {
-      const Elem *elem = *el;
+      const Elem * elem = *el;
 
       vertex_distance.clear();
 
@@ -159,11 +161,11 @@ void integrate_function (const MeshBase &mesh)
 
   mesh.comm().sum (int_val);
 
-  std::cout  << "\n***********************************\n"
-             << " int_val   = " << int_val << std::endl
-             << " exact_val = " <<  1*(2*2 - radius*radius*pi) + 10.*(radius*radius*pi)
-             << "\n***********************************\n"
-             << std::endl;
+  libMesh::out << "\n***********************************\n"
+               << " int_val   = " << int_val << std::endl
+               << " exact_val = " <<  1*(2*2 - radius*radius*pi) + 10.*(radius*radius*pi)
+               << "\n***********************************\n"
+               << std::endl;
 #else
   libmesh_ignore(mesh);
 #endif

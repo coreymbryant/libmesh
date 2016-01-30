@@ -29,7 +29,6 @@
 
 // rbOOmit includes
 #include "libmesh/rb_construction_base.h"
-#include "libmesh/rb_scm_evaluation.h"
 
 // libMesh includes
 #include "libmesh/condensed_eigen_system.h"
@@ -39,18 +38,18 @@
 namespace libMesh
 {
 
+// Forward declarations
+class RBSCMEvaluation;
+
 /**
  * This class is part of the rbOOmit framework.
  *
  * RBSCMConstruction implements the the Successive Constraint Method (SCM)
  * for computing rigorous lower bounds for stability constants.
  *
- * @author David J. Knezevic 2009
+ * \author David J. Knezevic
+ * \date 2009
  */
-
-// ------------------------------------------------------------
-// RBSCMConstruction class definition
-
 class RBSCMConstruction : public RBConstructionBase<CondensedEigenSystem>
 {
 public:
@@ -59,8 +58,8 @@ public:
    * Constructor.  Optionally initializes required
    * data structures.
    */
-  RBSCMConstruction (EquationSystems& es,
-                     const std::string& name_in,
+  RBSCMConstruction (EquationSystems & es,
+                     const std::string & name_in,
                      const unsigned int number_in);
 
   /**
@@ -82,22 +81,22 @@ public:
    * Clear all the data structures associated with
    * the system.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Set the RBSCMEvaluation object.
    */
-  void set_rb_scm_evaluation(RBSCMEvaluation& rb_scm_eval_in);
+  void set_rb_scm_evaluation(RBSCMEvaluation & rb_scm_eval_in);
 
   /**
    * Get a reference to the RBSCMEvaluation object.
    */
-  RBSCMEvaluation& get_rb_scm_evaluation();
+  RBSCMEvaluation & get_rb_scm_evaluation();
 
   /**
    * Get a reference to the RBThetaExpansion object.
    */
-  RBThetaExpansion& get_rb_theta_expansion();
+  RBThetaExpansion & get_rb_theta_expansion();
 
   /**
    * Clear and resize the SCM data vectors. Overload
@@ -109,7 +108,7 @@ public:
    * Read in the parameters from file specified by \p parameters_filename
    * and set the this system's member variables accordingly.
    */
-  virtual void process_parameters_file(const std::string& parameters_filename);
+  virtual void process_parameters_file(const std::string & parameters_filename);
 
   /**
    * Print out info that describes the current setup of this RBSCMConstruction.
@@ -125,13 +124,13 @@ public:
    * a negative value of the argument indicates we are
    * not performing a bounding box solve.
    */
-  virtual void set_eigensolver_properties(int ) { }
+  virtual void set_eigensolver_properties(int) {}
 
   /**
    * Set the name of the associated RB system --- we need
    * this to load the (symmetrized) affine operators.
    */
-  void set_RB_system_name(const std::string& new_name)
+  void set_RB_system_name(const std::string & new_name)
   { RB_system_name = new_name; }
 
   /**
@@ -169,7 +168,7 @@ protected:
    * usually this is the mass or inner-product
    * matrix, but needs to be implemented in subclass.
    */
-  virtual void load_matrix_B() ;
+  virtual void load_matrix_B();
 
   /**
    * Compute the SCM bounding box.
@@ -201,15 +200,15 @@ protected:
    * Compute the inner product between two vectors using the system's
    * matrix_B.
    */
-  Number B_inner_product(const NumericVector<Number>& v, const NumericVector<Number>& w) const;
+  Number B_inner_product(const NumericVector<Number> & v, const NumericVector<Number> & w) const;
 
   /**
    * Compute the inner product between two vectors using
    * matrix Aq.
    */
   Number Aq_inner_product(unsigned int q,
-                          const NumericVector<Number>& v,
-                          const NumericVector<Number>& w);
+                          const NumericVector<Number> & v,
+                          const NumericVector<Number> & w);
 
   /**
    * Helper function which provides an error
@@ -236,8 +235,7 @@ private:
    * The current RBSCMEvaluation object we are using to
    * perform the Evaluation stage of the SCM.
    */
-  RBSCMEvaluation* rb_scm_eval;
-
+  RBSCMEvaluation * rb_scm_eval;
 };
 
 } // namespace libMesh

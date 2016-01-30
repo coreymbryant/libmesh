@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -184,35 +184,12 @@ UniquePtr<Elem> Tri6::build_side (const unsigned int i,
 
   else
     {
-      Elem* edge = new Edge3;
+      Elem * edge = new Edge3;
       edge->subdomain_id() = this->subdomain_id();
 
-      switch (i)
-        {
-        case 0:
-          {
-            edge->set_node(0) = this->get_node(0);
-            edge->set_node(1) = this->get_node(1);
-            edge->set_node(2) = this->get_node(3);
-            break;
-          }
-        case 1:
-          {
-            edge->set_node(0) = this->get_node(1);
-            edge->set_node(1) = this->get_node(2);
-            edge->set_node(2) = this->get_node(4);
-            break;
-          }
-        case 2:
-          {
-            edge->set_node(0) = this->get_node(2);
-            edge->set_node(1) = this->get_node(0);
-            edge->set_node(2) = this->get_node(5);
-            break;
-          }
-        default:
-          libmesh_error_msg("Invalid side i = " << i);
-        }
+      // Set the nodes
+      for (unsigned n=0; n<edge->n_nodes(); ++n)
+        edge->set_node(n) = this->get_node(Tri6::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -224,7 +201,7 @@ UniquePtr<Elem> Tri6::build_side (const unsigned int i,
 
 void Tri6::connectivity(const unsigned int sf,
                         const IOPackage iop,
-                        std::vector<dof_id_type>& conn) const
+                        std::vector<dof_id_type> & conn) const
 {
   libmesh_assert_less (sf, this->n_sub_elem());
   libmesh_assert_not_equal_to (iop, INVALID_IO_PACKAGE);
@@ -338,6 +315,48 @@ void Tri6::connectivity(const unsigned int sf,
 }
 
 
+
+Real Tri6::volume () const
+{
+  // Construct constant data vectors.
+  // \vec{x}_{\xi}  = \vec{a1}*xi + \vec{b1}*eta + \vec{c1}
+  // \vec{x}_{\eta} = \vec{a2}*xi + \vec{b2}*eta + \vec{c2}
+  Point
+    a1 =  4.*point(0) + 4.*point(1) - 8.*point(3),
+    b1 =  4.*point(0) - 4.*point(3) + 4.*point(4) - 4.*point(5),
+    c1 = -3.*point(0) - 1.*point(1) + 4.*point(3),
+    a2 =  b1,
+    b2 =  4.*point(0) + 4.*point(2) - 8.*point(5),
+    c2 = -3.*point(0) - 1.*point(2) + 4.*point(5);
+
+  // If a1 == b1 == a2 == b2 == 0, this is a TRI6 with straight sides,
+  // and we can use the TRI3 formula to compute the volume.
+  if (a1.relative_fuzzy_equals(Point(0,0,0)) &&
+      b1.relative_fuzzy_equals(Point(0,0,0)) &&
+      b2.relative_fuzzy_equals(Point(0,0,0)))
+    return 0.5 * c1.cross(c2).size();
+
+  // 7-point rule, exact for quintics.
+  const unsigned int N = 7;
+
+  // Parameters of the quadrature rule
+  Real
+    w1 = Real(31)/480 + std::sqrt(15.0L)/2400,
+    w2 = Real(31)/480 - std::sqrt(15.0L)/2400,
+    q1 = Real(2)/7 + std::sqrt(15.0L)/21,
+    q2 = Real(2)/7 - std::sqrt(15.0L)/21;
+
+  const Real xi[N]  = {Real(1)/3,  q1, q1,     1-2*q1, q2, q2,     1-2*q2};
+  const Real eta[N] = {Real(1)/3,  q1, 1-2*q1, q1,     q2, 1-2*q2, q2};
+  const Real wts[N] = {Real(9)/80, w1, w1,     w1,     w2, w2,     w2};
+
+  // Approximate the area with quadrature
+  Real vol=0.;
+  for (unsigned int q=0; q<N; ++q)
+    vol += wts[q] * (xi[q]*a1 + eta[q]*b1 + c1).cross(xi[q]*a2 + eta[q]*b2 + c2).size();
+
+  return vol;
+}
 
 
 

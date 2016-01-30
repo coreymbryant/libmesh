@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@ struct null_output_iterator
   template <typename T2>
   void operator=(const T2&) {}
 
-  null_output_iterator& operator++() {
+  null_output_iterator & operator++() {
     return *this;
   }
 
@@ -47,7 +47,7 @@ struct null_output_iterator
 
   // We don't return a reference-to-T here because we don't want to
   // construct one or have any of its methods called.
-  null_output_iterator& operator*() { return *this; }
+  null_output_iterator & operator*() { return *this; }
 };
 
 } // namespace libMesh

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,16 +29,16 @@ namespace libMesh
 
 template <typename T>
 inline
-OptimizationSolver<T>::OptimizationSolver (sys_type& s) :
+OptimizationSolver<T>::OptimizationSolver (sys_type & s) :
   ParallelObject(s),
-  objective_object(NULL),
-  gradient_object(NULL),
-  hessian_object(NULL),
-  equality_constraints_object(NULL),
-  equality_constraints_jacobian_object(NULL),
-  inequality_constraints_object(NULL),
-  inequality_constraints_jacobian_object(NULL),
-  lower_and_upper_bounds_object(NULL),
+  objective_object(libmesh_nullptr),
+  gradient_object(libmesh_nullptr),
+  hessian_object(libmesh_nullptr),
+  equality_constraints_object(libmesh_nullptr),
+  equality_constraints_jacobian_object(libmesh_nullptr),
+  inequality_constraints_object(libmesh_nullptr),
+  inequality_constraints_jacobian_object(libmesh_nullptr),
+  lower_and_upper_bounds_object(libmesh_nullptr),
   max_objective_function_evaluations(500),
   objective_function_relative_tolerance(1.e-4),
   verbose(false),
@@ -59,7 +59,7 @@ OptimizationSolver<T>::~OptimizationSolver ()
 
 template <typename T>
 UniquePtr<OptimizationSolver<T> >
-OptimizationSolver<T>::build(sys_type& s, const SolverPackage solver_package)
+OptimizationSolver<T>::build(sys_type & s, const SolverPackage solver_package)
 {
   // Prevent unused variables warnings when Tao is not available
   libmesh_ignore(s);

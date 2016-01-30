@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 namespace libMesh
 {
 // LaplaceMeshSmoother member functions
-LaplaceMeshSmoother::LaplaceMeshSmoother(UnstructuredMesh& mesh)
+LaplaceMeshSmoother::LaplaceMeshSmoother(UnstructuredMesh & mesh)
   : MeshSmoother(mesh),
     _initialized(false)
 {
@@ -70,9 +70,9 @@ void LaplaceMeshSmoother::smooth(unsigned int n_iterations)
         const MeshBase::node_iterator it_end = _mesh.local_nodes_end();
         for (; it != it_end; ++it)
           {
-            Node* node = *it;
+            Node * node = *it;
 
-            if (node == NULL)
+            if (node == libmesh_nullptr)
               libmesh_error_msg("[" << _mesh.processor_id() << "]: Node iterator returned NULL pointer.");
 
             // leave the boundary intact
@@ -88,9 +88,9 @@ void LaplaceMeshSmoother::smooth(unsigned int n_iterations)
                     // or will they refer to remote nodes?  To be
                     // careful, we grab a pointer and test it against
                     // NULL.
-                    Node* connected_node = _mesh.node_ptr(_graph[node->id()][j]);
+                    Node * connected_node = _mesh.node_ptr(_graph[node->id()][j]);
 
-                    if (connected_node == NULL)
+                    if (connected_node == libmesh_nullptr)
                       libmesh_error_msg("Error! Libmesh returned NULL pointer for node " << _graph[connected_node->id()][j]);
 
                     avg_position.add( *connected_node );
@@ -109,7 +109,7 @@ void LaplaceMeshSmoother::smooth(unsigned int n_iterations)
         const MeshBase::node_iterator it_end = _mesh.local_nodes_end();
         for (; it != it_end; ++it)
           {
-            Node* node = *it;
+            Node * node = *it;
 
             if (!on_boundary[node->id()] && (_graph[node->id()].size() > 0))
               {
@@ -138,7 +138,7 @@ void LaplaceMeshSmoother::smooth(unsigned int n_iterations)
   for (; el != end; ++el)
     {
       // Constant handle for the element
-      const Elem* elem = *el;
+      const Elem * elem = *el;
 
       // get the second order nodes (son)
       // their element indices start at n_vertices and go to n_nodes
@@ -193,7 +193,7 @@ void LaplaceMeshSmoother::init()
         for (; el != end; ++el)
           {
             // Constant handle for the element
-            const Elem* elem = *el;
+            const Elem * elem = *el;
 
             for (unsigned int s=0; s<elem->n_neighbors(); s++)
               {
@@ -201,7 +201,7 @@ void LaplaceMeshSmoother::init()
                 // boundary or for which the current element's
                 // id is greater than its neighbor's.
                 // Sides get only built once.
-                if ((elem->neighbor(s) == NULL) ||
+                if ((elem->neighbor(s) == libmesh_nullptr) ||
                     (elem->id() > elem->neighbor(s)->id()))
                   {
                     UniquePtr<Elem> side(elem->build_side(s));
@@ -225,10 +225,10 @@ void LaplaceMeshSmoother::init()
         for (; el != end; ++el)
           {
             // Shortcut notation for simplicity
-            const Elem* elem = *el;
+            const Elem * elem = *el;
 
             for (unsigned int f=0; f<elem->n_neighbors(); f++) // Loop over faces
-              if ((elem->neighbor(f) == NULL) ||
+              if ((elem->neighbor(f) == libmesh_nullptr) ||
                   (elem->id() > elem->neighbor(f)->id()))
                 {
                   // We need a full (i.e. non-proxy) element for the face, since we will
@@ -281,7 +281,7 @@ void LaplaceMeshSmoother::init()
 
 
 
-void LaplaceMeshSmoother::print_graph(std::ostream& out_stream) const
+void LaplaceMeshSmoother::print_graph(std::ostream & out_stream) const
 {
   for (unsigned int i=0; i<_graph.size(); ++i)
     {

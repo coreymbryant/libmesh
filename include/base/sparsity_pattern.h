@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -79,9 +79,9 @@ static void sort_row (const BidirectionalIterator begin,
 class Build : public ParallelObject
 {
 private:
-  const MeshBase &mesh;
-  const DofMap &dof_map;
-  const CouplingMatrix *dof_coupling;
+  const MeshBase & mesh;
+  const DofMap & dof_map;
+  const CouplingMatrix * dof_coupling;
   const bool implicit_neighbor_dofs;
   const bool need_full_sparsity_pattern;
 
@@ -93,17 +93,17 @@ public:
   std::vector<dof_id_type> n_nz;
   std::vector<dof_id_type> n_oz;
 
-  Build (const MeshBase &mesh_in,
-         const DofMap &dof_map_in,
-         const CouplingMatrix *dof_coupling_in,
+  Build (const MeshBase & mesh_in,
+         const DofMap & dof_map_in,
+         const CouplingMatrix * dof_coupling_in,
          const bool implicit_neighbor_dofs_in,
          const bool need_full_sparsity_pattern_in);
 
-  Build (Build &other, Threads::split);
+  Build (Build & other, Threads::split);
 
-  void operator()(const ConstElemRange &range);
+  void operator()(const ConstElemRange & range);
 
-  void join (const Build &other);
+  void join (const Build & other);
 
   void parallel_sync ();
 };

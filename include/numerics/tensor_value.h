@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,8 @@ namespace libMesh
  * and NumberTensorValue defines a real or complex-valued tensor depending
  * on how the library was configured.
  *
- * \author Roy H. Stogner 2004
+ * \author Roy H. Stogner
+ * \date 2004
  */
 template <typename T>
 class TensorValue : public TypeTensor<T>
@@ -82,32 +83,35 @@ public:
    * Constructor.  Takes 1 row vector for LIBMESH_DIM=1
    */
   template <typename T2>
-  TensorValue (const TypeVector<T2>& vx);
+  TensorValue (const TypeVector<T2> & vx);
 
   /**
    * Constructor.  Takes 2 row vectors for LIBMESH_DIM=2
    */
   template <typename T2>
-  TensorValue (const TypeVector<T2>& vx, const TypeVector<T2>& vy);
+  TensorValue (const TypeVector<T2> & vx,
+               const TypeVector<T2> & vy);
 
   /**
    * Constructor.  Takes 3 row vectors for LIBMESH_DIM=3
    */
   template <typename T2>
-  TensorValue (const TypeVector<T2>& vx, const TypeVector<T2>& vy, const TypeVector<T2>& vz);
+  TensorValue (const TypeVector<T2> & vx,
+               const TypeVector<T2> & vy,
+               const TypeVector<T2> & vz);
 
 
   /**
    * Copy-constructor.
    */
   template <typename T2>
-  TensorValue (const TensorValue<T2>& p);
+  TensorValue (const TensorValue<T2> & p);
 
   /**
    * Copy-constructor.
    */
   template <typename T2>
-  TensorValue (const TypeTensor<T2>& p);
+  TensorValue (const TypeTensor<T2> & p);
 
 
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
@@ -116,8 +120,8 @@ public:
    * representing the real and imaginary part as
    * arguments.
    */
-  TensorValue (const TypeTensor<Real>& p_re,
-               const TypeTensor<Real>& p_im);
+  TensorValue (const TypeTensor<Real> & p_re,
+               const TypeTensor<Real> & p_im);
 #endif
 
 
@@ -127,14 +131,9 @@ public:
   template <typename Scalar>
   typename boostcopy::enable_if_c<
     ScalarTraits<Scalar>::value,
-    TensorValue&>::type
-  operator = (const Scalar& libmesh_dbg_var(p) )
+    TensorValue &>::type
+  operator = (const Scalar & libmesh_dbg_var(p) )
   { libmesh_assert_equal_to (p, Scalar(0)); this->zero(); return *this; }
-
-
-private:
-
-
 };
 
 
@@ -163,16 +162,15 @@ TensorValue<T>::TensorValue () :
 
 template <typename T>
 inline
-TensorValue<T>::TensorValue
-(const T xx,
- const T xy,
- const T xz,
- const T yx,
- const T yy,
- const T yz,
- const T zx,
- const T zy,
- const T zz) :
+TensorValue<T>::TensorValue (const T xx,
+                             const T xy,
+                             const T xz,
+                             const T yx,
+                             const T yy,
+                             const T yz,
+                             const T zx,
+                             const T zy,
+                             const T zz) :
   TypeTensor<T> (xx,xy,xz,yx,yy,yz,zx,zy,zz)
 {
 }
@@ -181,18 +179,17 @@ TensorValue<T>::TensorValue
 template <typename T>
 template <typename Scalar>
 inline
-TensorValue<T>::TensorValue
-(const Scalar xx,
- const Scalar xy,
- const Scalar xz,
- const Scalar yx,
- const Scalar yy,
- const Scalar yz,
- const Scalar zx,
- const Scalar zy,
- typename
- boostcopy::enable_if_c<ScalarTraits<Scalar>::value,
- const Scalar>::type zz) :
+TensorValue<T>::TensorValue (const Scalar xx,
+                             const Scalar xy,
+                             const Scalar xz,
+                             const Scalar yx,
+                             const Scalar yy,
+                             const Scalar yz,
+                             const Scalar zx,
+                             const Scalar zy,
+                             typename
+                             boostcopy::enable_if_c<ScalarTraits<Scalar>::value,
+                             const Scalar>::type zz) :
   TypeTensor<T> (xx,xy,xz,yx,yy,yz,zx,zy,zz)
 {
 }
@@ -202,7 +199,7 @@ TensorValue<T>::TensorValue
 template <typename T>
 template <typename T2>
 inline
-TensorValue<T>::TensorValue (const TensorValue<T2>& p) :
+TensorValue<T>::TensorValue (const TensorValue<T2> & p) :
   TypeTensor<T> (p)
 {
 }
@@ -212,7 +209,7 @@ TensorValue<T>::TensorValue (const TensorValue<T2>& p) :
 template <typename T>
 template <typename T2>
 inline
-TensorValue<T>::TensorValue (const TypeVector<T2>& vx) :
+TensorValue<T>::TensorValue (const TypeVector<T2> & vx) :
   TypeTensor<T> (vx)
 {
 }
@@ -222,8 +219,8 @@ TensorValue<T>::TensorValue (const TypeVector<T2>& vx) :
 template <typename T>
 template <typename T2>
 inline
-TensorValue<T>::TensorValue (const TypeVector<T2>& vx,
-                             const TypeVector<T2>& vy) :
+TensorValue<T>::TensorValue (const TypeVector<T2> & vx,
+                             const TypeVector<T2> & vy) :
   TypeTensor<T> (vx, vy)
 {
 }
@@ -233,9 +230,9 @@ TensorValue<T>::TensorValue (const TypeVector<T2>& vx,
 template <typename T>
 template <typename T2>
 inline
-TensorValue<T>::TensorValue (const TypeVector<T2>& vx,
-                             const TypeVector<T2>& vy,
-                             const TypeVector<T2>& vz) :
+TensorValue<T>::TensorValue (const TypeVector<T2> & vx,
+                             const TypeVector<T2> & vy,
+                             const TypeVector<T2> & vz) :
   TypeTensor<T> (vx, vy, vz)
 {
 }
@@ -245,7 +242,7 @@ TensorValue<T>::TensorValue (const TypeVector<T2>& vx,
 template <typename T>
 template <typename T2>
 inline
-TensorValue<T>::TensorValue (const TypeTensor<T2>& p) :
+TensorValue<T>::TensorValue (const TypeTensor<T2> & p) :
   TypeTensor<T> (p)
 {
 }
@@ -254,8 +251,8 @@ TensorValue<T>::TensorValue (const TypeTensor<T2>& p) :
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
 template <typename T>
 inline
-TensorValue<T>::TensorValue (const TypeTensor<Real>& p_re,
-                             const TypeTensor<Real>& p_im) :
+TensorValue<T>::TensorValue (const TypeTensor<Real> & p_re,
+                             const TypeTensor<Real> & p_im) :
   TypeTensor<T> (Complex (p_re(0,0), p_im(0,0)),
                  Complex (p_re(0,1), p_im(0,1)),
                  Complex (p_re(0,2), p_im(0,2)),

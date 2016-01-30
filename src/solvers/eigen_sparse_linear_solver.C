@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,17 +28,23 @@
 #include "libmesh/eigen_sparse_linear_solver.h"
 #include "libmesh/libmesh_logging.h"
 #include "libmesh/string_to_enum.h"
+#include "libmesh/solver_configuration.h"
+
+// GMRES is an "unsupported" iterative solver in Eigen.
+#include <unsupported/Eigen/IterativeSolvers>
 
 namespace libMesh
 {
 
 template <typename T>
 EigenSparseLinearSolver<T>::
-EigenSparseLinearSolver(const Parallel::Communicator &comm_in) :
+EigenSparseLinearSolver(const Parallel::Communicator & comm_in) :
   LinearSolver<T>(comm_in),
   _comp_info(Eigen::Success)
 {
-  // The GMRES iterative solver isn't supported by Eigen, so use BICGSTAB instead
+  // The GMRES _solver_type can be used in EigenSparseLinearSolver,
+  // however, the GMRES iterative solver is currently in the Eigen
+  // "unsupported" directory, so we use BICGSTAB as our default.
   this->_solver_type = BICGSTAB;
 }
 
@@ -59,7 +65,7 @@ void EigenSparseLinearSolver<T>::clear ()
 
 
 template <typename T>
-void EigenSparseLinearSolver<T>::init (const char* /*name*/)
+void EigenSparseLinearSolver<T>::init (const char * /*name*/)
 {
   // Initialize the data structures if not done so already.
   if (!this->initialized())
@@ -72,9 +78,9 @@ void EigenSparseLinearSolver<T>::init (const char* /*name*/)
 
 template <typename T>
 std::pair<unsigned int, Real>
-EigenSparseLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
-                                   NumericVector<T> &solution_in,
-                                   NumericVector<T> &rhs_in,
+EigenSparseLinearSolver<T>::solve (SparseMatrix<T> & matrix_in,
+                                   NumericVector<T> & solution_in,
+                                   NumericVector<T> & rhs_in,
                                    const double tol,
                                    const unsigned int m_its)
 {
@@ -82,9 +88,9 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
   this->init ();
 
   // Make sure the data passed in are really Eigen types
-  EigenSparseMatrix<T>& matrix   = cast_ref<EigenSparseMatrix<T>&>(matrix_in);
-  EigenSparseVector<T>& solution = cast_ref<EigenSparseVector<T>&>(solution_in);
-  EigenSparseVector<T>& rhs      = cast_ref<EigenSparseVector<T>&>(rhs_in);
+  EigenSparseMatrix<T> & matrix   = cast_ref<EigenSparseMatrix<T> &>(matrix_in);
+  EigenSparseVector<T> & solution = cast_ref<EigenSparseVector<T> &>(solution_in);
+  EigenSparseVector<T> & rhs      = cast_ref<EigenSparseVector<T> &>(rhs_in);
 
   // Close the matrix and vectors in case this wasn't already done.
   matrix.close();
@@ -124,12 +130,33 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
         break;
       }
 
-      //   // Generalized Minimum Residual
-      // case GMRES:
-      //   {
-      // libmesh_not_implemented();
-      // break;
-      //   }
+      // Generalized Minimum Residual
+    case GMRES:
+      {
+        Eigen::GMRES<EigenSM> solver (matrix._mat);
+        solver.setMaxIterations(m_its);
+        solver.setTolerance(tol);
+
+        // If there is an int parameter called "gmres_restart" in the
+        // SolverConfiguration object, pass it to the Eigen GMRES
+        // solver.
+        if (this->_solver_configuration)
+          {
+            std::map<std::string, int>::iterator it =
+              this->_solver_configuration->int_valued_data.find("gmres_restart");
+
+            if (it != this->_solver_configuration->int_valued_data.end())
+              solver.set_restart(it->second);
+          }
+
+        libMesh::out << "Eigen GMRES solver, restart = " << solver.get_restart() << std::endl;
+        solution._vec = solver.solveWithGuess(rhs._vec, solution._vec);
+        libMesh::out << "#iterations: " << solver.iterations() << std::endl;
+        libMesh::out << "estimated error: " << solver.error() << std::endl;
+        retval = std::make_pair(solver.iterations(), solver.error());
+        _comp_info = solver.info();
+        break;
+      }
 
       // Unknown solver, use BICGSTAB
     default:
@@ -158,9 +185,9 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> &matrix_in,
 
 template <typename T>
 std::pair<unsigned int, Real>
-EigenSparseLinearSolver<T>::adjoint_solve (SparseMatrix<T> &matrix_in,
-                                           NumericVector<T> &solution_in,
-                                           NumericVector<T> &rhs_in,
+EigenSparseLinearSolver<T>::adjoint_solve (SparseMatrix<T> & matrix_in,
+                                           NumericVector<T> & solution_in,
+                                           NumericVector<T> & rhs_in,
                                            const double tol,
                                            const unsigned int m_its)
 {
@@ -187,9 +214,9 @@ EigenSparseLinearSolver<T>::adjoint_solve (SparseMatrix<T> &matrix_in,
 
 template <typename T>
 std::pair<unsigned int, Real>
-EigenSparseLinearSolver<T>::solve (const ShellMatrix<T>& /*shell_matrix*/,
-                                   NumericVector<T>& /*solution_in*/,
-                                   NumericVector<T>& /*rhs_in*/,
+EigenSparseLinearSolver<T>::solve (const ShellMatrix<T> & /*shell_matrix*/,
+                                   NumericVector<T> & /*solution_in*/,
+                                   NumericVector<T> & /*rhs_in*/,
                                    const double /*tol*/,
                                    const unsigned int /*m_its*/)
 {
@@ -201,10 +228,10 @@ EigenSparseLinearSolver<T>::solve (const ShellMatrix<T>& /*shell_matrix*/,
 
 template <typename T>
 std::pair<unsigned int, Real>
-EigenSparseLinearSolver<T>::solve (const ShellMatrix<T>& /*shell_matrix*/,
-                                   const SparseMatrix<T>& /*precond_matrix*/,
-                                   NumericVector<T>& /*solution_in*/,
-                                   NumericVector<T>& /*rhs_in*/,
+EigenSparseLinearSolver<T>::solve (const ShellMatrix<T> & /*shell_matrix*/,
+                                   const SparseMatrix<T> & /*precond_matrix*/,
+                                   NumericVector<T> & /*solution_in*/,
+                                   NumericVector<T> & /*rhs_in*/,
                                    const double /*tol*/,
                                    const unsigned int /*m_its*/)
 {
@@ -222,7 +249,7 @@ void EigenSparseLinearSolver<T>::set_eigen_preconditioner_type ()
   // switch (this->_preconditioner_type)
   //   {
   //   case IDENTITY_PRECOND:
-  //     _precond_type = NULL; return;
+  //     _precond_type = libmesh_nullptr; return;
 
   //   case ILU_PRECOND:
   //     _precond_type = ILUPrecond; return;

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,21 +32,15 @@
 namespace libMesh
 {
 
-// Forward Declarations
-
-
-
 /**
  * Defines a dense vector for use in Finite Element-type computations.
  * This class is to basically compliment the \p DenseMatix class.  It
  * has additional capabilities over the \p std::vector that make it
  * useful for finite elements, particulary for systems of equations.
  *
- * @author Benjamin S. Kirk, 2003
+ * \author Benjamin S. Kirk
+ * \date 2003
  */
-
-// ------------------------------------------------------------
-// DenseVector class definition
 template<typename T>
 class DenseVector : public DenseVectorBase<T>
 {
@@ -62,13 +56,13 @@ public:
    * Copy-constructor.
    */
   template <typename T2>
-  DenseVector (const DenseVector<T2>& other_vector);
+  DenseVector (const DenseVector<T2> & other_vector);
 
   /**
    * Copy-constructor, from a \p std::vector.
    */
   template <typename T2>
-  DenseVector (const std::vector<T2>& other_vector);
+  DenseVector (const std::vector<T2> & other_vector);
 
   /**
    * Destructor.  Does nothing.
@@ -78,19 +72,21 @@ public:
   /**
    * @returns the size of the vector.
    */
-  virtual unsigned int size() const {
+  virtual unsigned int size() const libmesh_override
+  {
     return cast_int<unsigned int>(_val.size());
   }
 
   /**
    * @returns true iff size() is 0
    */
-  virtual bool empty() const { return _val.empty(); }
+  virtual bool empty() const libmesh_override
+  { return _val.empty(); }
 
   /**
    * Set every element in the vector to 0.
    */
-  virtual void zero();
+  virtual void zero() libmesh_override;
 
   /**
    * @returns the \p (i) element of the vector as a const reference.
@@ -105,23 +101,25 @@ public:
   /**
    * @returns the \p (i) element of the vector.
    */
-  virtual T el(const unsigned int i) const { return (*this)(i); }
+  virtual T el(const unsigned int i) const libmesh_override
+  { return (*this)(i); }
 
   /**
    * @returns the \p (i) element of the vector as a writeable reference.
    */
-  virtual T & el(const unsigned int i)     { return (*this)(i); }
+  virtual T & el(const unsigned int i) libmesh_override
+  { return (*this)(i); }
 
   /**
    * Assignment operator.
    */
   template <typename T2>
-  DenseVector<T>& operator = (const DenseVector<T2>& other_vector);
+  DenseVector<T> & operator = (const DenseVector<T2> & other_vector);
 
   /**
    * STL-like swap method
    */
-  void swap(DenseVector<T>& other_vector);
+  void swap(DenseVector<T> & other_vector);
 
   /**
    * Resize the vector. Sets all elements to 0.
@@ -133,7 +131,7 @@ public:
    * vector.
    */
   template <typename T2>
-  void append (const DenseVector<T2>& other_vector);
+  void append (const DenseVector<T2> & other_vector);
 
   /**
    * Multiplies every element in the vector by \p factor.
@@ -143,7 +141,7 @@ public:
   /**
    * Multiplies every element in the vector by \p factor.
    */
-  DenseVector<T>& operator*= (const T factor);
+  DenseVector<T> & operator*= (const T factor);
 
   /**
    * Adds \p factor times \p vec to this vector.
@@ -154,45 +152,45 @@ public:
   typename boostcopy::enable_if_c<
     ScalarTraits<T2>::value, void >::type
   add (const T2 factor,
-       const DenseVector<T3>& vec);
+       const DenseVector<T3> & vec);
 
   /**
    * Evaluate dot product with \p vec. In the complex-valued case, use the
    * complex conjugate of vec.
    */
   template <typename T2>
-  typename CompareTypes<T, T2>::supertype dot (const DenseVector<T2> &vec) const;
+  typename CompareTypes<T, T2>::supertype dot (const DenseVector<T2> & vec) const;
 
   /**
    * Evaluate dot product with \p vec. In the complex-valued case, do not
    * use the complex conjugate of vec.
    */
   template <typename T2>
-  typename CompareTypes<T, T2>::supertype indefinite_dot (const DenseVector<T2> &vec) const;
+  typename CompareTypes<T, T2>::supertype indefinite_dot (const DenseVector<T2> & vec) const;
 
   /**
    * Tests if \p vec is exactly equal to this vector.
    */
   template <typename T2>
-  bool operator== (const DenseVector<T2> &vec) const;
+  bool operator== (const DenseVector<T2> & vec) const;
 
   /**
    * Tests if \p vec is not exactly equal to this vector.
    */
   template <typename T2>
-  bool operator!= (const DenseVector<T2> &vec) const;
+  bool operator!= (const DenseVector<T2> & vec) const;
 
   /**
    * Adds \p vec to this vector.
    */
   template <typename T2>
-  DenseVector<T>& operator+= (const DenseVector<T2> &vec);
+  DenseVector<T> & operator+= (const DenseVector<T2> & vec);
 
   /**
    * Subtracts \p vec from this vector.
    */
   template <typename T2>
-  DenseVector<T>& operator-= (const DenseVector<T2> &vec);
+  DenseVector<T> & operator-= (const DenseVector<T2> & vec);
 
   /**
    * @returns the minimum element in the vector.
@@ -232,21 +230,21 @@ public:
    * Puts the principal subvector of size \p sub_n
    * (i.e. first sub_n entries) into \p dest.
    */
-  void get_principal_subvector (unsigned int sub_n, DenseVector<T>& dest) const;
+  void get_principal_subvector (unsigned int sub_n, DenseVector<T> & dest) const;
 
   /**
    * Access to the values array. This should be used with
    * caution but can  be used to speed up code compilation
    * significantly.
    */
-  std::vector<T>& get_values() { return _val; }
+  std::vector<T> & get_values() { return _val; }
 
   /**
    * Access to the values array. This should be used with
    * caution but can  be used to speed up code compilation
    * significantly.
    */
-  const std::vector<T>& get_values() const { return _val; }
+  const std::vector<T> & get_values() const { return _val; }
 
 private:
 
@@ -273,10 +271,10 @@ DenseVector<T>::DenseVector(const unsigned int n) :
 template<typename T>
 template<typename T2>
 inline
-DenseVector<T>::DenseVector (const DenseVector<T2>& other_vector) :
+DenseVector<T>::DenseVector (const DenseVector<T2> & other_vector) :
   DenseVectorBase<T>()
 {
-  const std::vector<T2> &other_vals = other_vector.get_values();
+  const std::vector<T2> & other_vals = other_vector.get_values();
 
   _val.clear();
   _val.reserve(other_vals.size());
@@ -290,7 +288,7 @@ DenseVector<T>::DenseVector (const DenseVector<T2>& other_vector) :
 template<typename T>
 template<typename T2>
 inline
-DenseVector<T>::DenseVector (const std::vector<T2>& other_vector) :
+DenseVector<T>::DenseVector (const std::vector<T2> & other_vector) :
   _val(other_vector)
 {
 }
@@ -302,11 +300,11 @@ DenseVector<T>::DenseVector (const std::vector<T2>& other_vector) :
 template<typename T>
 template<typename T2>
 inline
-DenseVector<T>& DenseVector<T>::operator = (const DenseVector<T2>& other_vector)
+DenseVector<T> & DenseVector<T>::operator = (const DenseVector<T2> & other_vector)
 {
   //  _val = other_vector._val;
 
-  const std::vector<T2> &other_vals = other_vector.get_values();
+  const std::vector<T2> & other_vals = other_vector.get_values();
 
   _val.clear();
   _val.reserve(other_vals.size());
@@ -321,7 +319,7 @@ DenseVector<T>& DenseVector<T>::operator = (const DenseVector<T2>& other_vector)
 
 template<typename T>
 inline
-void DenseVector<T>::swap(DenseVector<T>& other_vector)
+void DenseVector<T>::swap(DenseVector<T> & other_vector)
 {
   _val.swap(other_vector._val);
 }
@@ -342,9 +340,9 @@ void DenseVector<T>::resize(const unsigned int n)
 template<typename T>
 template<typename T2>
 inline
-void DenseVector<T>::append (const DenseVector<T2>& other_vector)
+void DenseVector<T>::append (const DenseVector<T2> & other_vector)
 {
-  const std::vector<T2> &other_vals = other_vector.get_values();
+  const std::vector<T2> & other_vals = other_vector.get_values();
 
   _val.reserve(this->size() + other_vals.size());
   _val.insert(_val.end(), other_vals.begin(), other_vals.end());
@@ -397,7 +395,7 @@ void DenseVector<T>::scale (const T factor)
 
 template<typename T>
 inline
-DenseVector<T>& DenseVector<T>::operator*= (const T factor)
+DenseVector<T> & DenseVector<T>::operator*= (const T factor)
 {
   this->scale(factor);
   return *this;
@@ -411,7 +409,7 @@ inline
 typename boostcopy::enable_if_c<
   ScalarTraits<T2>::value, void >::type
 DenseVector<T>::add (const T2 factor,
-                     const DenseVector<T3>& vec)
+                     const DenseVector<T3> & vec)
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -422,7 +420,7 @@ DenseVector<T>::add (const T2 factor,
 template<typename T>
 template<typename T2>
 inline
-typename CompareTypes<T, T2>::supertype DenseVector<T>::dot (const DenseVector<T2>& vec) const
+typename CompareTypes<T, T2>::supertype DenseVector<T>::dot (const DenseVector<T2> & vec) const
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -437,7 +435,7 @@ typename CompareTypes<T, T2>::supertype DenseVector<T>::dot (const DenseVector<T
 template<typename T>
 template<typename T2>
 inline
-typename CompareTypes<T, T2>::supertype DenseVector<T>::indefinite_dot (const DenseVector<T2>& vec) const
+typename CompareTypes<T, T2>::supertype DenseVector<T>::indefinite_dot (const DenseVector<T2> & vec) const
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -452,7 +450,7 @@ typename CompareTypes<T, T2>::supertype DenseVector<T>::indefinite_dot (const De
 template<typename T>
 template<typename T2>
 inline
-bool DenseVector<T>::operator== (const DenseVector<T2>& vec) const
+bool DenseVector<T>::operator== (const DenseVector<T2> & vec) const
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -468,7 +466,7 @@ bool DenseVector<T>::operator== (const DenseVector<T2>& vec) const
 template<typename T>
 template<typename T2>
 inline
-bool DenseVector<T>::operator!= (const DenseVector<T2>& vec) const
+bool DenseVector<T>::operator!= (const DenseVector<T2> & vec) const
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -484,7 +482,7 @@ bool DenseVector<T>::operator!= (const DenseVector<T2>& vec) const
 template<typename T>
 template<typename T2>
 inline
-DenseVector<T>& DenseVector<T>::operator+= (const DenseVector<T2>& vec)
+DenseVector<T> & DenseVector<T>::operator+= (const DenseVector<T2> & vec)
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -499,7 +497,7 @@ DenseVector<T>& DenseVector<T>::operator+= (const DenseVector<T2>& vec)
 template<typename T>
 template<typename T2>
 inline
-DenseVector<T>& DenseVector<T>::operator-= (const DenseVector<T2>& vec)
+DenseVector<T> & DenseVector<T>::operator-= (const DenseVector<T2> & vec)
 {
   libmesh_assert_equal_to (this->size(), vec.size());
 
@@ -592,7 +590,7 @@ Real DenseVector<T>::linfty_norm () const
 template<typename T>
 inline
 void DenseVector<T>::get_principal_subvector (unsigned int sub_n,
-                                              DenseVector<T>& dest) const
+                                              DenseVector<T> & dest) const
 {
   libmesh_assert_less_equal ( sub_n, this->size() );
 

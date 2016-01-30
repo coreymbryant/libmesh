@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -116,32 +116,12 @@ UniquePtr<Elem> Tri3::build_side (const unsigned int i,
 
   else
     {
-      Elem* edge = new Edge2;
+      Elem * edge = new Edge2;
       edge->subdomain_id() = this->subdomain_id();
 
-      switch (i)
-        {
-        case 0:
-          {
-            edge->set_node(0) = this->get_node(0);
-            edge->set_node(1) = this->get_node(1);
-            break;
-          }
-        case 1:
-          {
-            edge->set_node(0) = this->get_node(1);
-            edge->set_node(1) = this->get_node(2);
-            break;
-          }
-        case 2:
-          {
-            edge->set_node(0) = this->get_node(2);
-            edge->set_node(1) = this->get_node(0);
-            break;
-          }
-        default:
-          libmesh_error_msg("Invalid side i = " << i);
-        }
+      // Set the nodes
+      for (unsigned n=0; n<edge->n_nodes(); ++n)
+        edge->set_node(n) = this->get_node(Tri3::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -153,7 +133,7 @@ UniquePtr<Elem> Tri3::build_side (const unsigned int i,
 
 void Tri3::connectivity(const unsigned int libmesh_dbg_var(sf),
                         const IOPackage iop,
-                        std::vector<dof_id_type>& conn) const
+                        std::vector<dof_id_type> & conn) const
 {
   libmesh_assert_less (sf, this->n_sub_elem());
   libmesh_assert_not_equal_to (iop, INVALID_IO_PACKAGE);

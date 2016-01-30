@@ -1,21 +1,25 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
 
 // <h1>Systems Example 1 - Stokes Equations</h1>
+// \author Benjamin S. Kirk
+// \date 2003
 //
 // This example shows how a simple, linear system of equations
 // can be solved in parallel.  The system of equations are the familiar
@@ -56,11 +60,11 @@ using namespace libMesh;
 
 // Function prototype.  This function will assemble the system
 // matrix and right-hand-side.
-void assemble_stokes (EquationSystems& es,
-                      const std::string& system_name);
+void assemble_stokes (EquationSystems & es,
+                      const std::string & system_name);
 
 // The main program.
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   // Initialize libMesh.
   LibMeshInit init (argc, argv);
@@ -136,15 +140,15 @@ int main (int argc, char** argv)
   return 0;
 }
 
-void assemble_stokes (EquationSystems& es,
-                      const std::string& system_name)
+void assemble_stokes (EquationSystems & es,
+                      const std::string & system_name)
 {
   // It is a good idea to make sure we are assembling
   // the proper system.
   libmesh_assert_equal_to (system_name, "Stokes");
 
   // Get a constant reference to the mesh object.
-  const MeshBase& mesh = es.get_mesh();
+  const MeshBase & mesh = es.get_mesh();
 
   // The dimension that we are running
   const unsigned int dim = mesh.mesh_dimension();
@@ -185,15 +189,15 @@ void assemble_stokes (EquationSystems& es,
   // will be used to assemble the linear system.
   //
   // The element Jacobian * quadrature weight at each integration point.
-  const std::vector<Real>& JxW = fe_vel->get_JxW();
+  const std::vector<Real> & JxW = fe_vel->get_JxW();
 
   // The element shape function gradients for the velocity
   // variables evaluated at the quadrature points.
-  const std::vector<std::vector<RealGradient> >& dphi = fe_vel->get_dphi();
+  const std::vector<std::vector<RealGradient> > & dphi = fe_vel->get_dphi();
 
   // The element shape functions for the pressure variable
   // evaluated at the quadrature points.
-  const std::vector<std::vector<Real> >& psi = fe_pres->get_phi();
+  const std::vector<std::vector<Real> > & psi = fe_pres->get_phi();
 
   // A reference to the \p DofMap object for this system.  The \p DofMap
   // object handles the index translation from node and element numbers
@@ -240,7 +244,7 @@ void assemble_stokes (EquationSystems& es,
     {
       // Store a pointer to the element we are currently
       // working on.  This allows for nicer syntax later.
-      const Elem* elem = *el;
+      const Elem * elem = *el;
 
       // Get the degree of freedom indices for the
       // current element.  These define where in the global
@@ -354,7 +358,7 @@ void assemble_stokes (EquationSystems& es,
         // If the element has no neighbor on a side then that
         // side MUST live on a boundary of the domain.
         for (unsigned int s=0; s<elem->n_sides(); s++)
-          if (elem->neighbor(s) == NULL)
+          if (elem->neighbor(s) == libmesh_nullptr)
             {
               UniquePtr<Elem> side (elem->build_side(s));
 
@@ -393,7 +397,7 @@ void assemble_stokes (EquationSystems& es,
                         Fv(n) += penalty*v_value;
                       }
                 } // end face node loop
-            } // end if (elem->neighbor(side) == NULL)
+            } // end if (elem->neighbor(side) == libmesh_nullptr)
       } // end boundary condition section
 
       // If this assembly program were to be used on an adaptive mesh,
@@ -407,7 +411,4 @@ void assemble_stokes (EquationSystems& es,
       system.matrix->add_matrix (Ke, dof_indices);
       system.rhs->add_vector    (Fe, dof_indices);
     } // end of element loop
-
-  // That's it.
-  return;
 }

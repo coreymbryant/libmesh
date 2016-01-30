@@ -140,75 +140,21 @@ UniquePtr<Elem> Pyramid13::build_side (const unsigned int i, bool proxy) const
   else
     {
       // Create NULL pointer to be initialized, returned later.
-      Elem* face = NULL;
+      Elem * face = libmesh_nullptr;
 
       switch (i)
         {
-        case 0:  // triangular face 1
+        case 0: // triangular face 1
+        case 1: // triangular face 2
+        case 2: // triangular face 3
+        case 3: // triangular face 4
           {
             face = new Tri6;
-
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(1);
-            face->set_node(2) = this->get_node(4);
-            face->set_node(3) = this->get_node(5);
-            face->set_node(4) = this->get_node(10);
-            face->set_node(5) = this->get_node(9);
-
-            break;
-          }
-        case 1:  // triangular face 2
-          {
-            face = new Tri6;
-
-            face->set_node(0) = this->get_node(1);
-            face->set_node(1) = this->get_node(2);
-            face->set_node(2) = this->get_node(4);
-            face->set_node(3) = this->get_node(6);
-            face->set_node(4) = this->get_node(11);
-            face->set_node(5) = this->get_node(10);
-
-            break;
-          }
-        case 2:  // triangular face 3
-          {
-            face = new Tri6;
-
-            face->set_node(0) = this->get_node(2);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(4);
-            face->set_node(3) = this->get_node(7);
-            face->set_node(4) = this->get_node(12);
-            face->set_node(5) = this->get_node(11);
-
-            break;
-          }
-        case 3:  // triangular face 4
-          {
-            face = new Tri6;
-
-            face->set_node(0) = this->get_node(3);
-            face->set_node(1) = this->get_node(0);
-            face->set_node(2) = this->get_node(4);
-            face->set_node(3) = this->get_node(8);
-            face->set_node(4) = this->get_node(9);
-            face->set_node(5) = this->get_node(12);
-
             break;
           }
         case 4:  // the quad face at z=0
           {
             face = new Quad8;
-
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(2);
-            face->set_node(3) = this->get_node(1);
-            face->set_node(4) = this->get_node(8);
-            face->set_node(5) = this->get_node(7);
-            face->set_node(6) = this->get_node(6);
-            face->set_node(7) = this->get_node(5);
-
             break;
           }
         default:
@@ -216,6 +162,11 @@ UniquePtr<Elem> Pyramid13::build_side (const unsigned int i, bool proxy) const
         }
 
       face->subdomain_id() = this->subdomain_id();
+
+      // Set the nodes
+      for (unsigned n=0; n<face->n_nodes(); ++n)
+        face->set_node(n) = this->get_node(Pyramid13::side_nodes_map[i][n]);
+
       return UniquePtr<Elem>(face);
     }
 
@@ -236,7 +187,7 @@ UniquePtr<Elem> Pyramid13::build_edge (const unsigned int i) const
 
 void Pyramid13::connectivity(const unsigned int libmesh_dbg_var(sc),
                              const IOPackage iop,
-                             std::vector<dof_id_type>& /*conn*/) const
+                             std::vector<dof_id_type> & /*conn*/) const
 {
   libmesh_assert(_nodes);
   libmesh_assert_less (sc, this->n_sub_elem());

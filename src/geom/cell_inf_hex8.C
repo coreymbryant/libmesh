@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -130,7 +130,7 @@ UniquePtr<Elem> InfHex8::build_side (const unsigned int i,
   else
     {
       // Create NULL pointer to be initialized, returned later.
-      Elem* face = NULL;
+      Elem * face = libmesh_nullptr;
 
       // Think of a unit cube: (-1,1) x (-1,1) x (1,1)
       switch (i)
@@ -138,61 +138,16 @@ UniquePtr<Elem> InfHex8::build_side (const unsigned int i,
         case 0: // the base face
           {
             face = new Quad4;
-
-            // Only here, the face element's normal points inward
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(1);
-            face->set_node(2) = this->get_node(2);
-            face->set_node(3) = this->get_node(3);
-
             break;
           }
 
-        case 1:  // connecting to another infinite element
+          // connecting to another infinite element
+        case 1:
+        case 2:
+        case 3:
+        case 4:
           {
             face = new InfQuad4;
-
-            face->set_node(0) = this->get_node(0);
-            face->set_node(1) = this->get_node(1);
-            face->set_node(2) = this->get_node(4);
-            face->set_node(3) = this->get_node(5);
-
-            break;
-          }
-
-        case 2:  // connecting to another infinite element
-          {
-            face = new InfQuad4;
-
-            face->set_node(0) = this->get_node(1);
-            face->set_node(1) = this->get_node(2);
-            face->set_node(2) = this->get_node(5);
-            face->set_node(3) = this->get_node(6);
-
-            break;
-          }
-
-        case 3:  // connecting to another infinite element
-          {
-            face = new InfQuad4;
-
-            face->set_node(0) = this->get_node(2);
-            face->set_node(1) = this->get_node(3);
-            face->set_node(2) = this->get_node(6);
-            face->set_node(3) = this->get_node(7);
-
-            break;
-          }
-
-        case 4:  // connecting to another infinite element
-          {
-            face = new InfQuad4;
-
-            face->set_node(0) = this->get_node(3);
-            face->set_node(1) = this->get_node(0);
-            face->set_node(2) = this->get_node(7);
-            face->set_node(3) = this->get_node(4);
-
             break;
           }
 
@@ -201,6 +156,11 @@ UniquePtr<Elem> InfHex8::build_side (const unsigned int i,
         }
 
       face->subdomain_id() = this->subdomain_id();
+
+      // Set the nodes
+      for (unsigned n=0; n<face->n_nodes(); ++n)
+        face->set_node(n) = this->get_node(InfHex8::side_nodes_map[i][n]);
+
       return UniquePtr<Elem>(face);
     }
 
@@ -219,7 +179,7 @@ UniquePtr<Elem> InfHex8::build_edge (const unsigned int i) const
   return UniquePtr<Elem>(new SideEdge<InfEdge2,InfHex8>(this,i));
 }
 
-bool InfHex8::contains_point (const Point& p, Real tol) const
+bool InfHex8::contains_point (const Point & p, Real tol) const
 {
   /*
    * For infinite elements with linear base interpolation:
@@ -283,7 +243,7 @@ bool InfHex8::contains_point (const Point& p, Real tol) const
 
 void InfHex8::connectivity(const unsigned int libmesh_dbg_var(sc),
                            const IOPackage iop,
-                           std::vector<dof_id_type>& conn) const
+                           std::vector<dof_id_type> & conn) const
 {
   libmesh_assert(_nodes);
   libmesh_assert_less (sc, this->n_sub_elem());

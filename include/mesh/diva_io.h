@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -31,19 +31,15 @@ namespace libMesh
 // Forward declarations
 class MeshBase;
 
-
-
 /**
  * This class implements writing meshes in the Diva format.
  * This is a scientific visualization program created by Kelly Gaither.
  * More information on Diva can be found here:
  * http://www.erc.msstate.edu/simcenter/docs/diva/
  *
- * @author John W. Peterson, 2004
+ * \author John W. Peterson
+ * \date 2004
  */
-
-// ------------------------------------------------------------
-// DivaIO class definition
 class DivaIO : public MeshOutput<MeshBase>
 {
 public:
@@ -53,12 +49,12 @@ public:
    */
   //TODO:[JWP] figure out how to implement a const write method!
   explicit
-  DivaIO (const MeshBase&);
+  DivaIO (const MeshBase &);
 
   /**
    * This method implements writing a mesh to a specified file.
    */
-  virtual void write (const std::string& );
+  virtual void write (const std::string &) libmesh_override;
 
 private:
 
@@ -67,7 +63,7 @@ private:
    * file is called by the public interface file after it
    * constructs an ofstream.
    */
-  virtual void write_stream(std::ostream& out);
+  void write_stream(std::ostream & out);
 };
 
 
@@ -76,7 +72,7 @@ private:
 // ------------------------------------------------------------
 // DivaIO inline members
 inline
-DivaIO::DivaIO (const MeshBase& mesh_in) :
+DivaIO::DivaIO (const MeshBase & mesh_in) :
   MeshOutput<MeshBase>  (mesh_in)
 {}
 

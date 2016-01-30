@@ -1,24 +1,29 @@
-/* The libMesh Finite Element Library. */
-/* Copyright (C) 2003  Benjamin S. Kirk */
+// The libMesh Finite Element Library.
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
-/* This library is free software; you can redistribute it and/or */
-/* modify it under the terms of the GNU Lesser General Public */
-/* License as published by the Free Software Foundation; either */
-/* version 2.1 of the License, or (at your option) any later version. */
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
 
-/* This library is distributed in the hope that it will be useful, */
-/* but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
-/* Lesser General Public License for more details. */
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
 
-/* You should have received a copy of the GNU Lesser General Public */
-/* License along with this library; if not, write to the Free Software */
-/* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
 
 // <h1>Optimization Example 2 - Optimization with constraints</h1>
+// \author David Knezevic
+// \date 2015
 //
-// In this example we extend example 1 to demonstrate how to use OptimizationSystem's
-// interface for imposing equality and inequality constraints.
+// In this example we extend example 1 to demonstrate how to use
+// OptimizationSystem's interface for imposing equality and inequality
+// constraints.
 
 // C++ include files that we need
 #include <iostream>
@@ -67,15 +72,14 @@ private:
   /**
    * Keep a reference to the OptimizationSystem.
    */
-  OptimizationSystem& _sys;
+  OptimizationSystem & _sys;
 
 public:
 
   /**
    * Constructor.
    */
-  AssembleOptimization(
-    OptimizationSystem &sys_in);
+  AssembleOptimization(OptimizationSystem & sys_in);
 
   /**
    * The optimization problem we consider here is:
@@ -87,76 +91,71 @@ public:
   /**
    * Evaluate the objective function.
    */
-  virtual Number objective (
-    const NumericVector<Number>& soln,
-    OptimizationSystem& /*sys*/);
+  virtual Number objective (const NumericVector<Number> & soln,
+                            OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the gradient.
    */
-  virtual void gradient (
-    const NumericVector<Number>& soln,
-    NumericVector<Number>& grad_f,
-    OptimizationSystem& /*sys*/);
+  virtual void gradient (const NumericVector<Number> & soln,
+                         NumericVector<Number> & grad_f,
+                         OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the Hessian.
    */
-  virtual void hessian (
-    const NumericVector<Number>& soln,
-    SparseMatrix<Number>& H_f,
-    OptimizationSystem& /*sys*/);
+  virtual void hessian (const NumericVector<Number> & soln,
+                        SparseMatrix<Number> & H_f,
+                        OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the equality constraints.
    */
-  virtual void equality_constraints (const NumericVector<Number>& X,
-                                     NumericVector<Number>& C_eq,
-                                     OptimizationSystem& /*sys*/);
+  virtual void equality_constraints (const NumericVector<Number> & X,
+                                     NumericVector<Number> & C_eq,
+                                     OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the equality constraints Jacobian.
    */
-  virtual void equality_constraints_jacobian (const NumericVector<Number>& X,
-                                              SparseMatrix<Number>& C_eq_jac,
-                                              OptimizationSystem& /*sys*/);
+  virtual void equality_constraints_jacobian (const NumericVector<Number> & X,
+                                              SparseMatrix<Number> & C_eq_jac,
+                                              OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the inequality constraints.
    */
-  virtual void inequality_constraints (const NumericVector<Number>& X,
-                                       NumericVector<Number>& C_ineq,
-                                       OptimizationSystem& /*sys*/);
+  virtual void inequality_constraints (const NumericVector<Number> & X,
+                                       NumericVector<Number> & C_ineq,
+                                       OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the inequality constraints Jacobian.
    */
-  virtual void inequality_constraints_jacobian (const NumericVector<Number>& X,
-                                                SparseMatrix<Number>& C_ineq_jac,
-                                                OptimizationSystem& /*sys*/);
+  virtual void inequality_constraints_jacobian (const NumericVector<Number> & X,
+                                                SparseMatrix<Number> & C_ineq_jac,
+                                                OptimizationSystem & /*sys*/);
 
   /**
    * Evaluate the lower and upper bounds vectors.
    */
-  virtual void lower_and_upper_bounds (OptimizationSystem& sys);
+  virtual void lower_and_upper_bounds (OptimizationSystem & sys);
 
   /**
    * Sparse matrix for storing the matrix A. We use
    * this to facilitate computation of objective, gradient
    * and hessian.
    */
-  SparseMatrix<Number>* A_matrix;
+  SparseMatrix<Number> * A_matrix;
 
   /**
    * Vector for storing F. We use this to facilitate
    * computation of objective, gradient and hessian.
    */
-  NumericVector<Number>* F_vector;
-
+  NumericVector<Number> * F_vector;
 };
 
-AssembleOptimization::AssembleOptimization(OptimizationSystem &sys_in)
-  :
+AssembleOptimization::AssembleOptimization(OptimizationSystem & sys_in) :
   _sys(sys_in)
 {}
 
@@ -165,20 +164,20 @@ void AssembleOptimization::assemble_A_and_F()
   A_matrix->zero();
   F_vector->zero();
 
-  const MeshBase& mesh = _sys.get_mesh();
+  const MeshBase & mesh = _sys.get_mesh();
 
   const unsigned int dim = mesh.mesh_dimension();
   const unsigned int u_var = _sys.variable_number ("u");
 
-  const DofMap& dof_map = _sys.get_dof_map();
+  const DofMap & dof_map = _sys.get_dof_map();
   FEType fe_type = dof_map.variable_type(u_var);
   UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
   QGauss qrule (dim, fe_type.default_quadrature_order());
   fe->attach_quadrature_rule (&qrule);
 
-  const std::vector<Real>& JxW = fe->get_JxW();
-  const std::vector<std::vector<Real> >& phi = fe->get_phi();
-  const std::vector<std::vector<RealGradient> >& dphi = fe->get_dphi();
+  const std::vector<Real> & JxW = fe->get_JxW();
+  const std::vector<std::vector<Real> > & phi = fe->get_phi();
+  const std::vector<std::vector<RealGradient> > & dphi = fe->get_dphi();
 
   std::vector<dof_id_type> dof_indices;
 
@@ -189,56 +188,54 @@ void AssembleOptimization::assemble_A_and_F()
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
   for ( ; el != end_el; ++el)
-  {
-    const Elem* elem = *el;
-
-    dof_map.dof_indices (elem, dof_indices);
-
-    const unsigned int n_dofs = dof_indices.size();
-
-    fe->reinit (elem);
-
-    Ke.resize (n_dofs,n_dofs);
-    Fe.resize (n_dofs);
-
-    for (unsigned int qp=0; qp<qrule.n_points(); qp++)
     {
-      for (unsigned int dof_i=0; dof_i<n_dofs; dof_i++)
-      {
-        for (unsigned int dof_j=0; dof_j<n_dofs; dof_j++)
-        {
-          Ke(dof_i, dof_j) += JxW[qp] * (dphi[dof_j][qp]* dphi[dof_i][qp]);
-        }
-        Fe(dof_i) += JxW[qp] * phi[dof_i][qp];
-      }
-    }
+      const Elem * elem = *el;
 
-    A_matrix->add_matrix (Ke, dof_indices);
-    F_vector->add_vector (Fe, dof_indices);
-  }
+      dof_map.dof_indices (elem, dof_indices);
+
+      const unsigned int n_dofs = dof_indices.size();
+
+      fe->reinit (elem);
+
+      Ke.resize (n_dofs, n_dofs);
+      Fe.resize (n_dofs);
+
+      for (unsigned int qp=0; qp<qrule.n_points(); qp++)
+        {
+          for (unsigned int dof_i=0; dof_i<n_dofs; dof_i++)
+            {
+              for (unsigned int dof_j=0; dof_j<n_dofs; dof_j++)
+                {
+                  Ke(dof_i, dof_j) += JxW[qp] * (dphi[dof_j][qp]* dphi[dof_i][qp]);
+                }
+              Fe(dof_i) += JxW[qp] * phi[dof_i][qp];
+            }
+        }
+
+      A_matrix->add_matrix (Ke, dof_indices);
+      F_vector->add_vector (Fe, dof_indices);
+    }
 
   A_matrix->close();
   F_vector->close();
 }
 
-Number AssembleOptimization::objective (
-  const NumericVector<Number>& soln,
-  OptimizationSystem& /*sys*/)
+Number AssembleOptimization::objective (const NumericVector<Number> & soln,
+                                        OptimizationSystem & /*sys*/)
 {
-  UniquePtr< NumericVector<Number> > AxU = soln.zero_clone();
+  UniquePtr<NumericVector<Number> > AxU = soln.zero_clone();
 
   A_matrix->vector_mult(*AxU, soln);
-  Real UTxAxU = AxU->dot(soln);
+  Number UTxAxU = AxU->dot(soln);
 
-  Real UTxF = F_vector->dot(soln);
+  Number UTxF = F_vector->dot(soln);
 
   return 0.5 * UTxAxU - UTxF;
 }
 
-void AssembleOptimization::gradient (
-  const NumericVector<Number>& soln,
-  NumericVector<Number>& grad_f,
-  OptimizationSystem& /*sys*/)
+void AssembleOptimization::gradient (const NumericVector<Number> & soln,
+                                     NumericVector<Number> & grad_f,
+                                     OptimizationSystem & /*sys*/)
 {
   grad_f.zero();
 
@@ -247,10 +244,9 @@ void AssembleOptimization::gradient (
 }
 
 
-void AssembleOptimization::hessian (
-  const NumericVector<Number>& /*soln*/,
-  SparseMatrix<Number>& H_f,
-  OptimizationSystem& sys)
+void AssembleOptimization::hessian (const NumericVector<Number> & /*soln*/,
+                                    SparseMatrix<Number> & H_f,
+                                    OptimizationSystem & sys)
 {
   H_f.zero();
   H_f.add(1., *A_matrix);
@@ -266,27 +262,24 @@ void AssembleOptimization::hessian (
   dof_id_type ineq_index = 0;
   Number lambda_ineq_0 = 0.;
   unsigned int lambda_rank = 0;
-  if( (sys.lambda_ineq->first_local_index() <= ineq_index) &&
-      (ineq_index < sys.lambda_ineq->last_local_index()) )
-  {
-    lambda_ineq_0 = (*sys.lambda_ineq)(0);
-    lambda_rank = sys.comm().rank();
-  }
+  if ((sys.lambda_ineq->first_local_index() <= ineq_index) &&
+      (ineq_index < sys.lambda_ineq->last_local_index()))
+    {
+      lambda_ineq_0 = (*sys.lambda_ineq)(0);
+      lambda_rank = sys.comm().rank();
+    }
 
   // Sync lambda_rank across all processors.
   sys.comm().sum(lambda_rank);
   sys.comm().broadcast(lambda_rank, lambda_rank);
 
-  if( (sys.get_dof_map().first_dof() <= 200) && (200 < sys.get_dof_map().end_dof()) )
-  {
+  if ((sys.get_dof_map().first_dof() <= 200) && (200 < sys.get_dof_map().end_dof()))
     H_f.add(200, 200, 2. * lambda_ineq_0);
-  }
 }
 
-void AssembleOptimization::equality_constraints (
-  const NumericVector<Number>& X,
-  NumericVector<Number>& C_eq,
-  OptimizationSystem& /*sys*/)
+void AssembleOptimization::equality_constraints (const NumericVector<Number> & X,
+                                                 NumericVector<Number> & C_eq,
+                                                 OptimizationSystem & /*sys*/)
 {
   C_eq.zero();
 
@@ -300,21 +293,15 @@ void AssembleOptimization::equality_constraints (
   constraint_values[1] = (*X_localized)(23);
   constraint_values[2] = (*X_localized)(98) + (*X_localized)(185);
 
-  for(unsigned int i=0;
-      i<constraint_values.size();
-      i++)
-  {
-    if( (C_eq.first_local_index() <= i) &&
-        (i < C_eq.last_local_index()) )
-    {
+  for (unsigned int i=0; i<constraint_values.size(); i++)
+    if ((C_eq.first_local_index() <= i) &&
+        (i < C_eq.last_local_index()))
       C_eq.set(i, constraint_values[i]);
-    }
-  }
 }
 
-void AssembleOptimization::equality_constraints_jacobian (const NumericVector<Number>& /*X*/,
-                                                          SparseMatrix<Number>& C_eq_jac,
-                                                          OptimizationSystem& sys)
+void AssembleOptimization::equality_constraints_jacobian (const NumericVector<Number> & /*X*/,
+                                                          SparseMatrix<Number> & C_eq_jac,
+                                                          OptimizationSystem & sys)
 {
   C_eq_jac.zero();
 
@@ -338,31 +325,25 @@ void AssembleOptimization::equality_constraints_jacobian (const NumericVector<Nu
   constraint_jac_indices[2][0] = 98;
   constraint_jac_indices[2][1] = 185;
 
-  for(unsigned int i=0;
-      i<constraint_jac_values.size();
-      i++)
-  {
-    for(unsigned int j=0;
-        j<constraint_jac_values[i].size();
-        j++)
+  for (unsigned int i=0; i<constraint_jac_values.size(); i++)
     {
+      for (unsigned int j=0; j<constraint_jac_values[i].size(); j++)
+        {
 
-      if( (sys.C_eq->first_local_index() <= i) &&
-          (i < sys.C_eq->last_local_index()) )
-      {
-        dof_id_type col_index = constraint_jac_indices[i][j];
-        Number value = constraint_jac_values[i][j];
-        C_eq_jac.set(i, col_index, value);
-      }
-
+          if ((sys.C_eq->first_local_index() <= i) &&
+              (i < sys.C_eq->last_local_index()))
+            {
+              dof_id_type col_index = constraint_jac_indices[i][j];
+              Number value = constraint_jac_values[i][j];
+              C_eq_jac.set(i, col_index, value);
+            }
+        }
     }
-  }
 }
 
-void AssembleOptimization::inequality_constraints (
-  const NumericVector<Number>& X,
-  NumericVector<Number>& C_ineq,
-  OptimizationSystem& /*sys*/)
+void AssembleOptimization::inequality_constraints (const NumericVector<Number> & X,
+                                                   NumericVector<Number> & C_ineq,
+                                                   OptimizationSystem & /*sys*/)
 {
   C_ineq.zero();
 
@@ -374,22 +355,16 @@ void AssembleOptimization::inequality_constraints (
   std::vector<Number> constraint_values(1);
   constraint_values[0] = (*X_localized)(200)*(*X_localized)(200) + (*X_localized)(201) - 5.;
 
-  for(unsigned int i=0;
-      i<constraint_values.size();
-      i++)
-  {
-    if( (C_ineq.first_local_index() <= i) &&
-        (i < C_ineq.last_local_index()) )
+  for (unsigned int i=0; i<constraint_values.size(); i++)
     {
-      C_ineq.set(i, constraint_values[i]);
+      if ((C_ineq.first_local_index() <= i) && (i < C_ineq.last_local_index()))
+        C_ineq.set(i, constraint_values[i]);
     }
-  }
 }
 
-void AssembleOptimization::inequality_constraints_jacobian (
-  const NumericVector<Number>& X,
-  SparseMatrix<Number>& C_ineq_jac,
-  OptimizationSystem& sys)
+void AssembleOptimization::inequality_constraints_jacobian (const NumericVector<Number> & X,
+                                                            SparseMatrix<Number> & C_ineq_jac,
+                                                            OptimizationSystem & sys)
 {
   C_ineq_jac.zero();
 
@@ -408,46 +383,48 @@ void AssembleOptimization::inequality_constraints_jacobian (
   constraint_jac_indices[0][0] = 200;
   constraint_jac_indices[0][1] = 201;
 
-  for(unsigned int i=0;
-      i<constraint_jac_values.size();
-      i++)
-  {
-    for(unsigned int j=0;
-        j<constraint_jac_values[i].size();
-        j++)
+  for (unsigned int i=0; i<constraint_jac_values.size(); i++)
     {
+      for (unsigned int j=0; j<constraint_jac_values[i].size(); j++)
+        {
+          if ((sys.C_ineq->first_local_index() <= i) &&
+              (i < sys.C_ineq->last_local_index()))
+            {
+              dof_id_type col_index = constraint_jac_indices[i][j];
+              Number value = constraint_jac_values[i][j];
+              C_ineq_jac.set(i, col_index, value);
+            }
 
-      if( (sys.C_ineq->first_local_index() <= i) &&
-          (i < sys.C_ineq->last_local_index()) )
-      {
-        dof_id_type col_index = constraint_jac_indices[i][j];
-        Number value = constraint_jac_values[i][j];
-        C_ineq_jac.set(i, col_index, value);
-      }
-
+        }
     }
-  }
 }
 
-void AssembleOptimization::lower_and_upper_bounds (
-  OptimizationSystem& sys)
+void AssembleOptimization::lower_and_upper_bounds (OptimizationSystem & sys)
 {
-  for(unsigned int i=sys.get_dof_map().first_dof();
-      i<sys.get_dof_map().end_dof();
-      i++)
-  {
-    sys.get_vector("lower_bounds").set(i,-2.);
-    sys.get_vector("upper_bounds").set(i,2.);
-  }
+  for (unsigned int i=sys.get_dof_map().first_dof(); i<sys.get_dof_map().end_dof(); i++)
+    {
+      sys.get_vector("lower_bounds").set(i, -2.);
+      sys.get_vector("upper_bounds").set(i, 2.);
+    }
 }
 
-int main (int argc, char** argv)
+int main (int argc, char ** argv)
 {
   LibMeshInit init (argc, argv);
 
 #ifndef LIBMESH_HAVE_PETSC_TAO
+
   libmesh_example_requires(false, "PETSc >= 3.5.0 with built-in TAO support");
+
+#elif LIBMESH_USE_COMPLEX_NUMBERS
+
+  // According to
+  // http://www.mcs.anl.gov/research/projects/tao/documentation/installation.html
+  // TAO & PETSc-complex are currently mutually exclusive
+  libmesh_example_requires(false, "PETSc >= 3.5.0 with built-in TAO support & real-numbers only");
+
 #endif
+
 
   GetPot infile("optimization_ex2.in");
   const std::string approx_order = infile("approx_order", "FIRST");
@@ -466,7 +443,7 @@ int main (int argc, char** argv)
 
   EquationSystems equation_systems (mesh);
 
-  OptimizationSystem& system =
+  OptimizationSystem & system =
     equation_systems.add_system<OptimizationSystem> ("Optimization");
 
   // The default is to use PETSc/Tao solvers, but let the user change

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,18 +28,14 @@
 namespace libMesh
 {
 
-
-
-
 /**
  * This class creates a gaussian quadrature rule duplicated for each
  * subelement of a Clough-Tocher divided macroelement.
+ *
+ * \author Roy Stogner
+ * \date 2005
  */
-
-// ------------------------------------------------------------
-// QClough class definition
-
-class QClough : public QBase
+class QClough libmesh_final : public QBase
 {
 public:
 
@@ -47,48 +43,30 @@ public:
    * Constructor.  Declares the order of the quadrature rule.
    */
   QClough (const unsigned int _dim,
-           const Order _order=INVALID_ORDER);
+           const Order _order=INVALID_ORDER) :
+    QBase(_dim, _order)
+  {}
 
   /**
    * Destructor.
    */
-  ~QClough();
+  ~QClough() {}
 
   /**
    * @returns \p QCLOUGH
    */
-  QuadratureType type() const { return QCLOUGH; }
+  virtual QuadratureType type() const libmesh_override { return QCLOUGH; }
 
 
 private:
 
   void init_1D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+                unsigned int p_level=0) libmesh_override;
   void init_2D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
+                unsigned int p_level=0) libmesh_override;
   void init_3D (const ElemType _type=INVALID_ELEM,
-                unsigned int p_level=0);
-
+                unsigned int p_level=0) libmesh_override;
 };
-
-
-
-// ------------------------------------------------------------
-// QClough class members
-inline
-QClough::QClough(const unsigned int d,
-                 const Order o) : QBase(d,o)
-{
-}
-
-
-
-
-inline
-QClough::~QClough()
-{
-}
-
 
 } // namespace libMesh
 

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,8 +42,8 @@ void QClough::init_2D(const ElemType type_in,
     case TRI3:
     case TRI6:
       {
-        std::vector<Point> &gausspoints = gauss_rule.get_points();
-        std::vector<Real> &gaussweights = gauss_rule.get_weights();
+        std::vector<Point> & gausspoints = gauss_rule.get_points();
+        std::vector<Real> & gaussweights = gauss_rule.get_weights();
         std::size_t numgausspts = gausspoints.size();
         _points.resize(numgausspts*3);
         _weights.resize(numgausspts*3);

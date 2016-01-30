@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -47,39 +47,34 @@ public:
    */
   Face (const unsigned int nn,
         const unsigned int ns,
-        Elem* p,
-        Elem** elemlinkdata,
-        Node** nodelinkdata) :
+        Elem * p,
+        Elem ** elemlinkdata,
+        Node ** nodelinkdata) :
     Elem(nn, ns, p, elemlinkdata, nodelinkdata) {}
 
   /**
    * @returns 2, the dimensionality of the object.
    */
-  unsigned int dim () const { return 2; }
+  virtual unsigned int dim () const libmesh_override { return 2; }
 
   /**
    * @returns 0.  All 2D elements have no faces, just
    * edges.
    */
-  unsigned int n_faces() const { return 0; }
+  virtual unsigned int n_faces() const libmesh_override { return 0; }
 
   /**
    * build_side and build_edge are identical for faces
    */
-  UniquePtr<Elem> build_edge (const unsigned int i) const
+  virtual UniquePtr<Elem> build_edge (const unsigned int i) const libmesh_override
   { return build_side(i); }
 
   /*
    * is_edge_on_side is trivial in 2D
    */
   virtual bool is_edge_on_side(const unsigned int e,
-                               const unsigned int s) const
+                               const unsigned int s) const libmesh_override
   { return (e == s); }
-
-  //   /**
-  //    * @returns 2
-  //    */
-  //   unsigned int n_children_per_side(const unsigned int) const { return 2; }
 
 #ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
 
@@ -87,7 +82,7 @@ public:
    * @returns \p false.  All classes derived from \p Face
    * are finite elements.
    */
-  bool infinite () const { return false; }
+  virtual bool infinite () const libmesh_override { return false; }
 
 #endif
 

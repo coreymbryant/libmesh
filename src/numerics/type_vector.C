@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -61,7 +61,7 @@ TypeVector<T> TypeVector<T>::unit() const
 
 
 template <typename T>
-void TypeVector<T>::print(std::ostream& os) const
+void TypeVector<T>::print(std::ostream & os) const
 {
 #if LIBMESH_DIM == 1
 
@@ -89,7 +89,7 @@ void TypeVector<T>::print(std::ostream& os) const
 
 
 template <typename T>
-void TypeVector<T>::write_unformatted (std::ostream &os,
+void TypeVector<T>::write_unformatted (std::ostream & os,
                                        const bool newline) const
 {
   libmesh_assert (os);
@@ -106,7 +106,7 @@ void TypeVector<T>::write_unformatted (std::ostream &os,
 
 
 template <typename T>
-bool TypeVector<T>::operator < (const TypeVector<T>& rhs) const
+bool TypeVector<T>::operator < (const TypeVector<T> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -120,7 +120,7 @@ bool TypeVector<T>::operator < (const TypeVector<T>& rhs) const
 
 
 template <typename T>
-bool TypeVector<T>::operator <= (const TypeVector<T>& rhs) const
+bool TypeVector<T>::operator <= (const TypeVector<T> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -135,7 +135,7 @@ bool TypeVector<T>::operator <= (const TypeVector<T>& rhs) const
 
 
 template <typename T>
-bool TypeVector<T>::operator > (const TypeVector<T>& rhs) const
+bool TypeVector<T>::operator > (const TypeVector<T> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -149,7 +149,7 @@ bool TypeVector<T>::operator > (const TypeVector<T>& rhs) const
 
 
 template <typename T>
-bool TypeVector<T>::operator >= (const TypeVector<T>& rhs) const
+bool TypeVector<T>::operator >= (const TypeVector<T> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -164,7 +164,7 @@ bool TypeVector<T>::operator >= (const TypeVector<T>& rhs) const
 
 #ifdef LIBMESH_USE_COMPLEX_NUMBERS
 template <>
-bool TypeVector<Complex>::operator < (const TypeVector<Complex>& rhs) const
+bool TypeVector<Complex>::operator < (const TypeVector<Complex> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -183,7 +183,7 @@ bool TypeVector<Complex>::operator < (const TypeVector<Complex>& rhs) const
 
 
 template <>
-bool TypeVector<Complex>::operator <= (const TypeVector<Complex>& rhs) const
+bool TypeVector<Complex>::operator <= (const TypeVector<Complex> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -202,7 +202,7 @@ bool TypeVector<Complex>::operator <= (const TypeVector<Complex>& rhs) const
 
 
 template <>
-bool TypeVector<Complex>::operator > (const TypeVector<Complex>& rhs) const
+bool TypeVector<Complex>::operator > (const TypeVector<Complex> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {
@@ -221,7 +221,7 @@ bool TypeVector<Complex>::operator > (const TypeVector<Complex>& rhs) const
 
 
 template <>
-bool TypeVector<Complex>::operator >= (const TypeVector<Complex>& rhs) const
+bool TypeVector<Complex>::operator >= (const TypeVector<Complex> & rhs) const
 {
   for (unsigned int i=0; i<LIBMESH_DIM; i++)
     {

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ namespace libMesh
 // Preconditioner members
 template <typename T>
 Preconditioner<T> *
-Preconditioner<T>::build(const libMesh::Parallel::Communicator &comm,
+Preconditioner<T>::build(const libMesh::Parallel::Communicator & comm,
                          const SolverPackage solver_package)
 {
   // Build the appropriate solver
@@ -63,7 +63,7 @@ Preconditioner<T>::build(const libMesh::Parallel::Communicator &comm,
       libmesh_error_msg("ERROR:  Unrecognized solver package: " << solver_package);
     }
 
-  return NULL;
+  return libmesh_nullptr;
 }
 
 

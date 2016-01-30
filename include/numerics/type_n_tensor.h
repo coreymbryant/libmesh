@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,6 @@
 namespace libMesh
 {
 
-
 /**
  * This class will eventually define a rank-N tensor in \p LIBMESH_DIM
  * dimensional space of type T.
@@ -39,20 +38,20 @@ namespace libMesh
  * compile (but not give correct results) in the case of vector-valued
  * elements and second derivatives.
  *
- * \author Roy Stogner, 2012.
+ * \author Roy Stogner
+ * \date 2012
  */
-
 template <unsigned int N, typename T>
 class TypeNTensor
 {
 public:
   TypeNTensor () {}
 
-  TypeNTensor (const T&) {}
+  TypeNTensor (const T &) {}
 
-  TypeNTensor (const TypeVector<T>&) {}
+  TypeNTensor (const TypeVector<T> &) {}
 
-  TypeNTensor (const TypeTensor<T>&) {}
+  TypeNTensor (const TypeTensor<T> &) {}
 
   operator TypeVector<T> () const { libmesh_not_implemented(); return 0; }
   operator VectorValue<T> () const { libmesh_not_implemented(); return 0; }
@@ -161,34 +160,34 @@ public:
   /**
    * @returns \p true if two tensors are equal valued.
    */
-  bool operator == (const TypeNTensor<N,T>& /*rhs*/) const
+  bool operator == (const TypeNTensor<N,T> & /*rhs*/) const
   { return true; }
 
   /**
    * @returns \p true if this tensor is "less"
    * than another.  Useful for sorting.
    */
-  bool operator < (const TypeNTensor<N,T>& /*rhs*/) const
+  bool operator < (const TypeNTensor<N,T> & /*rhs*/) const
   { return false; }
 
   /**
    * @returns \p true if this tensor is "greater"
    * than another.
    */
-  bool operator > (const TypeNTensor<N,T>& /*rhs*/) const
+  bool operator > (const TypeNTensor<N,T> & /*rhs*/) const
   { return false; }
 
   /**
    * Formatted print, by default to \p libMesh::out.
    */
-  void print(std::ostream& /*os = libMesh::out*/) const {}
+  void print(std::ostream & /*os = libMesh::out*/) const {}
 
   /**
    * Formatted print as above but allows you to do
    * std::cout << t << std::endl;
    */
-  friend std::ostream& operator << (std::ostream& os,
-                                    const TypeNTensor<N,T>& t)
+  friend std::ostream & operator << (std::ostream & os,
+                                     const TypeNTensor<N,T> & t)
   {
     t.print(os);
     return os;

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 
 #include "libmesh/libmesh_config.h"
 
-#ifdef LIBMESH_HAVE_DTK
+#ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #include "libmesh/dtk_evaluator.h"
 
@@ -37,8 +37,16 @@
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_ArrayRCP.hpp>
 
-namespace libMesh {
+namespace libMesh
+{
 
+/**
+ * The DTKAdapter is used with the DTKSolutionTranfer object to adapt
+ * libmesh data to the DTK interface.
+ *
+ * \author Derek Gaston
+ * \date 2013
+ */
 class DTKAdapter
 {
 public:
@@ -102,6 +110,6 @@ protected:
 
 } // namespace libMesh
 
-#endif // #ifdef LIBMESH_HAVE_DTK
+#endif // #ifdef LIBMESH_TRILINOS_HAVE_DTK
 
 #endif // #define DTKADAPTER_H

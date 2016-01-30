@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,6 @@
 namespace libMesh
 {
 
-// Forward Declarations
-
-
 /**
  * This class contains a specific system class.
  * It provides an implicit time integration scheme
@@ -47,10 +44,6 @@ namespace libMesh
  * used for time integration are provided.
  * For details refer to the examples section.
  */
-
-// ------------------------------------------------------------
-// NewmarkSystem class definition
-
 class NewmarkSystem : public LinearImplicitSystem
 {
 public:
@@ -59,15 +52,14 @@ public:
    * Constructor.  Optionally initializes required
    * data structures.
    */
-  NewmarkSystem (EquationSystems& es,
-                 const std::string& name,
+  NewmarkSystem (EquationSystems & es,
+                 const std::string & name,
                  const unsigned int number);
 
   /**
    * Destructor.
    */
   ~NewmarkSystem ();
-
 
   /**
    * The type of system.
@@ -78,25 +70,25 @@ public:
    * Clear all the data structures associated with
    * the system.
    */
-  virtual void clear ();
+  virtual void clear () libmesh_override;
 
   /**
    * Reinitializes the member data fields associated with
    * the system, so that, e.g., \p assemble() may be used.
    */
-  virtual void reinit ();
+  virtual void reinit () libmesh_override;
 
   /**
    * Assemble the linear system.  Does not
    * actually call the solver.
    */
-  virtual void assemble ();
+  virtual void assemble () libmesh_override;
 
   /**
    * @returns \p "Newmark".  Helps in identifying
    * the system type in an equation system file.
    */
-  virtual std::string system_type () const { return "Newmark"; }
+  virtual std::string system_type () const libmesh_override { return "Newmark"; }
 
 
   //---------------------------------------------------------
@@ -133,9 +125,6 @@ public:
                                const Real alpha   = _default_alpha,
                                const Real delta   = _default_delta);
 
-protected:
-
-
 private:
 
   /**
@@ -169,16 +158,8 @@ private:
    * Default Newmark time step
    */
   static const Real _default_timestep;
-
 };
 
-
 } // namespace libMesh
-
-
-// ------------------------------------------------------------
-// NewmarkSystem inline methods
-
-
 
 #endif // LIBMESH_NEWMARK_SYSTEM_H

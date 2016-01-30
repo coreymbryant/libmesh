@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ using namespace libMesh;
 
 
 // If there's a missing input argument, then print a help message
-void usage_error(const char *progname)
+void usage_error(const char * progname)
 {
   libMesh::out << "Options: " << progname << '\n'
                << " --dim d               mesh dimension           [default: autodetect]\n"
@@ -60,10 +60,10 @@ void usage_error(const char *progname)
 
 // Get an input argument, or print a help message if it's missing
 template <typename T>
-T assert_argument (GetPot &cl,
-                   const std::string &argname,
-                   const char        *progname,
-                   const T&          defaultarg)
+T assert_argument (GetPot & cl,
+                   const std::string & argname,
+                   const char * progname,
+                   const T & defaultarg)
 {
   if(!cl.search(argname))
     {
@@ -74,7 +74,7 @@ T assert_argument (GetPot &cl,
 }
 
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   LibMeshInit init(argc, argv);
 
@@ -135,16 +135,16 @@ int main(int argc, char** argv)
 
   libmesh_assert_less(sysnum, n_systems);
 
-  System &old_sys = old_es.get_system(sysnum);
+  System & old_sys = old_es.get_system(sysnum);
   std::string current_sys_name = old_sys.name();
 
   libMesh::out << "Calculating with system " << current_sys_name << std::endl;
 
-  L2System &new_sys = new_es.add_system<L2System>(current_sys_name);
+  L2System & new_sys = new_es.add_system<L2System>(current_sys_name);
 
   new_sys.time_solver =
     UniquePtr<TimeSolver>(new SteadySolver(new_sys));
-  
+
   new_sys.fe_family() =
     cl.follow(std::string("LAGRANGE"), "--family");
 
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
 
   const std::string calcfunc =
     assert_argument(cl, "--calc", argv[0], std::string(""));
-  
+
   ParsedFEMFunction<Number> goal_function(old_sys, calcfunc);
 
   new_sys.goal_func.reset(goal_function.clone().release());
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
 
   new_es.init();
 
-  DiffSolver& solver = *(new_sys.time_solver->diff_solver().get());
+  DiffSolver & solver = *(new_sys.time_solver->diff_solver().get());
   solver.quiet = false;
   solver.verbose = true;
   solver.relative_step_tolerance = 1e-10;

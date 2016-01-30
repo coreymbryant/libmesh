@@ -1,3 +1,22 @@
+// rbOOmit: An implementation of the Certified Reduced Basis method.
+// Copyright (C) 2009, 2010, 2015 David J. Knezevic
+
+// This file is part of rbOOmit.
+
+// rbOOmit is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 2.1 of the License, or (at your option) any later version.
+
+// rbOOmit is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
 #ifndef RB_DATA_DESERIALIZATION_H
 #define RB_DATA_DESERIALIZATION_H
 
@@ -6,9 +25,6 @@
 #if defined(LIBMESH_HAVE_CAPNPROTO)
 
 // libMesh/reduced_basis includes
-#include "libmesh/transient_rb_evaluation.h"
-#include "libmesh/rb_eim_evaluation.h"
-#include "libmesh/rb_scm_evaluation.h"
 #include "libmesh/rb_data.capnp.h"
 
 // Cap'n'Proto includes
@@ -18,6 +34,12 @@
 
 namespace libMesh
 {
+
+// Forward declarations
+class RBEvaluation;
+class TransientRBEvaluation;
+class RBEIMEvaluation;
+class RBSCMEvaluation;
 
 namespace RBDataDeserialization
 {
@@ -34,7 +56,7 @@ public:
    * Initialize a new buffer using the structure from the Cap'n'Proto schema
    * described in rb_data.capnp.
    */
-  RBEvaluationDeserialization(RBEvaluation& rb_eval);
+  RBEvaluationDeserialization(RBEvaluation & rb_eval);
 
   /**
    * Destructor.
@@ -44,14 +66,14 @@ public:
   /**
    * Write the Cap'n'Proto buffer to disk.
    */
-  void read_from_file(const std::string& path, bool read_error_bound_data);
+  void read_from_file(const std::string & path, bool read_error_bound_data);
 
 private:
 
   /**
    * The RBEvaluation object that we will read into.
    */
-  RBEvaluation& _rb_eval;
+  RBEvaluation & _rb_eval;
 
 };
 
@@ -67,7 +89,7 @@ public:
    * Initialize a new buffer using the structure from the Cap'n'Proto schema
    * described in rb_data.capnp.
    */
-  TransientRBEvaluationDeserialization(TransientRBEvaluation& trans_rb_eval);
+  TransientRBEvaluationDeserialization(TransientRBEvaluation & trans_rb_eval);
 
   /**
    * Destructor.
@@ -77,14 +99,14 @@ public:
   /**
    * Write the Cap'n'Proto buffer to disk.
    */
-  void read_from_file(const std::string& path, bool read_error_bound_data);
+  void read_from_file(const std::string & path, bool read_error_bound_data);
 
 private:
 
   /**
    * The TransientRBEvaluation object that we will read into.
    */
-  TransientRBEvaluation& _trans_rb_eval;
+  TransientRBEvaluation & _trans_rb_eval;
 
 };
 
@@ -100,7 +122,7 @@ public:
    * Initialize a new buffer using the structure from the Cap'n'Proto schema
    * described in rb_data.capnp.
    */
-  RBEIMEvaluationDeserialization(RBEIMEvaluation& trans_rb_eval);
+  RBEIMEvaluationDeserialization(RBEIMEvaluation & trans_rb_eval);
 
   /**
    * Destructor.
@@ -110,14 +132,14 @@ public:
   /**
    * Write the Cap'n'Proto buffer to disk.
    */
-  void read_from_file(const std::string& path);
+  void read_from_file(const std::string & path);
 
 private:
 
   /**
    * The RBEIMEvaluation object we will read into.
    */
-  RBEIMEvaluation& _rb_eim_eval;
+  RBEIMEvaluation & _rb_eim_eval;
 
 };
 
@@ -137,7 +159,7 @@ public:
    * Initialize a new buffer using the structure from the Cap'n'Proto schema
    * described in rb_data.capnp.
    */
-  RBSCMEvaluationDeserialization(RBSCMEvaluation& trans_rb_eval);
+  RBSCMEvaluationDeserialization(RBSCMEvaluation & trans_rb_eval);
 
   /**
    * Destructor.
@@ -147,14 +169,14 @@ public:
   /**
    * Write the Cap'n'Proto buffer to disk.
    */
-  void read_from_file(const std::string& path);
+  void read_from_file(const std::string & path);
 
 private:
 
   /**
    * The RBSCMEvaluation object we will read into.
    */
-  RBSCMEvaluation& _rb_scm_eval;
+  RBSCMEvaluation & _rb_scm_eval;
 
 };
 #endif // LIBMESH_HAVE_SLEPC && LIBMESH_HAVE_GLPK
@@ -163,16 +185,16 @@ private:
  * Load parameter ranges and discrete parameter values into an RBEvaluation
  * from the corresponding structure in the buffer.
  */
-void load_parameter_ranges(RBParametrized& rb_evaluation,
-                           RBData::ParameterRanges::Reader& parameter_ranges,
-                           RBData::DiscreteParameterList::Reader& discrete_parameters_list);
+void load_parameter_ranges(RBParametrized & rb_evaluation,
+                           RBData::ParameterRanges::Reader & parameter_ranges,
+                           RBData::DiscreteParameterList::Reader & discrete_parameters_list);
 
 /**
  * Load an RB evaluation from a corresponding reader structure in the buffer.
  */
 template <typename RBEvaluationReaderNumber>
-void load_rb_evaluation_data(RBEvaluation& rb_evaluation,
-                             RBEvaluationReaderNumber& rb_evaluation_reader,
+void load_rb_evaluation_data(RBEvaluation & rb_evaluation,
+                             RBEvaluationReaderNumber & rb_evaluation_reader,
                              bool read_error_bound_data);
 
 /**
@@ -180,9 +202,9 @@ void load_rb_evaluation_data(RBEvaluation& rb_evaluation,
  * Templated to deal with both Real and Complex numbers.
  */
 template <typename RBEvaluationReaderNumber, typename TransRBEvaluationReaderNumber>
-void load_transient_rb_evaluation_data(TransientRBEvaluation& trans_rb_eval,
-                                       RBEvaluationReaderNumber& rb_evaluation_reader,
-                                       TransRBEvaluationReaderNumber& trans_rb_eval_reader,
+void load_transient_rb_evaluation_data(TransientRBEvaluation & trans_rb_eval,
+                                       RBEvaluationReaderNumber & rb_evaluation_reader,
+                                       TransRBEvaluationReaderNumber & trans_rb_eval_reader,
                                        bool read_error_bound_data);
 
 /**
@@ -190,9 +212,9 @@ void load_transient_rb_evaluation_data(TransientRBEvaluation& trans_rb_eval,
  * Templated to deal with both Real and Complex numbers.
  */
 template <typename RBEvaluationReaderNumber, typename RBEIMEvaluationReaderNumber>
-void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_eval,
-                                 RBEvaluationReaderNumber& rb_evaluation_reader,
-                                 RBEIMEvaluationReaderNumber& rb_eim_eval_reader);
+void load_rb_eim_evaluation_data(RBEIMEvaluation & rb_eim_eval,
+                                 RBEvaluationReaderNumber & rb_evaluation_reader,
+                                 RBEIMEvaluationReaderNumber & rb_eim_eval_reader);
 
 #if defined(LIBMESH_HAVE_SLEPC) && (LIBMESH_HAVE_GLPK)
 /**
@@ -202,21 +224,21 @@ void load_rb_eim_evaluation_data(RBEIMEvaluation& rb_eim_eval,
  * Real values, and hence doesn't depend on whether we're
  * using complex numbers or not.
  */
-void load_rb_scm_evaluation_data(RBSCMEvaluation& rb_scm_eval,
-                                 RBData::RBSCMEvaluation::Reader& rb_scm_eval_reader);
+void load_rb_scm_evaluation_data(RBSCMEvaluation & rb_scm_eval,
+                                 RBData::RBSCMEvaluation::Reader & rb_scm_eval_reader);
 #endif // LIBMESH_HAVE_SLEPC && LIBMESH_HAVE_GLPK
 
 /**
  * Helper function that loads point data.
  */
-void load_point(RBData::Point3D::Reader point_reader, Point& point);
+void load_point(RBData::Point3D::Reader point_reader, Point & point);
 
 /**
  * Helper function that loads element data.
  */
 void load_elem_into_mesh(RBData::MeshElem::Reader mesh_elem_reader,
-                         libMesh::Elem* elem,
-                         libMesh::SerialMesh& mesh);
+                         libMesh::Elem * elem,
+                         libMesh::SerialMesh & mesh);
 
 } // namespace RBDataDeserialization
 

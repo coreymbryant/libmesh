@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -29,16 +29,16 @@ template <>
 Real FE<2,SCALAR>::shape(const ElemType,
                          const Order,
                          const unsigned int,
-                         const Point&)
+                         const Point &)
 {
   return 1.;
 }
 
 template <>
-Real FE<2,SCALAR>::shape(const Elem*,
+Real FE<2,SCALAR>::shape(const Elem *,
                          const Order,
                          const unsigned int,
-                         const Point&)
+                         const Point &)
 {
   return 1.;
 }
@@ -49,17 +49,17 @@ Real FE<2,SCALAR>::shape_deriv(const ElemType,
                                const Order,
                                const unsigned int,
                                const unsigned int,
-                               const Point&)
+                               const Point &)
 {
   return 0.;
 }
 
 template <>
-Real FE<2,SCALAR>::shape_deriv(const Elem*,
+Real FE<2,SCALAR>::shape_deriv(const Elem *,
                                const Order,
                                const unsigned int,
                                const unsigned int,
-                               const Point&)
+                               const Point &)
 {
   return 0.;
 }
@@ -70,17 +70,17 @@ Real FE<2,SCALAR>::shape_second_deriv(const ElemType,
                                       const Order,
                                       const unsigned int,
                                       const unsigned int,
-                                      const Point&)
+                                      const Point &)
 {
   return 0.;
 }
 
 template <>
-Real FE<2,SCALAR>::shape_second_deriv(const Elem*,
+Real FE<2,SCALAR>::shape_second_deriv(const Elem *,
                                       const Order,
                                       const unsigned int,
                                       const unsigned int,
-                                      const Point&)
+                                      const Point &)
 {
   return 0.;
 }

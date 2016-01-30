@@ -1,4 +1,4 @@
-// Ignore unused parameter warnings coming from cppuint headers
+// Ignore unused parameter warnings coming from cppunit headers
 #include <libmesh/ignore_warnings.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/TestCase.h>
@@ -8,6 +8,7 @@
 #include <libmesh/mesh.h>
 #include <libmesh/mesh_generation.h>
 #include <libmesh/serial_mesh.h>
+#include <libmesh/elem.h>
 
 #include "test_comm.h"
 

@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ template <>
 Real FE<3,MONOMIAL>::shape(const ElemType,
                            const Order libmesh_dbg_var(order),
                            const unsigned int i,
-                           const Point& p)
+                           const Point & p)
 {
 #if LIBMESH_DIM == 3
 
@@ -184,10 +184,10 @@ Real FE<3,MONOMIAL>::shape(const ElemType,
 
 
 template <>
-Real FE<3,MONOMIAL>::shape(const Elem* elem,
+Real FE<3,MONOMIAL>::shape(const Elem * elem,
                            const Order order,
                            const unsigned int i,
-                           const Point& p)
+                           const Point & p)
 {
   libmesh_assert(elem);
 
@@ -202,7 +202,7 @@ Real FE<3,MONOMIAL>::shape_deriv(const ElemType,
                                  const Order libmesh_dbg_var(order),
                                  const unsigned int i,
                                  const unsigned int j,
-                                 const Point& p)
+                                 const Point & p)
 {
 #if LIBMESH_DIM == 3
 
@@ -637,11 +637,11 @@ Real FE<3,MONOMIAL>::shape_deriv(const ElemType,
 
 
 template <>
-Real FE<3,MONOMIAL>::shape_deriv(const Elem* elem,
+Real FE<3,MONOMIAL>::shape_deriv(const Elem * elem,
                                  const Order order,
                                  const unsigned int i,
                                  const unsigned int j,
-                                 const Point& p)
+                                 const Point & p)
 {
   libmesh_assert(elem);
 
@@ -656,7 +656,7 @@ Real FE<3,MONOMIAL>::shape_second_deriv(const ElemType,
                                         const Order libmesh_dbg_var(order),
                                         const unsigned int i,
                                         const unsigned int j,
-                                        const Point& p)
+                                        const Point & p)
 {
 #if LIBMESH_DIM == 3
 
@@ -1301,11 +1301,11 @@ Real FE<3,MONOMIAL>::shape_second_deriv(const ElemType,
 
 
 template <>
-Real FE<3,MONOMIAL>::shape_second_deriv(const Elem* elem,
+Real FE<3,MONOMIAL>::shape_second_deriv(const Elem * elem,
                                         const Order order,
                                         const unsigned int i,
                                         const unsigned int j,
-                                        const Point& p)
+                                        const Point & p)
 {
   libmesh_assert(elem);
 

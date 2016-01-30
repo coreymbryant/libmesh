@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -25,11 +25,11 @@
 
 // Use actual timestamps or constant dummies (to aid ccache)
 #ifdef LIBMESH_ENABLE_TIMESTAMPS
-#  define  __LIBMESH_TIME__ __TIME__
-#  define  __LIBMESH_DATE__ __DATE__
+#  define  LIBMESH_TIME __TIME__
+#  define  LIBMESH_DATE __DATE__
 #else
-#  define  __LIBMESH_TIME__ "notime"
-#  define  __LIBMESH_DATE__ "nodate"
+#  define  LIBMESH_TIME "notime"
+#  define  LIBMESH_DATE "nodate"
 #endif
 
 // C/C++ includes everyone should know about
@@ -76,6 +76,9 @@ extern "C" {
 #  include "libmesh/libmesh_augment_std_namespace.h"
 #endif
 
+// Make sure the C++03 compatible libmesh_nullptr is available
+// throughout the library.
+#include "libmesh/libmesh_nullptr.h"
 
 namespace libMesh
 {
@@ -88,9 +91,9 @@ namespace libMesh
 // libmesh_common.C.
 namespace MacroFunctions
 {
-void here(const char* file, int line, const char* date, const char* time);
-void stop(const char* file, int line, const char* date, const char* time);
-void report_error(const char* file, int line, const char* date, const char* time);
+void here(const char * file, int line, const char * date, const char * time);
+void stop(const char * file, int line, const char * date, const char * time);
+void report_error(const char * file, int line, const char * date, const char * time);
 }
 
 // Undefine any existing macros
@@ -241,7 +244,7 @@ extern bool warned_about_auto_ptr;
 // stick a libmesh_here(); in it, for example
 #define libmesh_here()                                                  \
   do {                                                                  \
-    libMesh::MacroFunctions::here(__FILE__, __LINE__, __LIBMESH_DATE__, __LIBMESH_TIME__); \
+    libMesh::MacroFunctions::here(__FILE__, __LINE__, LIBMESH_DATE, LIBMESH_TIME); \
   } while(0)
 
 // the libmesh_stop() macro will stop the code until a SIGCONT signal
@@ -252,7 +255,7 @@ extern bool warned_about_auto_ptr;
 // serial cases.
 #define libmesh_stop()                                                  \
   do {                                                                  \
-    libMesh::MacroFunctions::stop(__FILE__, __LINE__, __LIBMESH_DATE__, __LIBMESH_TIME__); \
+    libMesh::MacroFunctions::stop(__FILE__, __LINE__, LIBMESH_DATE, LIBMESH_TIME); \
   } while(0)
 
 // The libmesh_dbg_var() macro indicates that an argument to a function
@@ -351,7 +354,7 @@ extern bool warned_about_auto_ptr;
 // The libmesh_not_implemented() macro prints a message and throws a
 // NotImplemented exception
 //
-// The libmesh_file_error(const std::string& filename) macro prints a message
+// The libmesh_file_error(const std::string & filename) macro prints a message
 // and throws a FileError exception
 //
 // The libmesh_convergence_failure() macro
@@ -359,7 +362,7 @@ extern bool warned_about_auto_ptr;
 #define libmesh_error_msg(msg)                                          \
   do {                                                                  \
     libMesh::err << msg << std::endl;                                   \
-    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, __LIBMESH_DATE__, __LIBMESH_TIME__); \
+    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, LIBMESH_DATE, LIBMESH_TIME); \
     LIBMESH_THROW(libMesh::LogicError());                               \
   } while(0)
 
@@ -368,7 +371,7 @@ extern bool warned_about_auto_ptr;
 #define libmesh_exceptionless_error_msg(msg)                            \
   do {                                                                  \
     libMesh::err << msg << std::endl;                                   \
-    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, __LIBMESH_DATE__, __LIBMESH_TIME__); \
+    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, LIBMESH_DATE, LIBMESH_TIME); \
     std::terminate();                                                   \
   } while(0)
 
@@ -377,7 +380,7 @@ extern bool warned_about_auto_ptr;
 #define libmesh_not_implemented_msg(msg)                                \
   do {                                                                  \
     libMesh::err << msg << std::endl;                                   \
-    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, __LIBMESH_DATE__, __LIBMESH_TIME__); \
+    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, LIBMESH_DATE, LIBMESH_TIME); \
     LIBMESH_THROW(libMesh::NotImplemented());                           \
   } while(0)
 
@@ -385,7 +388,7 @@ extern bool warned_about_auto_ptr;
 
 #define libmesh_file_error_msg(filename, msg)                           \
   do {                                                                  \
-    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, __LIBMESH_DATE__, __LIBMESH_TIME__); \
+    libMesh::MacroFunctions::report_error(__FILE__, __LINE__, LIBMESH_DATE, LIBMESH_TIME); \
     libMesh::err << msg << std::endl;                                   \
     LIBMESH_THROW(libMesh::FileError(filename));                        \
   } while(0)
@@ -433,7 +436,7 @@ extern bool warned_about_auto_ptr;
 #ifdef LIBMESH_ENABLE_WARNINGS
 #define libmesh_warning(message)                                        \
   libmesh_do_once(libMesh::out << message                               \
-                  << __FILE__ << ", line " << __LINE__ << ", compiled " << __LIBMESH_DATE__ << " at " << __LIBMESH_TIME__ << " ***" << std::endl;)
+                  << __FILE__ << ", line " << __LINE__ << ", compiled " << LIBMESH_DATE << " at " << LIBMESH_TIME << " ***" << std::endl;)
 #else
 #define libmesh_warning(message)  ((void) 0)
 #endif
@@ -453,7 +456,7 @@ extern bool warned_about_auto_ptr;
 // A function template for ignoring unused variables.  This is a way
 // to shut up unused variable compiler warnings on a case by case
 // basis.
-template<class T> inline void libmesh_ignore( const T& ) { }
+template<class T> inline void libmesh_ignore( const T & ) { }
 
 
 // cast_ref and cast_ptr do a dynamic cast and assert
@@ -464,7 +467,7 @@ template<class T> inline void libmesh_ignore( const T& ) { }
 // Use these casts when you're certain that a cast will succeed in
 // correct code but you want to be able to double-check.
 template <typename Tnew, typename Told>
-inline Tnew cast_ref(Told& oldvar)
+inline Tnew cast_ref(Told & oldvar)
 {
 #if !defined(NDEBUG) && defined(LIBMESH_HAVE_RTTI) && defined(LIBMESH_ENABLE_EXCEPTIONS)
   try
@@ -488,7 +491,7 @@ inline Tnew cast_ref(Told& oldvar)
 }
 
 template <typename Tnew, typename Told>
-inline Tnew libmesh_cast_ref(Told& oldvar)
+inline Tnew libmesh_cast_ref(Told & oldvar)
 {
   // we use the less redundantly named libMesh::cast_ref now
   libmesh_deprecated();
@@ -498,7 +501,7 @@ inline Tnew libmesh_cast_ref(Told& oldvar)
 // We use two different function names to avoid an odd overloading
 // ambiguity bug with icc 10.1.008
 template <typename Tnew, typename Told>
-inline Tnew cast_ptr (Told* oldvar)
+inline Tnew cast_ptr (Told * oldvar)
 {
 #if !defined(NDEBUG) && defined(LIBMESH_HAVE_RTTI)
   Tnew newvar = dynamic_cast<Tnew>(oldvar);
@@ -520,7 +523,7 @@ inline Tnew cast_ptr (Told* oldvar)
 
 
 template <typename Tnew, typename Told>
-inline Tnew libmesh_cast_ptr (Told* oldvar)
+inline Tnew libmesh_cast_ptr (Told * oldvar)
 {
   // we use the less redundantly named libMesh::cast_ptr now
   return cast_ptr<Tnew>(oldvar);
@@ -554,6 +557,30 @@ inline Tnew libmesh_cast_int (Told oldvar)
 
 // build a integer representation of version
 #define LIBMESH_VERSION_ID(major,minor,patch) (((major) << 16) | ((minor) << 8) | ((patch) & 0xFF))
+
+
+// Allow for marking functions with "override" if the compiler supports it.
+// Note: override ensures that the function is virtual and is
+// overriding a virtual function from the base class.
+#ifdef LIBMESH_HAVE_CXX11_OVERRIDE
+#define libmesh_override override
+#else
+#define libmesh_override
+#endif
+
+// Define C++03 backwards-compatible function deletion keyword.
+#ifdef LIBMESH_HAVE_CXX11_DELETED_FUNCTIONS
+#define libmesh_delete =delete
+#else
+#define libmesh_delete
+#endif
+
+// Define C++03 backwards-compatible final keyword.
+#ifdef LIBMESH_HAVE_CXX11_FINAL
+#define libmesh_final final
+#else
+#define libmesh_final
+#endif
 
 } // namespace libMesh
 

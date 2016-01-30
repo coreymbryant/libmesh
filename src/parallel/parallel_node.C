@@ -1,5 +1,5 @@
 // The libMesh Finite Element Library.
-// Copyright (C) 2002-2014 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
+// Copyright (C) 2002-2016 Benjamin S. Kirk, John W. Peterson, Roy H. Stogner
 
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@ namespace
 {
 using namespace libMesh;
 
+#ifdef LIBMESH_HAVE_MPI
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
 static const unsigned int header_size = 3;
 #else
@@ -43,6 +44,7 @@ static const unsigned int idtypes_per_Real =
   (sizeof(Real) + sizeof(largest_id_type) - 1) / sizeof(largest_id_type);
 
 static const largest_id_type node_magic_header = 1234567890;
+#endif
 }
 
 
@@ -55,7 +57,10 @@ namespace Parallel
 {
 
 template <>
-unsigned int packable_size (const Node* node, const MeshBase* mesh)
+template <>
+unsigned int
+Packing<const Node *>::packable_size (const Node * const & node,
+                                      const MeshBase * mesh)
 {
   return
 #ifndef NDEBUG
@@ -69,8 +74,9 @@ unsigned int packable_size (const Node* node, const MeshBase* mesh)
 
 
 template <>
-unsigned int packed_size (const Node*,
-                          const std::vector<largest_id_type>::const_iterator in)
+template <>
+unsigned int
+Packing<const Node *>::packed_size (const std::vector<largest_id_type>::const_iterator in)
 {
   const unsigned int pre_indexing_size =
 #ifndef NDEBUG
@@ -91,45 +97,48 @@ unsigned int packed_size (const Node*,
 
 
 template <>
-unsigned int packed_size (const Node* n,
-                          const std::vector<largest_id_type>::iterator in)
+template <>
+unsigned int
+Packing<const Node *>::packed_size (const std::vector<largest_id_type>::iterator in)
 {
-  return packed_size(n, std::vector<largest_id_type>::const_iterator(in));
+  return packed_size(std::vector<largest_id_type>::const_iterator(in));
 }
 
 
 
 template <>
-unsigned int packable_size (const Node* node, const ParallelMesh* mesh)
+template <>
+unsigned int
+Packing<const Node *>::packable_size (const Node * const & node,
+                                     const ParallelMesh * mesh)
 {
-  return packable_size(node, static_cast<const MeshBase*>(mesh));
+  return packable_size(node, static_cast<const MeshBase *>(mesh));
 }
 
 
 
 template <>
-void pack (const Node* node,
-           std::vector<largest_id_type>& data,
-           const MeshBase* mesh)
+template <>
+void
+Packing<const Node *>::pack (const Node * const & node,
+                             std::back_insert_iterator<std::vector<largest_id_type> > data_out,
+                             const MeshBase * mesh)
 {
   libmesh_assert(node);
 
-  // This should be redundant when used with Parallel::pack_range()
-  // data.reserve (data.size() + Parallel::packable_size(node, mesh));
-
 #ifndef NDEBUG
-  data.push_back (node_magic_header);
+  *data_out++ = (node_magic_header);
 #endif
 
-  data.push_back (static_cast<largest_id_type>(node->processor_id()));
-  data.push_back (static_cast<largest_id_type>(node->id()));
+  *data_out++ = (static_cast<largest_id_type>(node->processor_id()));
+  *data_out++ = (static_cast<largest_id_type>(node->id()));
 
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
   if (node->valid_unique_id())
-    data.push_back (static_cast<largest_id_type>(node->unique_id()));
+    *data_out++ = (static_cast<largest_id_type>(node->unique_id()));
   else
     // OK to send invalid unique id, we must not own this DOF
-    data.push_back (static_cast<largest_id_type>(DofObject::invalid_unique_id));
+    *data_out++ = (static_cast<largest_id_type>(DofObject::invalid_unique_id));
 #endif
 
   // use "(a+b-1)/b" trick to get a/b to round up
@@ -138,55 +147,49 @@ void pack (const Node* node,
 
   for (unsigned int i=0; i != LIBMESH_DIM; ++i)
     {
-      const largest_id_type* Real_as_idtypes =
-        reinterpret_cast<const largest_id_type*>(&((*node)(i)));
+      const largest_id_type * Real_as_idtypes =
+        reinterpret_cast<const largest_id_type *>(&((*node)(i)));
       for (unsigned int j=0; j != idtypes_per_Real; ++j)
         {
-          data.push_back(Real_as_idtypes[j]);
+          *data_out++ =(Real_as_idtypes[j]);
         }
     }
 
-#ifndef NDEBUG
-  const std::size_t start_indices = data.size();
-#endif
   // Add any DofObject indices
-  node->pack_indexing(std::back_inserter(data));
-
-  libmesh_assert(node->packed_indexing_size() ==
-                 DofObject::unpackable_indexing_size(data.begin() +
-                                                     start_indices));
-
-  libmesh_assert_equal_to (node->packed_indexing_size(),
-                           data.size() - start_indices);
+  node->pack_indexing(data_out);
 
   // Add any nodal boundary condition ids
-  std::vector<boundary_id_type> bcs =
-    mesh->get_boundary_info().boundary_ids(node);
+  std::vector<boundary_id_type> bcs;
+  mesh->get_boundary_info().boundary_ids(node, bcs);
 
   libmesh_assert(bcs.size() < std::numeric_limits<largest_id_type>::max());
 
-  data.push_back(bcs.size());
+  *data_out++ =(bcs.size());
 
-  for (std::size_t bc_it=0; bc_it < bcs.size(); bc_it++)
-    data.push_back(bcs[bc_it]);
+  for (std::vector<boundary_id_type>::iterator bc_it=bcs.begin();
+       bc_it != bcs.end(); ++bc_it)
+    *data_out++ =(*bc_it);
 }
 
 
 
 template <>
-void pack (const Node* node,
-           std::vector<largest_id_type>& data,
-           const ParallelMesh* mesh)
+template <>
+void
+Packing<const Node *>::pack (const Node* const & node,
+                             std::back_insert_iterator<std::vector<largest_id_type> > data_out,
+                             const ParallelMesh * mesh)
 {
-  pack(node, data, static_cast<const MeshBase*>(mesh));
+  pack(node, data_out, static_cast<const MeshBase*>(mesh));
 }
 
 
 
 template <>
-void unpack (std::vector<largest_id_type>::const_iterator in,
-             Node** out,
-             MeshBase* mesh)
+template <>
+Node *
+Packing<Node *>::unpack (std::vector<largest_id_type>::const_iterator in,
+                         MeshBase * mesh)
 {
 #ifndef NDEBUG
   const std::vector<largest_id_type>::const_iterator original_in = in;
@@ -204,7 +207,7 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
   const unique_id_type unique_id = cast_int<unique_id_type>(*in++);
 #endif
 
-  Node *node = mesh->query_node_ptr(id);
+  Node * node = mesh->query_node_ptr(id);
 
   if (node)
     {
@@ -220,7 +223,7 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
       // own the node.
       for (unsigned int i=0; i != LIBMESH_DIM; ++i)
         {
-          const Real& idtypes_as_Real = *(reinterpret_cast<const Real*>(&(*in)));
+          const Real & idtypes_as_Real = *(reinterpret_cast<const Real *>(&(*in)));
           libmesh_assert_less_equal ((*node)(i), idtypes_as_Real + (std::max(Real(1),idtypes_as_Real)*TOLERANCE*TOLERANCE));
           libmesh_assert_greater_equal ((*node)(i), idtypes_as_Real - (std::max(Real(1),idtypes_as_Real)*TOLERANCE*TOLERANCE));
 
@@ -242,8 +245,6 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
           // the encoded indexing is consistent
           in += DofObject::unpackable_indexing_size(in);
         }
-
-      *out = node;
     }
   else
     {
@@ -252,7 +253,7 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
 
       for (unsigned int i=0; i != LIBMESH_DIM; ++i)
         {
-          const Real* idtypes_as_Real = reinterpret_cast<const Real*>(&(*in));
+          const Real * idtypes_as_Real = reinterpret_cast<const Real *>(&(*in));
           (*node)(i) = *idtypes_as_Real;
           in += idtypes_per_Real;
         }
@@ -280,23 +281,24 @@ void unpack (std::vector<largest_id_type>::const_iterator in,
     mesh->get_boundary_info().add_node
       (node, cast_int<boundary_id_type>(*in++));
 
-  *out = node;
-
 #ifndef NDEBUG
   libmesh_assert (in - original_in ==
                   cast_int<int>
-                  (Parallel::packed_size(node, original_in)));
+                  (Parallel::Packing<const Node*>::packed_size(original_in)));
 #endif
+
+  return node;
 }
 
 
 
 template <>
-void unpack (std::vector<largest_id_type>::const_iterator in,
-             Node** out,
-             ParallelMesh* mesh)
+template <>
+Node *
+Packing<Node *>::unpack (std::vector<largest_id_type>::const_iterator in,
+                         ParallelMesh * mesh)
 {
-  unpack(in, out, static_cast<MeshBase*>(mesh));
+  return unpack(in, static_cast<MeshBase*>(mesh));
 }
 
 } // namespace Parallel
