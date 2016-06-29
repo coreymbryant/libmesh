@@ -44,7 +44,7 @@ template <typename T, typename T2>
 inline
 typename boostcopy::enable_if_c<ScalarTraits<T>::value && ScalarTraits<T2>::value,
                                 typename CompareTypes<T, T2>::supertype>::type
-  inner_product(const T & a, const T2& b)
+inner_product(const T & a, const T2& b)
 { return a * b; }
 
 template <typename T, typename T2>
@@ -76,12 +76,12 @@ T norm_sq(std::complex<T> a) { return std::norm(a); }
 template <typename T>
 inline
 Real norm_sq(const TypeVector<T> & a)
-{return a.size_sq();}
+{return a.norm_sq();}
 
 template <typename T>
 inline
 Real norm_sq(const VectorValue<T> & a)
-{return a.size_sq();}
+{return a.norm_sq();}
 
 // Any tensor-rank-independent code will need to include
 // tensor_tools.h, so we define rank-increasing and real-to-number type

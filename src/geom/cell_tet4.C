@@ -23,6 +23,7 @@
 #include "libmesh/cell_tet4.h"
 #include "libmesh/edge_edge2.h"
 #include "libmesh/face_tri3.h"
+#include "libmesh/tensor_value.h"
 
 namespace libMesh
 {
@@ -126,8 +127,8 @@ bool Tet4::is_node_on_side(const unsigned int n,
   return false;
 }
 
-UniquePtr<Elem> Tet4::build_side (const unsigned int i,
-                                  bool proxy) const
+UniquePtr<Elem> Tet4::build_side_ptr (const unsigned int i,
+                                      bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -140,7 +141,7 @@ UniquePtr<Elem> Tet4::build_side (const unsigned int i,
       face->subdomain_id() = this->subdomain_id();
 
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(Tet4::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(Tet4::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -150,7 +151,7 @@ UniquePtr<Elem> Tet4::build_side (const unsigned int i,
 }
 
 
-UniquePtr<Elem> Tet4::build_edge (const unsigned int i) const
+UniquePtr<Elem> Tet4::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_edges());
 
@@ -172,24 +173,24 @@ void Tet4::connectivity(const unsigned int libmesh_dbg_var(sc),
     case TECPLOT:
       {
         conn.resize(8);
-        conn[0] = this->node(0)+1;
-        conn[1] = this->node(1)+1;
-        conn[2] = this->node(2)+1;
-        conn[3] = this->node(2)+1;
-        conn[4] = this->node(3)+1;
-        conn[5] = this->node(3)+1;
-        conn[6] = this->node(3)+1;
-        conn[7] = this->node(3)+1;
+        conn[0] = this->node_id(0)+1;
+        conn[1] = this->node_id(1)+1;
+        conn[2] = this->node_id(2)+1;
+        conn[3] = this->node_id(2)+1;
+        conn[4] = this->node_id(3)+1;
+        conn[5] = this->node_id(3)+1;
+        conn[6] = this->node_id(3)+1;
+        conn[7] = this->node_id(3)+1;
         return;
       }
 
     case VTK:
       {
         conn.resize(4);
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
         return;
       }
 
@@ -287,15 +288,15 @@ Real Tet4::volume () const
 {
   // The volume of a tetrahedron is 1/6 the box product formed
   // by its base and apex vectors
-  Point a ( *this->get_node(3) - *this->get_node(0) );
+  Point a = point(3) - point(0);
 
   // b is the vector pointing from 0 to 1
-  Point b ( *this->get_node(1) - *this->get_node(0) );
+  Point b = point(1) - point(0);
 
   // c is the vector pointing from 0 to 2
-  Point c ( *this->get_node(2) - *this->get_node(0) );
+  Point c = point(2) - point(0);
 
-  return (1.0 / 6.0) * (a * (b.cross(c)));
+  return triple_product(a, b, c) / 6.;
 }
 
 
@@ -316,12 +317,47 @@ std::pair<Real, Real> Tet4::min_and_max_angle() const
   // Compute dihedral angles
   for (unsigned int k=0,i=0; i<4; ++i)
     for (unsigned int j=i+1; j<4; ++j,k+=1)
-      dihedral_angles[k] = std::acos(n[i]*n[j] / n[i].size() / n[j].size()); // return value is between 0 and PI
+      dihedral_angles[k] = std::acos(n[i]*n[j] / n[i].norm() / n[j].norm()); // return value is between 0 and PI
 
   // Return max/min dihedral angles
   return std::make_pair(*std::min_element(dihedral_angles, dihedral_angles+6),
                         *std::max_element(dihedral_angles, dihedral_angles+6));
 
+}
+
+
+
+dof_id_type Tet4::key () const
+{
+  return this->compute_key(this->node_id(0),
+                           this->node_id(1),
+                           this->node_id(2),
+                           this->node_id(3));
+}
+
+
+
+bool Tet4::contains_point (const Point & p, Real tol) const
+{
+  // See the response by Tony Noe on this thread.
+  // http://bbs.dartmouth.edu/~fangq/MATH/download/source/Point_in_Tetrahedron.htm
+  Point
+    col1 = point(1) - point(0),
+    col2 = point(2) - point(0),
+    col3 = point(3) - point(0);
+
+  Point r;
+  RealTensorValue(col1(0), col2(0), col3(0),
+                  col1(1), col2(1), col3(1),
+                  col1(2), col2(2), col3(2)).solve(p - point(0), r);
+
+  // The point p is inside the tetrahedron if r1 + r2 + r3 < 1 and
+  // 0 <= ri <= 1 for i = 1,2,3.
+  return
+    r(0) > -tol &&
+    r(1) > -tol &&
+    r(2) > -tol &&
+    r(0) + r(1) + r(2) < 1.0 + tol;
 }
 
 
@@ -369,16 +405,6 @@ float Tet4::embedding_matrix (const unsigned int i,
 
 
 
-dof_id_type Tet4::key () const
-{
-  return this->compute_key(this->node(0),
-                           this->node(1),
-                           this->node(2),
-                           this->node(3));
-}
-
-
-
 // void Tet4::reselect_diagonal (const Diagonal diag)
 // {
 //   /* Make sure that the element has just been refined.  */
@@ -406,7 +432,7 @@ dof_id_type Tet4::key () const
 //  available.  */
 //       for (unsigned int c=4; c<this->n_children(); c++)
 // {
-//   Elem * child = this->child(c);
+//   Elem * child = this->child_ptr(c);
 //   for (unsigned int nc=0; nc<child->n_nodes(); nc++)
 //     {
 //       /* Unassign the current node.  */
@@ -438,14 +464,14 @@ dof_id_type Tet4::key () const
 // {
 //   /* Second time, so we know now which node to
 //      use.  */
-//   child->set_node(nc) = this->child(n)->get_node(first_05_in_embedding_matrix);
+//   child->set_node(nc) = this->child_ptr(n)->node_ptr(first_05_in_embedding_matrix);
 // }
 //
 //     }
 // }
 //
 //       /* Make sure that a node has been found.  */
-//       libmesh_assert(child->get_node(nc));
+//       libmesh_assert(child->node_ptr(nc));
 //     }
 // }
 //     }
@@ -455,9 +481,9 @@ dof_id_type Tet4::key () const
 
 // void Tet4::reselect_optimal_diagonal (const Diagonal exclude_this)
 // {
-//   Real diag_01_23 = (this->point(0)+this->point(1)-this->point(2)-this->point(3)).size_sq();
-//   Real diag_02_13 = (this->point(0)-this->point(1)+this->point(2)-this->point(3)).size_sq();
-//   Real diag_03_12 = (this->point(0)-this->point(1)-this->point(2)+this->point(3)).size_sq();
+//   Real diag_01_23 = (this->point(0)+this->point(1)-this->point(2)-this->point(3)).norm_sq();
+//   Real diag_02_13 = (this->point(0)-this->point(1)+this->point(2)-this->point(3)).norm_sq();
+//   Real diag_03_12 = (this->point(0)-this->point(1)-this->point(2)+this->point(3)).norm_sq();
 //
 //   Diagonal use_this = INVALID_DIAG;
 //   switch (exclude_this)

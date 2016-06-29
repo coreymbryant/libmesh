@@ -25,22 +25,22 @@ namespace libMesh
 {
 
 
-UniquePtr<Elem> Edge::side (const unsigned int i) const
+UniquePtr<Elem> Edge::side_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, 2);
   const Elem * the_parent = this;
   Elem * nodeelem = new NodeElem(const_cast<Elem *>(the_parent));
-  nodeelem->set_node(0) = this->get_node(i);
+  nodeelem->set_node(0) = this->node_ptr(i);
   return UniquePtr<Elem>(nodeelem);
 }
 
 
-UniquePtr<Elem> Edge::build_side (const unsigned int i, bool) const
+UniquePtr<Elem> Edge::build_side_ptr (const unsigned int i, bool)
 {
   libmesh_assert_less (i, 2);
   const Elem * the_parent = this;
   Elem * nodeelem = new NodeElem(const_cast<Elem *>(the_parent));
-  nodeelem->set_node(0) = this->get_node(i);
+  nodeelem->set_node(0) = this->node_ptr(i);
   return UniquePtr<Elem>(nodeelem);
 }
 

@@ -105,8 +105,8 @@ bool Pyramid5::has_affine_map() const
 
 
 
-UniquePtr<Elem> Pyramid5::build_side (const unsigned int i,
-                                      bool proxy) const
+UniquePtr<Elem> Pyramid5::build_side_ptr (const unsigned int i,
+                                          bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -156,7 +156,7 @@ UniquePtr<Elem> Pyramid5::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(Pyramid5::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(Pyramid5::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -167,7 +167,7 @@ UniquePtr<Elem> Pyramid5::build_side (const unsigned int i,
 
 
 
-UniquePtr<Elem> Pyramid5::build_edge (const unsigned int i) const
+UniquePtr<Elem> Pyramid5::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_edges());
 
@@ -189,25 +189,25 @@ void Pyramid5::connectivity(const unsigned int libmesh_dbg_var(sc),
     case TECPLOT:
       {
         conn.resize(8);
-        conn[0] = this->node(0)+1;
-        conn[1] = this->node(1)+1;
-        conn[2] = this->node(2)+1;
-        conn[3] = this->node(3)+1;
-        conn[4] = this->node(4)+1;
-        conn[5] = this->node(4)+1;
-        conn[6] = this->node(4)+1;
-        conn[7] = this->node(4)+1;
+        conn[0] = this->node_id(0)+1;
+        conn[1] = this->node_id(1)+1;
+        conn[2] = this->node_id(2)+1;
+        conn[3] = this->node_id(3)+1;
+        conn[4] = this->node_id(4)+1;
+        conn[5] = this->node_id(4)+1;
+        conn[6] = this->node_id(4)+1;
+        conn[7] = this->node_id(4)+1;
         return;
       }
 
     case VTK:
       {
         conn.resize(5);
-        conn[0] = this->node(3);
-        conn[1] = this->node(2);
-        conn[2] = this->node(1);
-        conn[3] = this->node(0);
-        conn[4] = this->node(4);
+        conn[0] = this->node_id(3);
+        conn[1] = this->node_id(2);
+        conn[2] = this->node_id(1);
+        conn[3] = this->node_id(0);
+        conn[4] = this->node_id(4);
         return;
       }
 
@@ -222,21 +222,21 @@ Real Pyramid5::volume () const
   // The pyramid with a bilinear base has volume given by the
   // formula in: "Calculation of the Volume of a General Hexahedron
   // for Flow Predictions", AIAA Journal v.23, no.6, 1984, p.954-
-  Node * node0 = this->get_node(0);
-  Node * node1 = this->get_node(1);
-  Node * node2 = this->get_node(2);
-  Node * node3 = this->get_node(3);
-  Node * node4 = this->get_node(4);
+  Point
+    x0 = point(0), x1 = point(1), x2 = point(2),
+    x3 = point(3), x4 = point(4);
 
-  // Construct Various edge and diagonal vectors
-  Point v40 ( *node0 - *node4 );
-  Point v13 ( *node3 - *node1 );
-  Point v02 ( *node2 - *node0 );
-  Point v03 ( *node3 - *node0 );
-  Point v01 ( *node1 - *node0 );
+  // Construct various edge and diagonal vectors.
+  Point v40 = x0 - x4;
+  Point v13 = x3 - x1;
+  Point v02 = x2 - x0;
+  Point v03 = x3 - x0;
+  Point v01 = x1 - x0;
 
   // Finally, ready to return the volume!
-  return (1./6.)*(v40*(v13.cross(v02))) + (1./12.)*(v02*(v01.cross(v03)));
+  return
+    triple_product(v40, v13, v02) / 6. +
+    triple_product(v02, v01, v03) / 12.;
 }
 
 } // namespace libMesh

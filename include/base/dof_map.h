@@ -89,7 +89,7 @@ typedef std::map<dof_id_type, Real,
  * The constraint matrix storage format.
  * We're using a class instead of a typedef to allow forward
  * declarations and future flexibility.  Don't delete this from
- * a pointer-to-std::map; the destructor isn't virtual!
+ * a pointer-to-std-map; the destructor isn't virtual!
  */
 class DofConstraints : public std::map<dof_id_type,
                                        DofConstraintRow,
@@ -137,7 +137,7 @@ typedef std::map<const Node *, Real,
  * The Node constraint storage format.
  * We're using a class instead of a typedef to allow forward
  * declarations and future flexibility.  Don't delete this from
- * a pointer-to-std::map; the destructor isn't virtual!
+ * a pointer-to-std-map; the destructor isn't virtual!
  */
 class NodeConstraints : public std::map<const Node *,
                                         std::pair<NodeConstraintRow,Point>,
@@ -517,11 +517,13 @@ public:
 
   /**
    * Fills the vector \p di with the global degree of freedom indices
-   * for the element.  For one variable
+   * for the element.  For one variable, and potentially for a
+   * non-default element p refinement level
    */
   void dof_indices (const Elem * const elem,
                     std::vector<dof_id_type> & di,
-                    const unsigned int vn) const;
+                    const unsigned int vn,
+                    int p_level = -12345) const;
 
   /**
    * Fills the vector \p di with the global degree of freedom indices
@@ -740,7 +742,7 @@ public:
    * Prints (from processor 0) all DoF and Node constraints.  If \p
    * print_nonlocal is true, then each constraint is printed once for
    * each processor that knows about it, which may be useful for \p
-   * ParallelMesh debugging.
+   * DistributedMesh debugging.
    */
   void print_dof_constraints(std::ostream & os=libMesh::out,
                              bool print_nonlocal=false) const;
@@ -1099,10 +1101,12 @@ private:
    * Helper function that gets the dof indices on the current element
    * for a non-SCALAR type variable.
    *
-   * @param tot_size In DEBUG mode this will add up the total number of
-   * dof indices that should have been added to di.
+   * In DEBUG mode, the tot_size parameter will add up the total
+   * number of dof indices that should have been added to di.
    */
-  void _dof_indices (const Elem * const elem, std::vector<dof_id_type> & di,
+  void _dof_indices (const Elem * const elem,
+                     int p_level,
+                     std::vector<dof_id_type> & di,
                      const unsigned int v,
                      const Node * const * nodes,
                      unsigned int       n_nodes
@@ -1404,6 +1408,12 @@ private:
 #endif
 
 #ifdef LIBMESH_ENABLE_DIRICHLET
+  /**
+   * Check that all the ids in dirichlet_bcids are actually present in the mesh.
+   * If not, this will throw an error.
+   */
+  void check_dirichlet_bcid_consistency (const MeshBase & mesh,
+                                         const DirichletBoundary & boundary) const;
   /**
    * Data structure containing Dirichlet functions.  The ith
    * entry is the constraint matrix row for boundaryid i.

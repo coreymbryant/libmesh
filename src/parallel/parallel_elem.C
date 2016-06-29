@@ -33,7 +33,6 @@ namespace
 {
 using namespace libMesh;
 
-#ifdef LIBMESH_HAVE_MPI
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
 static const unsigned int header_size = 12;
 #else
@@ -41,14 +40,11 @@ static const unsigned int header_size = 11;
 #endif
 
 static const largest_id_type elem_magic_header = 987654321;
-#endif
 }
 
 
 namespace libMesh
 {
-
-#ifdef LIBMESH_HAVE_MPI
 
 namespace Parallel
 {
@@ -109,6 +105,15 @@ Packing<const Elem *>::packed_size (std::vector<largest_id_type>::const_iterator
           libmesh_assert_greater_equal (n_bcs, 0);
           total_packed_bc_data += n_bcs;
         }
+
+      for (unsigned short sf=0; sf != 2; ++sf)
+        {
+          const int n_bcs = cast_int<int>
+            (*(in + pre_indexing_size + indexing_size +
+               total_packed_bc_data++));
+          libmesh_assert_greater_equal (n_bcs, 0);
+          total_packed_bc_data += n_bcs;
+        }
     }
 
   return
@@ -148,6 +153,11 @@ Packing<const Elem *>::packable_size (const Elem * const & elem,
       for (unsigned short e = 0; e != elem->n_edges(); ++e)
         total_packed_bcs +=
           mesh->get_boundary_info().n_edge_boundary_ids(elem,e);
+
+      total_packed_bcs += 2; // shellfaces
+      for (unsigned short sf=0; sf != 2; ++sf)
+        total_packed_bcs +=
+          mesh->get_boundary_info().n_shellface_boundary_ids(elem,sf);
     }
 
   return
@@ -157,6 +167,17 @@ Packing<const Elem *>::packable_size (const Elem * const & elem,
     header_size + elem->n_nodes() +
     elem->n_neighbors() +
     elem->packed_indexing_size() + total_packed_bcs;
+}
+
+
+
+template <>
+template <>
+unsigned int
+Packing<const Elem *>::packable_size (const Elem * const & elem,
+                                      const DistributedMesh * mesh)
+{
+  return packable_size(elem, static_cast<const MeshBase *>(mesh));
 }
 
 
@@ -244,11 +265,11 @@ Packing<const Elem *>::pack (const Elem * const & elem,
     *data_out++ =(DofObject::invalid_id);
 
   for (unsigned int n=0; n<elem->n_nodes(); n++)
-    *data_out++ = (elem->node(n));
+    *data_out++ = (elem->node_id(n));
 
   for (unsigned int n=0; n<elem->n_neighbors(); n++)
     {
-      const Elem * neigh = elem->neighbor(n);
+      const Elem * neigh = elem->neighbor_ptr(n);
       if (neigh)
         *data_out++ = (neigh->id());
       else
@@ -284,7 +305,30 @@ Packing<const Elem *>::pack (const Elem * const & elem,
                bc_it != bcs.end(); ++bc_it)
             *data_out++ =(*bc_it);
         }
+
+      for (unsigned short sf=0; sf != 2; ++sf)
+        {
+          mesh->get_boundary_info().shellface_boundary_ids(elem, sf, bcs);
+
+          *data_out++ =(bcs.size());
+
+          for (std::vector<boundary_id_type>::iterator bc_it=bcs.begin();
+               bc_it != bcs.end(); ++bc_it)
+            *data_out++ =(*bc_it);
+        }
     }
+}
+
+
+
+template <>
+template <>
+void
+Packing<const Elem *>::pack (const Elem * const & elem,
+                             std::back_insert_iterator<std::vector<largest_id_type> > data_out,
+                             const DistributedMesh * mesh)
+{
+  pack(elem, data_out, static_cast<const MeshBase*>(mesh));
 }
 
 
@@ -410,7 +454,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
   // plus the real data header
   libmesh_assert_equal_to (in - original_in, header_size + 1);
 
-  Elem * elem = mesh->query_elem(id);
+  Elem * elem = mesh->query_elem_ptr(id);
 
   // if we already have this element, make sure its
   // properties match, and update any missing neighbor
@@ -430,21 +474,27 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
 #ifndef NDEBUG
       // All our nodes should be correct
       for (unsigned int i=0; i != n_nodes; ++i)
-        libmesh_assert(elem->node(i) ==
+        libmesh_assert(elem->node_id(i) ==
                        cast_int<dof_id_type>(*in++));
 #else
       in += n_nodes;
 #endif
 
 #ifdef LIBMESH_ENABLE_AMR
-      libmesh_assert_equal_to (elem->p_level(), p_level);
       libmesh_assert_equal_to (elem->refinement_flag(), refinement_flag);
       libmesh_assert_equal_to (elem->has_children(), has_children);
-      libmesh_assert_equal_to (elem->p_refinement_flag(), p_refinement_flag);
+
+#ifdef DEBUG
+      if (elem->active())
+        {
+          libmesh_assert_equal_to (elem->p_level(), p_level);
+          libmesh_assert_equal_to (elem->p_refinement_flag(), p_refinement_flag);
+        }
+#endif
 
       libmesh_assert (!level || elem->parent() != libmesh_nullptr);
       libmesh_assert (!level || elem->parent()->id() == parent_id);
-      libmesh_assert (!level || elem->parent()->child(which_child_am_i) == elem);
+      libmesh_assert (!level || elem->parent()->child_ptr(which_child_am_i) == elem);
 #endif
       // Our interior_parent link should be "close to" correct - we
       // may have to update it, but we can check for some
@@ -467,7 +517,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
           }
         else
           {
-            Elem * ip = mesh->query_elem(interior_parent_id);
+            Elem * ip = mesh->query_elem_ptr(interior_parent_id);
 
             // The sending processor sees an interior parent here, so
             // if we don't have that interior element, then we'd
@@ -510,7 +560,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
             // we'd better agree.
             if (neighbor_id == DofObject::invalid_id)
               {
-                libmesh_assert (!(elem->neighbor(n)));
+                libmesh_assert (!(elem->neighbor_ptr(n)));
                 continue;
               }
 
@@ -519,18 +569,18 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
             // boundary.
             if (neighbor_id == remote_elem->id())
               {
-                libmesh_assert(elem->neighbor(n));
+                libmesh_assert(elem->neighbor_ptr(n));
                 continue;
               }
 
-            Elem * neigh = mesh->query_elem(neighbor_id);
+            Elem * neigh = mesh->query_elem_ptr(neighbor_id);
 
             // The sending processor sees a neighbor here, so if we
             // don't have that neighboring element, then we'd better
             // have a remote_elem signifying that fact.
             if (!neigh)
               {
-                libmesh_assert_equal_to (elem->neighbor(n), remote_elem);
+                libmesh_assert_equal_to (elem->neighbor_ptr(n), remote_elem);
                 continue;
               }
 
@@ -539,19 +589,35 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
             // linking to it.  Perhaps we initially received both elem
             // and neigh from processors on which their mutual link was
             // remote?
-            libmesh_assert(elem->neighbor(n) == neigh ||
-                           elem->neighbor(n) == remote_elem);
+            libmesh_assert(elem->neighbor_ptr(n) == neigh ||
+                           elem->neighbor_ptr(n) == remote_elem);
 
             // If the link was originally remote, we should update it,
             // and make sure the appropriate parts of its family link
             // back to us.
-            if (elem->neighbor(n) == remote_elem)
+            if (elem->neighbor_ptr(n) == remote_elem)
               {
                 elem->set_neighbor(n, neigh);
 
                 elem->make_links_to_me_local(n);
               }
           }
+
+      // Our p level and refinement flags should be "close to" correct
+      // if we're not an active element - we might have a p level
+      // increased or decreased by changes in remote_elem children.
+      //
+      // But if we have remote_elem children, then we shouldn't be
+      // doing a projection on this inactive element on this
+      // processor, so we won't need correct p settings.  Couldn't
+      // hurt to update, though.
+#ifdef LIBMESH_ENABLE_AMR
+      if (elem->processor_id() != mesh->processor_id())
+        {
+          elem->hack_p_level(p_level);
+          elem->set_p_refinement_flag(p_refinement_flag);
+        }
+#endif // LIBMESH_ENABLE_AMR
 
       // FIXME: We should add some debug mode tests to ensure that the
       // encoded indexing and boundary conditions are consistent.
@@ -570,7 +636,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
           // connectivity so that parents are encountered before
           // children.  If we get here and can't find the parent that
           // is a fatal error.
-          parent = mesh->elem(parent_id);
+          parent = mesh->elem_ptr(parent_id);
         }
       // Or assert that the sending processor sees no parent
       else
@@ -588,7 +654,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
         {
           // Since this is a newly created element, the parent must
           // have previously thought of this child as a remote element.
-          libmesh_assert_equal_to (parent->child(which_child_am_i), remote_elem);
+          libmesh_assert_equal_to (parent->child_ptr(which_child_am_i), remote_elem);
 
           parent->add_child(elem, which_child_am_i);
         }
@@ -640,7 +706,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
           {
             // If we don't have the interior parent element, then it's
             // a remote_elem until we get it.
-            Elem * ip = mesh->query_elem(interior_parent_id);
+            Elem * ip = mesh->query_elem_ptr(interior_parent_id);
             if (!ip )
               elem->set_interior_parent
                 (const_cast<RemoteElem *>(remote_elem));
@@ -670,7 +736,7 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
 
           // If we don't have the neighbor element, then it's a
           // remote_elem until we get it.
-          Elem * neigh = mesh->query_elem(neighbor_id);
+          Elem * neigh = mesh->query_elem_ptr(neighbor_id);
           if (!neigh)
             {
               elem->set_neighbor(n, const_cast<RemoteElem *>(remote_elem));
@@ -713,10 +779,31 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
             mesh->get_boundary_info().add_edge
               (elem, e, cast_int<boundary_id_type>(*in++));
         }
+
+      for (unsigned short sf=0; sf != 2; ++sf)
+        {
+          const boundary_id_type num_bcs =
+            cast_int<boundary_id_type>(*in++);
+
+          for(boundary_id_type bc_it=0; bc_it < num_bcs; bc_it++)
+            mesh->get_boundary_info().add_shellface
+              (elem, sf, cast_int<boundary_id_type>(*in++));
+        }
     }
 
   // Return the new element
   return elem;
+}
+
+
+
+template <>
+template <>
+Elem *
+Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
+                         DistributedMesh * mesh)
+{
+  return unpack(in, static_cast<MeshBase*>(mesh));
 }
 
 
@@ -731,7 +818,5 @@ Packing<Elem *>::unpack (std::vector<largest_id_type>::const_iterator in,
 }
 
 } // namespace Parallel
-
-#endif // LIBMESH_HAVE_MPI
 
 } // namespace libMesh

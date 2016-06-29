@@ -170,7 +170,7 @@ namespace libMesh
 #if defined(LIBMESH_HAVE_LIBHILBERT) && defined(LIBMESH_HAVE_MPI)
 void MeshCommunication::assign_global_indices (MeshBase & mesh) const
 {
-  START_LOG ("assign_global_indices()", "MeshCommunication");
+  LOG_SCOPE ("assign_global_indices()", "MeshCommunication");
 
   // This method determines partition-agnostic global indices
   // for nodes and elements.
@@ -201,33 +201,31 @@ void MeshCommunication::assign_global_indices (MeshBase & mesh) const
       node_keys.resize (nr.size());
       Threads::parallel_for (nr, ComputeHilbertKeys (bbox, node_keys));
 
-#if 0
-      // It's O(N^2) to check that these keys don't duplicate before the
-      // sort...
-      MeshBase::const_node_iterator nodei = mesh.local_nodes_begin();
-      for (std::size_t i = 0; i != node_keys.size(); ++i, ++nodei)
-        {
-          MeshBase::const_node_iterator nodej = mesh.local_nodes_begin();
-          for (std::size_t j = 0; j != i; ++j, ++nodej)
-            {
-              if (node_keys[i] == node_keys[j])
-                {
-                  CFixBitVec icoords[3], jcoords[3];
-                  get_hilbert_coords(**nodej, bbox, jcoords);
-                  libMesh::err <<
-                    "node " << (*nodej)->id() << ", " <<
-                    *(Point *)(*nodej) << " has HilbertIndices " <<
-                    node_keys[j] << std::endl;
-                  get_hilbert_coords(**nodei, bbox, icoords);
-                  libMesh::err <<
-                    "node " << (*nodei)->id() << ", " <<
-                    *(Point *)(*nodei) << " has HilbertIndices " <<
-                    node_keys[i] << std::endl;
-                  libmesh_error_msg("Error: nodes with duplicate Hilbert keys!");
-                }
-            }
-        }
-#endif
+      // // It's O(N^2) to check that these keys don't duplicate before the
+      // // sort...
+      // MeshBase::const_node_iterator nodei = mesh.local_nodes_begin();
+      // for (std::size_t i = 0; i != node_keys.size(); ++i, ++nodei)
+      //   {
+      //     MeshBase::const_node_iterator nodej = mesh.local_nodes_begin();
+      //     for (std::size_t j = 0; j != i; ++j, ++nodej)
+      //       {
+      //         if (node_keys[i] == node_keys[j])
+      //           {
+      //             CFixBitVec icoords[3], jcoords[3];
+      //             get_hilbert_coords(**nodej, bbox, jcoords);
+      //             libMesh::err <<
+      //               "node " << (*nodej)->id() << ", " <<
+      //               *(Point *)(*nodej) << " has HilbertIndices " <<
+      //               node_keys[j] << std::endl;
+      //             get_hilbert_coords(**nodei, bbox, icoords);
+      //             libMesh::err <<
+      //               "node " << (*nodei)->id() << ", " <<
+      //               *(Point *)(*nodei) << " has HilbertIndices " <<
+      //               node_keys[i] << std::endl;
+      //             libmesh_error_msg("Error: nodes with duplicate Hilbert keys!");
+      //           }
+      //       }
+      //   }
     }
 
     // Elements next
@@ -237,38 +235,36 @@ void MeshCommunication::assign_global_indices (MeshBase & mesh) const
       elem_keys.resize (er.size());
       Threads::parallel_for (er, ComputeHilbertKeys (bbox, elem_keys));
 
-#if 0
-      // For elements, the keys can be (and in the case of TRI, are
-      // expected to be) duplicates, but only if the elements are at
-      // different levels
-      MeshBase::const_element_iterator elemi = mesh.local_elements_begin();
-      for (std::size_t i = 0; i != elem_keys.size(); ++i, ++elemi)
-        {
-          MeshBase::const_element_iterator elemj = mesh.local_elements_begin();
-          for (std::size_t j = 0; j != i; ++j, ++elemj)
-            {
-              if ((elem_keys[i] == elem_keys[j]) &&
-                  ((*elemi)->level() == (*elemj)->level()))
-                {
-                  libMesh::err <<
-                    "level " << (*elemj)->level() << " elem\n" <<
-                    (**elemj) << " centroid " <<
-                    (*elemj)->centroid() << " has HilbertIndices " <<
-                    elem_keys[j] << " or " <<
-                    get_hilbert_index((*elemj), bbox) <<
-                    std::endl;
-                  libMesh::err <<
-                    "level " << (*elemi)->level() << " elem\n" <<
-                    (**elemi) << " centroid " <<
-                    (*elemi)->centroid() << " has HilbertIndices " <<
-                    elem_keys[i] << " or " <<
-                    get_hilbert_index((*elemi), bbox) <<
-                    std::endl;
-                  libmesh_error_msg("Error: level " << (*elemi)->level() << " elements with duplicate Hilbert keys!");
-                }
-            }
-        }
-#endif
+      // // For elements, the keys can be (and in the case of TRI, are
+      // // expected to be) duplicates, but only if the elements are at
+      // // different levels
+      // MeshBase::const_element_iterator elemi = mesh.local_elements_begin();
+      // for (std::size_t i = 0; i != elem_keys.size(); ++i, ++elemi)
+      //   {
+      //     MeshBase::const_element_iterator elemj = mesh.local_elements_begin();
+      //     for (std::size_t j = 0; j != i; ++j, ++elemj)
+      //       {
+      //         if ((elem_keys[i] == elem_keys[j]) &&
+      //             ((*elemi)->level() == (*elemj)->level()))
+      //           {
+      //             libMesh::err <<
+      //               "level " << (*elemj)->level() << " elem\n" <<
+      //               (**elemj) << " centroid " <<
+      //               (*elemj)->centroid() << " has HilbertIndices " <<
+      //               elem_keys[j] << " or " <<
+      //               get_hilbert_index((*elemj), bbox) <<
+      //               std::endl;
+      //             libMesh::err <<
+      //               "level " << (*elemi)->level() << " elem\n" <<
+      //               (**elemi) << " centroid " <<
+      //               (*elemi)->centroid() << " has HilbertIndices " <<
+      //               elem_keys[i] << " or " <<
+      //               get_hilbert_index((*elemi), bbox) <<
+      //               std::endl;
+      //             libmesh_error_msg("Error: level " << (*elemi)->level() << " elements with duplicate Hilbert keys!");
+      //           }
+      //       }
+      //   }
     }
   } // done computing Hilbert keys
 
@@ -570,8 +566,6 @@ void MeshCommunication::assign_global_indices (MeshBase & mesh) const
       }
     }
   }
-
-  STOP_LOG ("assign_global_indices()", "MeshCommunication");
 }
 #else // LIBMESH_HAVE_LIBHILBERT, LIBMESH_HAVE_MPI
 void MeshCommunication::assign_global_indices (MeshBase &) const
@@ -583,7 +577,7 @@ void MeshCommunication::assign_global_indices (MeshBase &) const
 #if defined(LIBMESH_HAVE_LIBHILBERT) && defined(LIBMESH_HAVE_MPI)
 void MeshCommunication::check_for_duplicate_global_indices (MeshBase & mesh) const
 {
-  START_LOG ("check_for_duplicate_global_indices()", "MeshCommunication");
+  LOG_SCOPE ("check_for_duplicate_global_indices()", "MeshCommunication");
 
   // Global bounding box
   MeshTools::BoundingBox bbox =
@@ -666,8 +660,6 @@ void MeshCommunication::check_for_duplicate_global_indices (MeshBase & mesh) con
         }
     }
   } // done checking Hilbert keys
-
-  STOP_LOG ("check_for_duplicate_global_indices()", "MeshCommunication");
 }
 #else // LIBMESH_HAVE_LIBHILBERT, LIBMESH_HAVE_MPI
 void MeshCommunication::check_for_duplicate_global_indices (MeshBase &) const
@@ -683,7 +675,7 @@ void MeshCommunication::find_global_indices (const Parallel::Communicator & comm
                                              const ForwardIterator & end,
                                              std::vector<dof_id_type> & index_map) const
 {
-  START_LOG ("find_global_indices()", "MeshCommunication");
+  LOG_SCOPE ("find_global_indices()", "MeshCommunication");
 
   // This method determines partition-agnostic global indices
   // for nodes and elements.
@@ -709,7 +701,7 @@ void MeshCommunication::find_global_indices (const Parallel::Communicator & comm
   sorted_hilbert_keys.reserve(n_objects);
   hilbert_keys.reserve(n_objects);
   {
-    START_LOG("compute_hilbert_indices()", "MeshCommunication");
+    LOG_SCOPE("compute_hilbert_indices()", "MeshCommunication");
     for (ForwardIterator it=begin; it!=end; ++it)
       {
         const Parallel::DofObjectKey hi(get_hilbert_index (*it, bbox));
@@ -723,14 +715,13 @@ void MeshCommunication::find_global_indices (const Parallel::Communicator & comm
             ((*it)->processor_id() == DofObject::invalid_processor_id))
           sorted_hilbert_keys.push_back(hi);
       }
-    STOP_LOG("compute_hilbert_indices()", "MeshCommunication");
   }
 
   //-------------------------------------------------------------
   // (2) parallel sort the Hilbert keys
   START_LOG ("parallel_sort()", "MeshCommunication");
   Parallel::Sort<Parallel::DofObjectKey> sorter (communicator,
-                                                  sorted_hilbert_keys);
+                                                 sorted_hilbert_keys);
   sorter.sort();
   STOP_LOG ("parallel_sort()", "MeshCommunication");
   const std::vector<Parallel::DofObjectKey> & my_bin = sorter.bin();
@@ -919,8 +910,6 @@ void MeshCommunication::find_global_indices (const Parallel::Communicator & comm
   }
 
   libmesh_assert_equal_to(index_map.size(), n_objects);
-
-  STOP_LOG ("find_global_indices()", "MeshCommunication");
 }
 #else // LIBMESH_HAVE_LIBHILBERT, LIBMESH_HAVE_MPI
 template <typename ForwardIterator>

@@ -63,7 +63,7 @@ int main (int argc, char ** argv)
 
   GMVIO(mesh).write ("out_0.gmv");
 
-  mesh.elem(0)->set_refinement_flag (Elem::REFINE);
+  mesh.elem_ref(0).set_refinement_flag (Elem::REFINE);
 
   MeshRefinement mesh_refinement (mesh);
 
@@ -204,7 +204,7 @@ void assemble(EquationSystems & es,
           for (unsigned int i=0; i<phi.size(); ++i)
             {
               // this is tricky.  ig is the _global_ dof index corresponding
-              // to the _global_ vertex number elem->node(i).  Note that
+              // to the _global_ vertex number elem->node_id(i).  Note that
               // in general these numbers will not be the same (except for
               // the case of one unknown per node on one subdomain) so
               // we need to go through the dof_map
@@ -236,7 +236,7 @@ void assemble(EquationSystems & es,
       if (dim == 3)
         {
           for (unsigned int side=0; side<elem->n_sides(); side++)
-            if (elem->neighbor(side) == libmesh_nullptr)
+            if (elem->neighbor_ptr(side) == libmesh_nullptr)
               {
                 fe_face->reinit (elem, side);
 

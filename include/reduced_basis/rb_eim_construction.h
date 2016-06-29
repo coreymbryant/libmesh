@@ -194,20 +194,29 @@ public:
    * Load \p source into the subvector of \p dest corresponding
    * to var \p var.
    */
-  void set_explicit_sys_subvector(
-    NumericVector<Number>& dest, unsigned int var, NumericVector<Number>& source);
+  void set_explicit_sys_subvector(NumericVector<Number>& dest,
+                                  unsigned int var,
+                                  NumericVector<Number>& source);
 
   /**
-   * Load the subvector of \p source corresponding to variable \p var into
-   * \p dest.
+   * Load the subvector of \p localized_source corresponding to variable \p var into
+   * \p dest. We require localized_source to be localized before we call this method.
    */
-  void get_explicit_sys_subvector(
-    NumericVector<Number>& dest, unsigned int var, NumericVector<Number>& source);
+  void get_explicit_sys_subvector(NumericVector<Number>& dest,
+                                  unsigned int var,
+                                  NumericVector<Number>& localized_source);
 
   /**
    * Set up the index map between the implicit and explicit systems.
    */
   void init_dof_map_between_systems();
+
+  /**
+   * Plot all the parameterized functions that we are storing
+   * in _parametrized_functions_in_training_set. \p pathname
+   * provides the path to where the plot data will be saved.
+   */
+  void plot_parametrized_functions_in_training_set(const std::string& pathname);
 
   //----------- PUBLIC DATA MEMBERS -----------//
 
@@ -258,7 +267,9 @@ protected:
    * Function that indicates when to terminate the Greedy
    * basis training. Overload in subclasses to specialize.
    */
-  virtual bool greedy_termination_test(Real training_greedy_error, int count) libmesh_override;
+  virtual bool greedy_termination_test(Real abs_greedy_error,
+                                       Real initial_greedy_error,
+                                       int count) libmesh_override;
 
   /**
    * Loop over the training set and compute the parametrized function for each
@@ -324,6 +335,12 @@ private:
    * The index map between the explicit system and the implicit system.
    */
   std::vector< std::vector<dof_id_type> > _dof_map_between_systems;
+
+  /**
+   * This vector is used to store inner_product_matrix * basis_function[i] for each i,
+   * since we frequently use this data.
+   */
+  std::vector< NumericVector<Number>* > _matrix_times_bfs;
 
 };
 

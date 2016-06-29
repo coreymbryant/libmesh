@@ -40,11 +40,11 @@ namespace libMesh
 // ElemCutter implementation
 ElemCutter::ElemCutter()
 {
-  _inside_mesh_2D.reset  (new SerialMesh(_comm_self,2)); /**/ _triangle_inside.reset  (new TriangleInterface (*_inside_mesh_2D));
-  _outside_mesh_2D.reset (new SerialMesh(_comm_self,2)); /**/ _triangle_outside.reset (new TriangleInterface (*_outside_mesh_2D));
+  _inside_mesh_2D.reset  (new ReplicatedMesh(_comm_self,2)); /**/ _triangle_inside.reset  (new TriangleInterface (*_inside_mesh_2D));
+  _outside_mesh_2D.reset (new ReplicatedMesh(_comm_self,2)); /**/ _triangle_outside.reset (new TriangleInterface (*_outside_mesh_2D));
 
-  _inside_mesh_3D.reset  (new SerialMesh(_comm_self,3)); /**/ _tetgen_inside.reset  (new TetGenMeshInterface (*_inside_mesh_3D));
-  _outside_mesh_3D.reset (new SerialMesh(_comm_self,3)); /**/ _tetgen_outside.reset (new TetGenMeshInterface (*_outside_mesh_3D));
+  _inside_mesh_3D.reset  (new ReplicatedMesh(_comm_self,3)); /**/ _tetgen_inside.reset  (new TetGenMeshInterface (*_inside_mesh_3D));
+  _outside_mesh_3D.reset (new ReplicatedMesh(_comm_self,3)); /**/ _tetgen_outside.reset (new TetGenMeshInterface (*_outside_mesh_3D));
 
   cut_cntr = 0;
 }
@@ -160,12 +160,12 @@ void ElemCutter::find_intersection_points(const Elem & elem,
 
   for (unsigned int e=0; e<elem.n_edges(); e++)
     {
-      UniquePtr<Elem> edge (elem.build_edge(e));
+      UniquePtr<const Elem> edge (elem.build_edge_ptr(e));
 
       // find the element nodes el0, el1 that map
       unsigned int
-        el0 = elem.get_node_index(edge->get_node(0)),
-        el1 = elem.get_node_index(edge->get_node(1));
+        el0 = elem.get_node_index(edge->node_ptr(0)),
+        el1 = elem.get_node_index(edge->node_ptr(1));
 
       libmesh_assert (elem.is_vertex(el0));
       libmesh_assert (elem.is_vertex(el1));

@@ -49,11 +49,8 @@ void GnuPlotIO::write_nodal_data (const std::string & fname,
                                   const std::vector<Number> & soln,
                                   const std::vector<std::string> & names)
 {
-  START_LOG("write_nodal_data()", "GnuPlotIO");
-
+  LOG_SCOPE("write_nodal_data()", "GnuPlotIO");
   this->write_solution(fname, &soln, &names);
-
-  STOP_LOG("write_nodal_data()", "GnuPlotIO");
 }
 
 
@@ -63,7 +60,7 @@ void GnuPlotIO::write_solution(const std::string & fname,
                                const std::vector<Number> * soln,
                                const std::vector<std::string> * names)
 {
-  // Even when writing on a serialized ParallelMesh, we expect
+  // Even when writing on a serialized DistributedMesh, we expect
   // non-proc-0 help with calls like n_active_elem
   // libmesh_assert_equal_to (this->mesh().processor_id(), 0);
 
@@ -123,16 +120,16 @@ void GnuPlotIO::write_solution(const std::string & fname,
           const Elem * el = *it;
 
           // if el is the left edge of the mesh, print its left node position
-          if(el->neighbor(0) == libmesh_nullptr)
+          if (el->neighbor_ptr(0) == libmesh_nullptr)
             {
-              x_min = (*(el->get_node(0)))(0);
+              x_min = (el->point(0))(0);
               xtics_stream << "\"\" " << x_min << ", \\\n";
             }
-          if(el->neighbor(1) == libmesh_nullptr)
+          if (el->neighbor_ptr(1) == libmesh_nullptr)
             {
-              x_max = (*(el->get_node(1)))(0);
+              x_max = (el->point(1))(0);
             }
-          xtics_stream << "\"\" " << (*(el->get_node(1)))(0);
+          xtics_stream << "\"\" " << (el->point(1))(0);
 
           if(count+1 != n_active_elem)
             {
@@ -193,7 +190,7 @@ void GnuPlotIO::write_solution(const std::string & fname,
               std::vector<Number> values;
 
               // Get the global id of the node
-              dof_id_type global_id = elem->node(i);
+              dof_id_type global_id = elem->node_id(i);
 
               for(unsigned int c=0; c<n_vars; c++)
                 {

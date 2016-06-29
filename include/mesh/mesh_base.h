@@ -369,13 +369,40 @@ public:
    * \f$ i^{th} \f$ node, which should be present in this processor's
    * subset of the mesh data structure.
    */
-  virtual const Node & node (const dof_id_type i) const = 0;
+  virtual const Node & node_ref (const dof_id_type i) const {
+    return *this->node_ptr(i);
+  }
 
   /**
    * Return a reference to the \f$ i^{th} \f$ node, which should be
    * present in this processor's subset of the mesh data structure.
    */
-  virtual Node & node (const dof_id_type i) = 0;
+  virtual Node & node_ref (const dof_id_type i) {
+    return *this->node_ptr(i);
+  }
+
+  /**
+   * Return a constant reference (for reading only) to the
+   * \f$ i^{th} \f$ node, which should be present in this processor's
+   * subset of the mesh data structure.
+   *
+   * This method is deprecated; use the less confusingly-named
+   * node_ref() instead.
+   */
+  virtual const Node & node (const dof_id_type i) const {
+    return *this->node_ptr(i);
+  }
+
+  /**
+   * Return a reference to the \f$ i^{th} \f$ node, which should be
+   * present in this processor's subset of the mesh data structure.
+   *
+   * This method is deprecated; use the less confusingly-named
+   * node_ref() instead.
+   */
+  virtual Node & node (const dof_id_type i) {
+    return *this->node_ptr(i);
+  }
 
   /**
    * Return a pointer to the \f$ i^{th} \f$ node, which should be
@@ -403,29 +430,91 @@ public:
   virtual Node * query_node_ptr (const dof_id_type i) = 0;
 
   /**
+   * Return a reference to the \f$ i^{th} \f$ element, which should be
+   * present in this processor's subset of the mesh data structure.
+   */
+  virtual const Elem & elem_ref (const dof_id_type i) const {
+    return *this->elem_ptr(i);
+  }
+
+  /**
+   * Return a writeable reference to the \f$ i^{th} \f$ element, which
+   * should be present in this processor's subset of the mesh data
+   * structure.
+   */
+  virtual Elem & elem_ref (const dof_id_type i) {
+    return *this->elem_ptr(i);
+  }
+
+  /**
    * Return a pointer to the \f$ i^{th} \f$ element, which should be
    * present in this processor's subset of the mesh data structure.
    */
-  virtual const Elem * elem (const dof_id_type i) const = 0;
+  virtual const Elem * elem_ptr (const dof_id_type i) const = 0;
 
   /**
    * Return a writeable pointer to the \f$ i^{th} \f$ element, which
    * should be present in this processor's subset of the mesh data
    * structure.
    */
-  virtual Elem * elem (const dof_id_type i) = 0;
+  virtual Elem * elem_ptr (const dof_id_type i) = 0;
+
+  /**
+   * Return a pointer to the \f$ i^{th} \f$ element, which should be
+   * present in this processor's subset of the mesh data structure.
+   *
+   * This method is deprecated; use the less confusingly-named
+   * elem_ptr() instead.
+   */
+  virtual const Elem * elem (const dof_id_type i) const {
+    return this->elem_ptr(i);
+  }
+
+  /**
+   * Return a writeable pointer to the \f$ i^{th} \f$ element, which
+   * should be present in this processor's subset of the mesh data
+   * structure.
+   *
+   * This method is deprecated; use the less confusingly-named
+   * elem_ptr() instead.
+   */
+  virtual Elem * elem (const dof_id_type i) {
+    return this->elem_ptr(i);
+  }
 
   /**
    * Return a pointer to the \f$ i^{th} \f$ element, or NULL if no
    * such element exists in this processor's mesh data structure.
    */
-  virtual const Elem * query_elem (const dof_id_type i) const = 0;
+  virtual const Elem * query_elem_ptr (const dof_id_type i) const = 0;
 
   /**
    * Return a writeable pointer to the \f$ i^{th} \f$ element, or NULL
    * if no such element exists in this processor's mesh data structure.
    */
-  virtual Elem * query_elem (const dof_id_type i) = 0;
+  virtual Elem * query_elem_ptr (const dof_id_type i) = 0;
+
+  /**
+   * Return a pointer to the \f$ i^{th} \f$ element, or NULL if no
+   * such element exists in this processor's mesh data structure.
+   *
+   * This method is deprecated; use the less confusingly-named
+   * query_elem_ptr() instead.
+   */
+  virtual const Elem * query_elem (const dof_id_type i) const {
+    return this->query_elem_ptr(i);
+  }
+
+  /**
+   * Return a writeable pointer to the \f$ i^{th} \f$ element, or NULL
+   * if no such element exists in this processor's mesh data structure.
+   *
+   * This method is deprecated; use the less confusingly-named
+   * query_elem_ptr() instead.
+   */
+  virtual Elem * query_elem (const dof_id_type i) {
+    return this->query_elem_ptr(i);
+  }
 
   /**
    * Add a new \p Node at \p Point \p p to the end of the vertex array,
@@ -532,7 +621,7 @@ public:
    * There is no reason for a user to ever call this function.
    *
    * This function restores a previously broken element/node numbering such that
-   * \p mesh.node(n)->id() == n.
+   * \p mesh.node_ref(n).id() == n.
    */
   virtual void fix_broken_node_and_element_numbering () = 0;
 
@@ -570,7 +659,7 @@ public:
   /**
    * Redistribute elements between processors.  This gets called
    * automatically by the Partitioner, and is a no-op in the case of a
-   * SerialMesh or serialized ParallelMesh
+   * ReplicatedMesh or serialized DistributedMesh
    */
   virtual void redistribute () {}
 
@@ -740,7 +829,7 @@ public:
    * Verify id and processor_id consistency of our elements and
    * nodes containers.
    * Calls libmesh_assert() on each possible failure.
-   * Currently only implemented on ParallelMesh; a serial data
+   * Currently only implemented on DistributedMesh; a serial data
    * structure is much harder to get out of sync.
    */
   virtual void libmesh_assert_valid_parallel_ids() const {}
@@ -857,6 +946,11 @@ public:
   virtual element_iterator local_elements_end () = 0;
   virtual const_element_iterator local_elements_begin () const = 0;
   virtual const_element_iterator local_elements_end () const = 0;
+
+  virtual element_iterator active_semilocal_elements_begin () = 0;
+  virtual element_iterator active_semilocal_elements_end () = 0;
+  virtual const_element_iterator active_semilocal_elements_begin () const = 0;
+  virtual const_element_iterator active_semilocal_elements_end () const = 0;
 
   virtual element_iterator active_type_elements_begin (ElemType type) = 0;
   virtual element_iterator active_type_elements_end (ElemType type) = 0;
@@ -1139,7 +1233,7 @@ MeshBase::element_iterator : variant_filter_iterator<MeshBase::Predicate, Elem *
                     const IterType & e,
                     const PredType & p ) :
     variant_filter_iterator<MeshBase::Predicate,
-    Elem *>(d,e,p) {}
+                            Elem *>(d,e,p) {}
 };
 
 
@@ -1196,7 +1290,7 @@ MeshBase::node_iterator : variant_filter_iterator<MeshBase::Predicate, Node *>
                  const IterType & e,
                  const PredType & p ) :
     variant_filter_iterator<MeshBase::Predicate,
-    Node *>(d,e,p) {}
+                            Node *>(d,e,p) {}
 };
 
 
@@ -1218,18 +1312,18 @@ MeshBase::const_node_iterator : variant_filter_iterator<MeshBase::Predicate,
                        const IterType & e,
                        const PredType & p ) :
     variant_filter_iterator<MeshBase::Predicate,
-    Node * const,
-    Node * const &,
-    Node * const *>(d,e,p)  {}
+                            Node * const,
+                            Node * const &,
+                            Node * const *>(d,e,p)  {}
 
 
   // The conversion-to-const ctor.  Takes a regular iterator and calls the appropriate
   // variant_filter_iterator copy constructor.  Note that this one is *not* templated!
   const_node_iterator (const MeshBase::node_iterator & rhs) :
     variant_filter_iterator<Predicate,
-    Node * const,
-    Node * const &,
-    Node * const *>(rhs)
+                            Node * const,
+                            Node * const &,
+                            Node * const *>(rhs)
   {
     // libMesh::out << "Called node_iterator conversion-to-const ctor." << std::endl;
   }

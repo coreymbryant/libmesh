@@ -249,7 +249,7 @@ public:
         g_vec(2) = -1.;
         {
           for (unsigned int side=0; side<elem->n_sides(); side++)
-            if (elem->neighbor(side) == libmesh_nullptr)
+            if (elem->neighbor_ptr(side) == libmesh_nullptr)
               {
                 const std::vector<std::vector<Real> > & phi_face = fe_face->get_phi();
                 const std::vector<Real> & JxW_face = fe_face->get_JxW();
@@ -414,9 +414,9 @@ int main (int argc, char ** argv)
   // Create a 3D mesh distributed across the default MPI communicator.
   Mesh mesh(init.comm(), dim);
   MeshTools::Generation::build_cube (mesh,
-                                     40,
-                                     10,
-                                     5,
+                                     32,
+                                     8,
+                                     4,
                                      0., 1.*x_scaling,
                                      0., 0.3,
                                      0., 0.1,
@@ -427,8 +427,10 @@ int main (int argc, char ** argv)
   mesh.print_info();
 
   // Let's add some node and edge boundary conditions
-  MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
-  const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+  // Each processor should know about each boundary condition it can
+  // see, so we loop over all elements, not just local elements.
+  MeshBase::const_element_iterator       el     = mesh.elements_begin();
+  const MeshBase::const_element_iterator end_el = mesh.elements_end();
   for ( ; el != end_el; ++el)
     {
       const Elem * elem = *el;
@@ -476,7 +478,7 @@ int main (int argc, char ** argv)
           if (elem->is_node_on_side(n, side_max_x) &&
               elem->is_node_on_side(n, side_max_y) &&
               elem->is_node_on_side(n, side_max_z))
-            mesh.get_boundary_info().add_node(elem->get_node(n), NODE_BOUNDARY_ID);
+            mesh.get_boundary_info().add_node(elem->node_ptr(n), NODE_BOUNDARY_ID);
 
 
       // If elem has sides on boundaries

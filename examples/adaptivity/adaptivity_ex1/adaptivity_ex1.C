@@ -204,8 +204,8 @@ void assemble_1D(EquationSystems & es,
   FEType fe_type = dof_map.variable_type(0);
 
   // Build a finite element object of the specified type. The build
-  // function dynamically allocates memory so we use an UniquePtr in this case.
-  // An UniquePtr is a pointer that cleans up after itself. See examples 3 and 4
+  // function dynamically allocates memory so we use a UniquePtr in this case.
+  // A UniquePtr is a pointer that cleans up after itself. See examples 3 and 4
   // for more details on UniquePtr.
   UniquePtr<FEBase> fe(FEBase::build(dim, fe_type));
 
@@ -302,7 +302,7 @@ void assemble_1D(EquationSystems & es,
           // If this element has a NULL neighbor, then it is on the edge of the
           // mesh and we need to enforce a boundary condition using the penalty
           // method.
-          if (elem->neighbor(s) == libmesh_nullptr)
+          if (elem->neighbor_ptr(s) == libmesh_nullptr)
             {
               Ke(s,s) += penalty;
               Fe(s)   += 0*penalty;

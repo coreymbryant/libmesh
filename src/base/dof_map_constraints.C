@@ -36,6 +36,7 @@
 #include "libmesh/libmesh_logging.h"
 #include "libmesh/mesh_base.h"
 #include "libmesh/mesh_inserter_iterator.h"
+#include "libmesh/mesh_tools.h" // for libmesh_assert_valid_boundary_ids()
 #include "libmesh/numeric_vector.h" // for enforce_constraints_exactly()
 #include "libmesh/parallel.h"
 #include "libmesh/parallel_algebra.h"
@@ -51,6 +52,7 @@
 #include "libmesh/system.h" // needed by enforce_constraints_exactly()
 #include "libmesh/threads.h"
 #include "libmesh/tensor_tools.h"
+#include "libmesh/utility.h" // Utility::iota()
 
 
 // Anonymous namespace to hold helper classes
@@ -142,7 +144,11 @@ public:
     _periodic_boundaries(periodic_boundaries),
 #endif
     _mesh(mesh)
-  {}
+  {
+    // Clang detects that _dof_map is not used for anything (other
+    // than being initialized) so let's prevent that warning.
+    libmesh_ignore(_dof_map);
+  }
 
   void operator()(const ConstElemRange & range) const
   {
@@ -343,6 +349,7 @@ private:
     // Prepare variables for projection
     UniquePtr<QBase> qedgerule (fe_type.default_quadrature_rule(1));
     UniquePtr<QBase> qsiderule (fe_type.default_quadrature_rule(dim-1));
+    UniquePtr<QBase> qrule (fe_type.default_quadrature_rule(dim));
 
     // The values of the shape functions at the quadrature
     // points
@@ -426,11 +433,12 @@ private:
         if (f_system && context.get())
           context->pre_fe_reinit(*f_system, elem);
 
-        // Find out which nodes, edges and sides are on a requested
+        // Find out which nodes, edges, sides and shellfaces are on a requested
         // boundary:
         std::vector<bool> is_boundary_node(elem->n_nodes(), false),
           is_boundary_edge(elem->n_edges(), false),
-          is_boundary_side(elem->n_sides(), false);
+          is_boundary_side(elem->n_sides(), false),
+          is_boundary_shellface(2, false);
 
         // We also maintain a separate list of nodeset-based boundary nodes
         std::vector<bool> is_boundary_nodeset(elem->n_nodes(), false);
@@ -470,7 +478,7 @@ private:
         // also independently check whether the nodes have been requested
         for (unsigned int n=0; n != elem->n_nodes(); ++n)
           {
-            boundary_info.boundary_ids (elem->get_node(n), ids_vec);
+            boundary_info.boundary_ids (elem->node_ptr(n), ids_vec);
 
             for (std::vector<boundary_id_type>::iterator bc_it = ids_vec.begin();
                  bc_it != ids_vec.end(); ++bc_it)
@@ -491,6 +499,18 @@ private:
                  bc_it != ids_vec.end(); ++bc_it)
               if (b.count(*bc_it))
                 is_boundary_edge[e] = true;
+          }
+
+        // We can also impose Dirichlet boundary conditions on shellfaces, so we should
+        // also independently check whether the shellfaces have been requested
+        for (unsigned short shellface=0; shellface != 2; ++shellface)
+          {
+            boundary_info.shellface_boundary_ids (elem, shellface, ids_vec);
+
+            for (std::vector<boundary_id_type>::iterator bc_it = ids_vec.begin();
+                 bc_it != ids_vec.end(); ++bc_it)
+              if (b.count(*bc_it))
+                is_boundary_shellface[shellface] = true;
           }
 
         // Update the DOF indices for this element based on
@@ -927,6 +947,129 @@ private:
                 }
             }
 
+        // Project any shellface values
+        if (dim == 2 && cont != DISCONTINUOUS)
+          for (unsigned int shellface=0; shellface != 2; ++shellface)
+            {
+              if (!is_boundary_shellface[shellface])
+                continue;
+
+              // A shellface has the same dof indices as the element itself
+              std::vector<unsigned int> shellface_dofs(dof_indices.size());
+              Utility::iota(shellface_dofs.begin(), shellface_dofs.end(), 0);
+
+              // Some shellface dofs are on nodes/edges and already
+              // fixed, others are free to calculate
+              unsigned int free_dofs = 0;
+              for (unsigned int i=0; i != shellface_dofs.size(); ++i)
+                if (!dof_is_fixed[shellface_dofs[i]])
+                  free_dof[free_dofs++] = i;
+
+              // There may be nothing to project
+              if (!free_dofs)
+                continue;
+
+              Ke.resize (free_dofs, free_dofs); Ke.zero();
+              Fe.resize (free_dofs); Fe.zero();
+              // The new shellface coefficients
+              DenseVector<Number> Ushellface(free_dofs);
+
+              // Initialize FE data on the element
+              fe->attach_quadrature_rule (qrule.get());
+              fe->reinit (elem);
+              const unsigned int n_qp = qrule->n_points();
+
+              // Loop over the quadrature points
+              for (unsigned int qp=0; qp<n_qp; qp++)
+                {
+                  // solution at the quadrature point
+                  OutputNumber fineval(0);
+                  libMesh::RawAccessor<OutputNumber> f_accessor( fineval, dim );
+
+                  for( unsigned int c = 0; c < n_vec_dim; c++)
+                    f_accessor(c) =
+                      f_component(f, f_fem, context.get(), var_component+c,
+                                  xyz_values[qp], time);
+
+                  // solution grad at the quadrature point
+                  OutputNumberGradient finegrad;
+                  libMesh::RawAccessor<OutputNumberGradient> g_accessor( finegrad, dim );
+
+                  unsigned int g_rank;
+                  switch( FEInterface::field_type( fe_type ) )
+                    {
+                    case TYPE_SCALAR:
+                      {
+                        g_rank = 1;
+                        break;
+                      }
+                    case TYPE_VECTOR:
+                      {
+                        g_rank = 2;
+                        break;
+                      }
+                    default:
+                      libmesh_error_msg("Unknown field type!");
+                    }
+
+                  if (cont == C_ONE)
+                    for( unsigned int c = 0; c < n_vec_dim; c++)
+                      for( unsigned int d = 0; d < g_rank; d++ )
+                        g_accessor(c + d*dim ) =
+                          g_component(g, g_fem, context.get(), var_component,
+                                      xyz_values[qp], time)(c);
+
+                  // Form shellface projection matrix
+                  for (unsigned int shellfacei=0, freei=0;
+                       shellfacei != shellface_dofs.size(); ++shellfacei)
+                    {
+                      unsigned int i = shellface_dofs[shellfacei];
+                      // fixed DoFs aren't test functions
+                      if (dof_is_fixed[i])
+                        continue;
+                      for (unsigned int shellfacej=0, freej=0;
+                           shellfacej != shellface_dofs.size(); ++shellfacej)
+                        {
+                          unsigned int j = shellface_dofs[shellfacej];
+                          if (dof_is_fixed[j])
+                            Fe(freei) -= phi[i][qp] * phi[j][qp] *
+                              JxW[qp] * Ue(j);
+                          else
+                            Ke(freei,freej) += phi[i][qp] *
+                              phi[j][qp] * JxW[qp];
+                          if (cont == C_ONE)
+                            {
+                              if (dof_is_fixed[j])
+                                Fe(freei) -= ((*dphi)[i][qp].contract((*dphi)[j][qp])) *
+                                  JxW[qp] * Ue(j);
+                              else
+                                Ke(freei,freej) += ((*dphi)[i][qp].contract((*dphi)[j][qp]))
+                                  * JxW[qp];
+                            }
+                          if (!dof_is_fixed[j])
+                            freej++;
+                        }
+                      Fe(freei) += (fineval * phi[i][qp]) * JxW[qp];
+                      if (cont == C_ONE)
+                        Fe(freei) += (finegrad.contract((*dphi)[i][qp])) *
+                          JxW[qp];
+                      freei++;
+                    }
+                }
+
+              Ke.cholesky_solve(Fe, Ushellface);
+
+              // Transfer new shellface solutions to element
+              for (unsigned int i=0; i != free_dofs; ++i)
+                {
+                  Number & ui = Ue(shellface_dofs[free_dof[i]]);
+                  libmesh_assert(std::abs(ui) < TOLERANCE ||
+                                 std::abs(ui - Ushellface(i)) < TOLERANCE);
+                  ui = Ushellface(i);
+                  dof_is_fixed[shellface_dofs[free_dof[i]]] = true;
+                }
+            }
+
         // Lock the DofConstraints since it is shared among threads.
         {
           Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
@@ -1045,9 +1188,16 @@ void DofMap::create_dof_constraints(const MeshBase & mesh, Real time)
 {
   parallel_object_only();
 
-  START_LOG("create_dof_constraints()", "DofMap");
+  LOG_SCOPE("create_dof_constraints()", "DofMap");
 
   libmesh_assert (mesh.is_prepared());
+
+  // The user might have set boundary conditions after the mesh was
+  // prepared; we should double-check that those boundary conditions
+  // are still consistent.
+#ifdef DEBUG
+  MeshTools::libmesh_assert_valid_boundary_ids(mesh);
+#endif
 
   // We might get constraint equations from AMR hanging nodes in 2D/3D
   // or from boundary conditions in any dimension
@@ -1086,8 +1236,6 @@ void DofMap::create_dof_constraints(const MeshBase & mesh, Real time)
       _node_constraints.clear();
 #endif
 
-      // make sure we stop logging though
-      STOP_LOG("create_dof_constraints()", "DofMap");
       return;
     }
 
@@ -1101,7 +1249,7 @@ void DofMap::create_dof_constraints(const MeshBase & mesh, Real time)
                         mesh.local_elements_end());
 
   // Global computation fails if we're using a FEMFunctionBase BC on a
-  // SerialMesh in parallel
+  // ReplicatedMesh in parallel
   // ConstElemRange range (mesh.elements_begin(),
   //                       mesh.elements_end());
 
@@ -1156,6 +1304,10 @@ void DofMap::create_dof_constraints(const MeshBase & mesh, Real time)
          i = _dirichlet_boundaries->begin();
        i != _dirichlet_boundaries->end(); ++i, range.reset())
     {
+      // Sanity check that the boundary ids associated with the DirichletBoundary
+      // objects are actually present in the mesh
+      this->check_dirichlet_bcid_consistency(mesh,**i);
+
       Threads::parallel_for
         (range,
          ConstrainDirichlet(*this, mesh, time, **i,
@@ -1172,6 +1324,10 @@ void DofMap::create_dof_constraints(const MeshBase & mesh, Real time)
            i != _adjoint_dirichlet_boundaries[qoi_index]->end();
            ++i, range.reset())
         {
+          // Sanity check that the boundary ids associated with the DirichletBoundary
+          // objects are actually present in the mesh
+          this->check_dirichlet_bcid_consistency(mesh,**i);
+
           Threads::parallel_for
             (range,
              ConstrainDirichlet(*this, mesh, time, **i,
@@ -1181,8 +1337,6 @@ void DofMap::create_dof_constraints(const MeshBase & mesh, Real time)
     }
 
 #endif // LIBMESH_ENABLE_DIRICHLET
-
-  STOP_LOG("create_dof_constraints()", "DofMap");
 }
 
 
@@ -1403,7 +1557,7 @@ void DofMap::constrain_element_matrix (DenseMatrix<Number> & matrix,
 
   this->build_constraint_matrix (C, elem_dofs);
 
-  START_LOG("constrain_elem_matrix()", "DofMap");
+  LOG_SCOPE("constrain_elem_matrix()", "DofMap");
 
   // It is possible that the matrix is not constrained at all.
   if ((C.m() == matrix.m()) &&
@@ -1452,8 +1606,6 @@ void DofMap::constrain_element_matrix (DenseMatrix<Number> & matrix,
               }
           }
     } // end if is constrained...
-
-  STOP_LOG("constrain_elem_matrix()", "DofMap");
 }
 
 
@@ -1477,7 +1629,7 @@ void DofMap::constrain_element_matrix_and_vector (DenseMatrix<Number> & matrix,
 
   this->build_constraint_matrix (C, elem_dofs);
 
-  START_LOG("cnstrn_elem_mat_vec()", "DofMap");
+  LOG_SCOPE("cnstrn_elem_mat_vec()", "DofMap");
 
   // It is possible that the matrix is not constrained at all.
   if ((C.m() == matrix.m()) &&
@@ -1533,8 +1685,6 @@ void DofMap::constrain_element_matrix_and_vector (DenseMatrix<Number> & matrix,
       // compute matrix/vector product
       C.vector_mult_transpose(rhs, old_rhs);
     } // end if is constrained...
-
-  STOP_LOG("cnstrn_elem_mat_vec()", "DofMap");
 }
 
 
@@ -1560,7 +1710,7 @@ void DofMap::heterogenously_constrain_element_matrix_and_vector (DenseMatrix<Num
 
   this->build_constraint_matrix_and_vector (C, H, elem_dofs, qoi_index);
 
-  START_LOG("hetero_cnstrn_elem_mat_vec()", "DofMap");
+  LOG_SCOPE("hetero_cnstrn_elem_mat_vec()", "DofMap");
 
   // It is possible that the matrix is not constrained at all.
   if ((C.m() == matrix.m()) &&
@@ -1641,8 +1791,6 @@ void DofMap::heterogenously_constrain_element_matrix_and_vector (DenseMatrix<Num
         }
 
     } // end if is constrained...
-
-  STOP_LOG("hetero_cnstrn_elem_mat_vec()", "DofMap");
 }
 
 
@@ -1668,7 +1816,7 @@ void DofMap::heterogenously_constrain_element_vector (const DenseMatrix<Number> 
 
   this->build_constraint_matrix_and_vector (C, H, elem_dofs, qoi_index);
 
-  START_LOG("hetero_cnstrn_elem_vec()", "DofMap");
+  LOG_SCOPE("hetero_cnstrn_elem_vec()", "DofMap");
 
   // It is possible that the matrix is not constrained at all.
   if ((C.m() == matrix.m()) &&
@@ -1718,8 +1866,6 @@ void DofMap::heterogenously_constrain_element_vector (const DenseMatrix<Number> 
         }
 
     } // end if is constrained...
-
-  STOP_LOG("hetero_cnstrn_elem_vec()", "DofMap");
 }
 
 
@@ -1750,23 +1896,32 @@ void DofMap::constrain_element_matrix (DenseMatrix<Number> & matrix,
   this->build_constraint_matrix (R, orig_row_dofs);
   this->build_constraint_matrix (C, orig_col_dofs);
 
-  START_LOG("constrain_elem_matrix()", "DofMap");
+  LOG_SCOPE("constrain_elem_matrix()", "DofMap");
 
   row_dofs = orig_row_dofs;
   col_dofs = orig_col_dofs;
 
+  bool constraint_found = false;
+
+  // K_constrained = R^T K C
+
+  if ((R.m() == matrix.m()) &&
+      (R.n() == row_dofs.size()))
+    {
+      matrix.left_multiply_transpose  (R);
+      constraint_found = true;
+    }
+
+  if ((C.m() == matrix.n()) &&
+      (C.n() == col_dofs.size()))
+    {
+      matrix.right_multiply (C);
+      constraint_found = true;
+    }
 
   // It is possible that the matrix is not constrained at all.
-  if ((R.m() == matrix.m()) &&
-      (R.n() == row_dofs.size()) &&
-      (C.m() == matrix.n()) &&
-      (C.n() == col_dofs.size())) // If the matrix is constrained
+  if (constraint_found)
     {
-      // K_constrained = R^T K C
-      matrix.left_multiply_transpose  (R);
-      matrix.right_multiply (C);
-
-
       libmesh_assert_equal_to (matrix.m(), row_dofs.size());
       libmesh_assert_equal_to (matrix.n(), col_dofs.size());
 
@@ -1802,8 +1957,6 @@ void DofMap::constrain_element_matrix (DenseMatrix<Number> & matrix,
               }
           }
     } // end if is constrained...
-
-  STOP_LOG("constrain_elem_matrix()", "DofMap");
 }
 
 
@@ -1823,7 +1976,7 @@ void DofMap::constrain_element_vector (DenseVector<Number> & rhs,
 
   this->build_constraint_matrix (R, row_dofs);
 
-  START_LOG("constrain_elem_vector()", "DofMap");
+  LOG_SCOPE("constrain_elem_vector()", "DofMap");
 
   // It is possible that the vector is not constrained at all.
   if ((R.m() == rhs.size()) &&
@@ -1844,8 +1997,6 @@ void DofMap::constrain_element_vector (DenseVector<Number> & rhs,
             rhs(i) = 0;
           }
     } // end if the RHS is constrained.
-
-  STOP_LOG("constrain_elem_vector()", "DofMap");
 }
 
 
@@ -1867,7 +2018,7 @@ void DofMap::constrain_element_dyad_matrix (DenseVector<Number> & v,
 
   this->build_constraint_matrix (R, row_dofs);
 
-  START_LOG("cnstrn_elem_dyad_mat()", "DofMap");
+  LOG_SCOPE("cnstrn_elem_dyad_mat()", "DofMap");
 
   // It is possible that the vector is not constrained at all.
   if ((R.m() == v.size()) &&
@@ -1895,8 +2046,6 @@ void DofMap::constrain_element_dyad_matrix (DenseVector<Number> & v,
             v(i) = 0;
           }
     } // end if the RHS is constrained.
-
-  STOP_LOG("cnstrn_elem_dyad_mat()", "DofMap");
 }
 
 
@@ -1924,7 +2073,7 @@ void DofMap::enforce_constraints_exactly (const System & system,
   if (!this->n_constrained_dofs())
     return;
 
-  START_LOG("enforce_constraints_exactly()","DofMap");
+  LOG_SCOPE("enforce_constraints_exactly()","DofMap");
 
   if (!v)
     v = system.solution.get();
@@ -2010,8 +2159,6 @@ void DofMap::enforce_constraints_exactly (const System & system,
       v_global->localize (*v);
     }
   v->close();
-
-  STOP_LOG("enforce_constraints_exactly()","DofMap");
 }
 
 
@@ -2024,7 +2171,7 @@ void DofMap::enforce_adjoint_constraints_exactly (NumericVector<Number> & v,
   if (!this->n_constrained_dofs())
     return;
 
-  START_LOG("enforce_adjoint_constraints_exactly()","DofMap");
+  LOG_SCOPE("enforce_adjoint_constraints_exactly()", "DofMap");
 
   NumericVector<Number> * v_local  = libmesh_nullptr; // will be initialized below
   NumericVector<Number> * v_global = libmesh_nullptr; // will be initialized below
@@ -2115,8 +2262,6 @@ void DofMap::enforce_adjoint_constraints_exactly (NumericVector<Number> & v,
       v_global->localize (v);
     }
   v.close();
-
-  STOP_LOG("enforce_adjoint_constraints_exactly()","DofMap");
 }
 
 
@@ -2209,7 +2354,7 @@ void DofMap::build_constraint_matrix (DenseMatrix<Number> & C,
                                       std::vector<dof_id_type> & elem_dofs,
                                       const bool called_recursively) const
 {
-  if (!called_recursively) START_LOG("build_constraint_matrix()", "DofMap");
+  LOG_SCOPE_IF("build_constraint_matrix()", "DofMap", !called_recursively);
 
   // Create a set containing the DOFs we already depend on
   typedef std::set<dof_id_type> RCSet;
@@ -2247,10 +2392,7 @@ void DofMap::build_constraint_matrix (DenseMatrix<Number> & C,
   // May be safe to return at this point
   // (but remember to stop the perflog)
   if (!we_have_constraints)
-    {
-      STOP_LOG("build_constraint_matrix()", "DofMap");
-      return;
-    }
+    return;
 
   for (unsigned int i=0; i != elem_dofs.size(); ++i)
     dof_set.erase (elem_dofs[i]);
@@ -2316,8 +2458,6 @@ void DofMap::build_constraint_matrix (DenseMatrix<Number> & C,
 
       libmesh_assert_equal_to (C.n(), elem_dofs.size());
     }
-
-  if (!called_recursively) STOP_LOG("build_constraint_matrix()", "DofMap");
 }
 
 
@@ -2328,8 +2468,7 @@ void DofMap::build_constraint_matrix_and_vector (DenseMatrix<Number> & C,
                                                  int qoi_index,
                                                  const bool called_recursively) const
 {
-  if (!called_recursively)
-    START_LOG("build_constraint_matrix_and_vector()", "DofMap");
+  LOG_SCOPE_IF("build_constraint_matrix_and_vector()", "DofMap", !called_recursively);
 
   // Create a set containing the DOFs we already depend on
   typedef std::set<dof_id_type> RCSet;
@@ -2367,10 +2506,7 @@ void DofMap::build_constraint_matrix_and_vector (DenseMatrix<Number> & C,
   // May be safe to return at this point
   // (but remember to stop the perflog)
   if (!we_have_constraints)
-    {
-      STOP_LOG("build_constraint_matrix_and_vector()", "DofMap");
-      return;
-    }
+    return;
 
   for (unsigned int i=0; i != elem_dofs.size(); ++i)
     dof_set.erase (elem_dofs[i]);
@@ -2464,9 +2600,6 @@ void DofMap::build_constraint_matrix_and_vector (DenseMatrix<Number> & C,
 
       libmesh_assert_equal_to (C.n(), elem_dofs.size());
     }
-
-  if (!called_recursively)
-    STOP_LOG("build_constraint_matrix_and_vector()", "DofMap");
 }
 
 
@@ -2544,15 +2677,15 @@ void DofMap::allgather_recursive_constraints(MeshBase & mesh)
 
         for (unsigned int n=0; n != elem->n_nodes(); ++n)
           {
-            const Node * node = elem->get_node(n);
-            const unsigned int n_vars = node->n_vars(sys_num);
+            const Node & node = elem->node_ref(n);
+            const unsigned int n_vars = node.n_vars(sys_num);
             for (unsigned int v=0; v != n_vars; ++v)
               {
-                const unsigned int n_comp = node->n_comp(sys_num,v);
+                const unsigned int n_comp = node.n_comp(sys_num,v);
                 for (unsigned int c=0; c != n_comp; ++c)
                   {
                     const unsigned int id =
-                      node->dof_number(sys_num,v,c);
+                      node.dof_number(sys_num,v,c);
                     if (this->is_constrained_dof(id))
                       pushed_ids[elem->processor_id()].insert(id);
                   }
@@ -2561,8 +2694,8 @@ void DofMap::allgather_recursive_constraints(MeshBase & mesh)
 
 #ifdef LIBMESH_ENABLE_NODE_CONSTRAINTS
         for (unsigned int n=0; n != elem->n_nodes(); ++n)
-          if (this->is_constrained_node(elem->get_node(n)))
-            pushed_node_ids[elem->processor_id()].insert(elem->node(n));
+          if (this->is_constrained_node(elem->node_ptr(n)))
+            pushed_node_ids[elem->processor_id()].insert(elem->node_id(n));
 #endif
       }
 
@@ -3511,7 +3644,6 @@ void DofMap::scatter_constraints(MeshBase & mesh)
               for (std::size_t j = 0; j != pushed_node_keys_to_me[i].size(); ++j)
                 {
                   const Node * key_node = mesh.node_ptr(pushed_node_keys_to_me[i][j]);
-                  libmesh_assert(key_node);
                   row[key_node] = pushed_node_vals_to_me[i][j];
                 }
               _node_constraints[constrained].second = pushed_node_offsets_to_me[i];
@@ -3752,7 +3884,7 @@ void DofMap::constrain_p_dofs (unsigned int var,
   for (unsigned int n = 0; n != n_nodes; ++n)
     if (elem->is_node_on_side(n, s))
       {
-        const Node * const node = elem->get_node(n);
+        const Node & node = elem->node_ref(n);
         const unsigned int low_nc =
           FEInterface::n_dofs_at_node (dim, low_p_fe_type, type, n);
         const unsigned int high_nc =
@@ -3769,21 +3901,21 @@ void DofMap::constrain_p_dofs (unsigned int var,
             // dofs
             for (unsigned int i = low_nc; i != high_nc; ++i)
               {
-                _dof_constraints[node->dof_number(sys_num,var,i)].clear();
-                _primal_constraint_values.erase(node->dof_number(sys_num,var,i));
+                _dof_constraints[node.dof_number(sys_num,var,i)].clear();
+                _primal_constraint_values.erase(node.dof_number(sys_num,var,i));
               }
           }
         else
           {
-            const unsigned int total_dofs = node->n_comp(sys_num, var);
+            const unsigned int total_dofs = node.n_comp(sys_num, var);
             libmesh_assert_greater_equal (total_dofs, high_nc);
             // Add "this is zero" constraint rows for high p
             // non-vertex dofs, which are numbered in reverse
             for (unsigned int j = low_nc; j != high_nc; ++j)
               {
                 const unsigned int i = total_dofs - j - 1;
-                _dof_constraints[node->dof_number(sys_num,var,i)].clear();
-                _primal_constraint_values.erase(node->dof_number(sys_num,var,i));
+                _dof_constraints[node.dof_number(sys_num,var,i)].clear();
+                _primal_constraint_values.erase(node.dof_number(sys_num,var,i));
               }
           }
       }
@@ -3893,6 +4025,33 @@ DirichletBoundaries::~DirichletBoundaries()
 {
   for (std::vector<DirichletBoundary *>::iterator it = begin(); it != end(); ++it)
     delete *it;
+}
+
+void DofMap::check_dirichlet_bcid_consistency (const MeshBase & mesh,
+                                               const DirichletBoundary & boundary) const
+{
+  const std::set<boundary_id_type>& mesh_bcids = mesh.get_boundary_info().get_boundary_ids();
+  const std::set<boundary_id_type>& dbc_bcids = boundary.b;
+
+  // DirichletBoundary id sets should be consistent across all ranks
+  mesh.comm().verify(dbc_bcids.size());
+
+  for (std::set<boundary_id_type>::const_iterator bid = dbc_bcids.begin();
+       bid != dbc_bcids.end(); ++bid)
+    {
+      // DirichletBoundary id sets should be consistent across all ranks
+      mesh.comm().verify(*bid);
+
+      bool found_bcid = (mesh_bcids.find(*bid) != mesh_bcids.end());
+
+      // On a distributed mesh, boundary id sets may *not* be
+      // consistent across all ranks, since not all ranks see all
+      // boundaries
+      mesh.comm().max(found_bcid);
+
+      if (!found_bcid)
+        libmesh_error_msg("Could not find Dirichlet boundary id " << *bid << " in mesh!");
+    }
 }
 
 #endif // LIBMESH_ENABLE_DIRICHLET

@@ -35,8 +35,7 @@ RBEIMAssembly::RBEIMAssembly(RBEIMConstruction & rb_eim_con_in,
                              unsigned int basis_function_index_in)
   : _rb_eim_con(rb_eim_con_in),
     _basis_function_index(basis_function_index_in),
-    _ghosted_basis_function(NumericVector<Number>::build(
-      rb_eim_con_in.get_explicit_system().comm())),
+    _ghosted_basis_function(NumericVector<Number>::build(rb_eim_con_in.get_explicit_system().comm())),
     _fe(NULL),
     _qrule(NULL)
 {
@@ -50,7 +49,7 @@ RBEIMAssembly::RBEIMAssembly(RBEIMConstruction & rb_eim_con_in,
                                  GHOSTED);
   _rb_eim_con.get_rb_evaluation().get_basis_function(_basis_function_index).
     localize(*_ghosted_basis_function,
-              _rb_eim_con.get_explicit_system().get_dof_map().get_send_list());
+             _rb_eim_con.get_explicit_system().get_dof_map().get_send_list());
 #else
   _ghosted_basis_function->init (_rb_eim_con.get_explicit_system().n_dofs(), false, SERIAL);
   _rb_eim_con.get_rb_evaluation().get_basis_function(_basis_function_index).
@@ -74,7 +73,7 @@ void RBEIMAssembly::evaluate_basis_function(unsigned int var,
                                             const QBase & element_qrule,
                                             std::vector<Number> & values)
 {
-  START_LOG("evaluate_basis_function", "RBEIMAssembly");
+  LOG_SCOPE("evaluate_basis_function", "RBEIMAssembly");
 
   bool repeated_qrule = false;
   if (_qrule != libmesh_nullptr)
@@ -121,8 +120,6 @@ void RBEIMAssembly::evaluate_basis_function(unsigned int var,
       for (unsigned int i=0; i<dof_indices_var.size(); i++)
         values[qp] += (*_ghosted_basis_function)(dof_indices_var[i]) * phi[i][qp];
     }
-
-  STOP_LOG("evaluate_basis_function", "RBEIMAssembly");
 }
 
 RBEIMConstruction & RBEIMAssembly::get_rb_eim_construction()

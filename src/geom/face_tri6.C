@@ -152,17 +152,17 @@ dof_id_type Tri6::key (const unsigned int s) const
     case 0:
 
       return
-        this->compute_key (this->node(3));
+        this->compute_key (this->node_id(3));
 
     case 1:
 
       return
-        this->compute_key (this->node(4));
+        this->compute_key (this->node_id(4));
 
     case 2:
 
       return
-        this->compute_key (this->node(5));
+        this->compute_key (this->node_id(5));
 
     default:
       libmesh_error_msg("Invalid side s = " << s);
@@ -174,8 +174,8 @@ dof_id_type Tri6::key (const unsigned int s) const
 
 
 
-UniquePtr<Elem> Tri6::build_side (const unsigned int i,
-                                  bool proxy) const
+UniquePtr<Elem> Tri6::build_side_ptr (const unsigned int i,
+                                      bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -189,7 +189,7 @@ UniquePtr<Elem> Tri6::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<edge->n_nodes(); ++n)
-        edge->set_node(n) = this->get_node(Tri6::side_nodes_map[i][n]);
+        edge->set_node(n) = this->node_ptr(Tri6::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -215,37 +215,37 @@ void Tri6::connectivity(const unsigned int sf,
           {
           case 0:
             // linear sub-triangle 0
-            conn[0] = this->node(0)+1;
-            conn[1] = this->node(3)+1;
-            conn[2] = this->node(5)+1;
-            conn[3] = this->node(5)+1;
+            conn[0] = this->node_id(0)+1;
+            conn[1] = this->node_id(3)+1;
+            conn[2] = this->node_id(5)+1;
+            conn[3] = this->node_id(5)+1;
 
             return;
 
           case 1:
             // linear sub-triangle 1
-            conn[0] = this->node(3)+1;
-            conn[1] = this->node(1)+1;
-            conn[2] = this->node(4)+1;
-            conn[3] = this->node(4)+1;
+            conn[0] = this->node_id(3)+1;
+            conn[1] = this->node_id(1)+1;
+            conn[2] = this->node_id(4)+1;
+            conn[3] = this->node_id(4)+1;
 
             return;
 
           case 2:
             // linear sub-triangle 2
-            conn[0] = this->node(5)+1;
-            conn[1] = this->node(4)+1;
-            conn[2] = this->node(2)+1;
-            conn[3] = this->node(2)+1;
+            conn[0] = this->node_id(5)+1;
+            conn[1] = this->node_id(4)+1;
+            conn[2] = this->node_id(2)+1;
+            conn[3] = this->node_id(2)+1;
 
             return;
 
           case 3:
             // linear sub-triangle 3
-            conn[0] = this->node(3)+1;
-            conn[1] = this->node(4)+1;
-            conn[2] = this->node(5)+1;
-            conn[3] = this->node(5)+1;
+            conn[0] = this->node_id(3)+1;
+            conn[1] = this->node_id(4)+1;
+            conn[2] = this->node_id(5)+1;
+            conn[3] = this->node_id(5)+1;
 
             return;
 
@@ -258,12 +258,12 @@ void Tri6::connectivity(const unsigned int sf,
       {
         // VTK_QUADRATIC_TRIANGLE has same numbering as libmesh TRI6
         conn.resize(6);
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
-        conn[4] = this->node(4);
-        conn[5] = this->node(5);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
+        conn[4] = this->node_id(4);
+        conn[5] = this->node_id(5);
         return;
 
         // Used to write out linear sub-triangles for VTK...
@@ -273,33 +273,33 @@ void Tri6::connectivity(const unsigned int sf,
           {
           case 0:
           // linear sub-triangle 0
-          conn[0] = this->node(0);
-          conn[1] = this->node(3);
-          conn[2] = this->node(5);
+          conn[0] = this->node_id(0);
+          conn[1] = this->node_id(3);
+          conn[2] = this->node_id(5);
 
           return;
 
           case 1:
           // linear sub-triangle 1
-          conn[0] = this->node(3);
-          conn[1] = this->node(1);
-          conn[2] = this->node(4);
+          conn[0] = this->node_id(3);
+          conn[1] = this->node_id(1);
+          conn[2] = this->node_id(4);
 
           return;
 
           case 2:
           // linear sub-triangle 2
-          conn[0] = this->node(5);
-          conn[1] = this->node(4);
-          conn[2] = this->node(2);
+          conn[0] = this->node_id(5);
+          conn[1] = this->node_id(4);
+          conn[2] = this->node_id(2);
 
           return;
 
           case 3:
           // linear sub-triangle 3
-          conn[0] = this->node(3);
-          conn[1] = this->node(4);
-          conn[2] = this->node(5);
+          conn[0] = this->node_id(3);
+          conn[1] = this->node_id(4);
+          conn[2] = this->node_id(5);
 
           return;
 
@@ -318,42 +318,48 @@ void Tri6::connectivity(const unsigned int sf,
 
 Real Tri6::volume () const
 {
+  // Make copies of our points.  It makes the subsequent calculations a bit
+  // shorter and avoids dereferencing the same pointer multiple times.
+  Point
+    x0 = point(0), x1 = point(1), x2 = point(2),
+    x3 = point(3), x4 = point(4), x5 = point(5);
+
   // Construct constant data vectors.
   // \vec{x}_{\xi}  = \vec{a1}*xi + \vec{b1}*eta + \vec{c1}
   // \vec{x}_{\eta} = \vec{a2}*xi + \vec{b2}*eta + \vec{c2}
   Point
-    a1 =  4.*point(0) + 4.*point(1) - 8.*point(3),
-    b1 =  4.*point(0) - 4.*point(3) + 4.*point(4) - 4.*point(5),
-    c1 = -3.*point(0) - 1.*point(1) + 4.*point(3),
-    a2 =  b1,
-    b2 =  4.*point(0) + 4.*point(2) - 8.*point(5),
-    c2 = -3.*point(0) - 1.*point(2) + 4.*point(5);
+    a1 =  4*x0 + 4*x1 - 8*x3,
+    b1 =  4*x0 - 4*x3 + 4*x4 - 4*x5, /*=a2*/
+    c1 = -3*x0 - 1*x1 + 4*x3,
+    b2 =  4*x0 + 4*x2 - 8*x5,
+    c2 = -3*x0 - 1*x2 + 4*x5;
 
   // If a1 == b1 == a2 == b2 == 0, this is a TRI6 with straight sides,
   // and we can use the TRI3 formula to compute the volume.
   if (a1.relative_fuzzy_equals(Point(0,0,0)) &&
       b1.relative_fuzzy_equals(Point(0,0,0)) &&
       b2.relative_fuzzy_equals(Point(0,0,0)))
-    return 0.5 * c1.cross(c2).size();
+    return 0.5 * cross_norm(c1, c2);
 
   // 7-point rule, exact for quintics.
   const unsigned int N = 7;
 
   // Parameters of the quadrature rule
-  Real
+  const static Real
     w1 = Real(31)/480 + std::sqrt(15.0L)/2400,
     w2 = Real(31)/480 - std::sqrt(15.0L)/2400,
     q1 = Real(2)/7 + std::sqrt(15.0L)/21,
     q2 = Real(2)/7 - std::sqrt(15.0L)/21;
 
-  const Real xi[N]  = {Real(1)/3,  q1, q1,     1-2*q1, q2, q2,     1-2*q2};
-  const Real eta[N] = {Real(1)/3,  q1, 1-2*q1, q1,     q2, 1-2*q2, q2};
-  const Real wts[N] = {Real(9)/80, w1, w1,     w1,     w2, w2,     w2};
+  const static Real xi[N]  = {Real(1)/3,  q1, q1,     1-2*q1, q2, q2,     1-2*q2};
+  const static Real eta[N] = {Real(1)/3,  q1, 1-2*q1, q1,     q2, 1-2*q2, q2};
+  const static Real wts[N] = {Real(9)/80, w1, w1,     w1,     w2, w2,     w2};
 
   // Approximate the area with quadrature
   Real vol=0.;
   for (unsigned int q=0; q<N; ++q)
-    vol += wts[q] * (xi[q]*a1 + eta[q]*b1 + c1).cross(xi[q]*a2 + eta[q]*b2 + c2).size();
+    vol += wts[q] * cross_norm(xi[q]*a1 + eta[q]*b1 + c1,
+                               xi[q]*b1 + eta[q]*b2 + c2);
 
   return vol;
 }

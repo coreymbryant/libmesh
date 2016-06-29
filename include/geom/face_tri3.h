@@ -118,8 +118,8 @@ public:
    */
   virtual Order default_order() const libmesh_override { return FIRST; }
 
-  virtual UniquePtr<Elem> build_side (const unsigned int i,
-                                      bool proxy) const libmesh_override;
+  virtual UniquePtr<Elem> build_side_ptr (const unsigned int i,
+                                          bool proxy) libmesh_override;
 
   virtual void connectivity(const unsigned int sf,
                             const IOPackage iop,
@@ -143,6 +143,12 @@ public:
    * is the minimum angle, the second entry is the max angle.
    */
   std::pair<Real, Real> min_and_max_angle() const;
+
+  /**
+   * Specialization for tri3 elements. These elements are guaranteed to be planar
+   * so a simple linear geometric test can be used.
+   */
+  virtual bool contains_point (const Point & p, Real tol) const libmesh_override;
 
 protected:
 
@@ -174,7 +180,6 @@ protected:
 #endif // LIBMESH_ENABLE_AMR
 
 };
-
 
 } // namespace libMesh
 

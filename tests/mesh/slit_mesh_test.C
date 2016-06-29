@@ -177,17 +177,19 @@ public:
 
     /* The middle nodes should still be distinct between the top and
      * bottom elements */
-    if (_mesh->query_elem(0) && _mesh->query_elem(1))
-      CPPUNIT_ASSERT( _mesh->elem(0)->node(1) != _mesh->elem(1)->node(2) );
-    if (_mesh->query_elem(2) && _mesh->query_elem(3))
-      CPPUNIT_ASSERT( _mesh->elem(2)->node(0) != _mesh->elem(3)->node(3) );
+    if (_mesh->query_elem_ptr(0) && _mesh->query_elem_ptr(1))
+      CPPUNIT_ASSERT( _mesh->elem_ref(0).node_id(1) != _mesh->elem_ref(1).node_id(2) );
+    if (_mesh->query_elem_ptr(2) && _mesh->query_elem_ptr(3))
+      CPPUNIT_ASSERT( _mesh->elem_ref(2).node_id(0) != _mesh->elem_ref(3).node_id(3) );
 
     /* The middle nodes should still be shared between left and right
      * elements on top and bottom */
-    if (_mesh->query_elem(0) && _mesh->query_elem(2))
-      CPPUNIT_ASSERT_EQUAL( _mesh->elem(0)->node(1), _mesh->elem(2)->node(0) );
-    if (_mesh->query_elem(1) && _mesh->query_elem(3))
-      CPPUNIT_ASSERT_EQUAL( _mesh->elem(1)->node(2), _mesh->elem(3)->node(3) );
+    if (_mesh->query_elem_ptr(0) && _mesh->query_elem_ptr(2))
+      CPPUNIT_ASSERT_EQUAL( _mesh->elem_ref(0).node_id(1),
+                            _mesh->elem_ref(2).node_id(0) );
+    if (_mesh->query_elem_ptr(1) && _mesh->query_elem_ptr(3))
+      CPPUNIT_ASSERT_EQUAL( _mesh->elem_ref(1).node_id(2),
+                            _mesh->elem_ref(3).node_id(3) );
   }
 
 };
@@ -366,6 +368,10 @@ public:
     const std::vector<Point> & xyz = fe->get_xyz();
     fe->get_phi();
 
+    // While we're in the middle of a unique id based test case, let's
+    // make sure our unique ids were all read in correctly too.
+    UniquePtr<PointLocatorBase> locator = _mesh->sub_point_locator();
+
     MeshBase::const_element_iterator       el     =
       mesh2.active_local_elements_begin();
     const MeshBase::const_element_iterator end_el =
@@ -374,6 +380,22 @@ public:
     for (; el != end_el; ++el)
       {
         const Elem * elem = *el;
+
+        const Elem * mesh1_elem = (*locator)(elem->centroid());
+        if (mesh1_elem)
+          {
+            CPPUNIT_ASSERT_EQUAL( elem->unique_id(),
+                                  mesh1_elem->unique_id() );
+
+            for (unsigned int n=0; n != elem->n_nodes(); ++n)
+              {
+                const Node & node       = elem->node_ref(n);
+                const Node & mesh1_node = mesh1_elem->node_ref(n);
+                CPPUNIT_ASSERT_EQUAL( node.unique_id(),
+                                      mesh1_node.unique_id() );
+              }
+          }
+
         context.pre_fe_reinit(sys2, elem);
         context.elem_fe_reinit();
 

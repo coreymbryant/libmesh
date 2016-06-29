@@ -63,7 +63,6 @@ RBConstruction::RBConstruction (EquationSystems & es,
     inner_product_solver(LinearSolver<Number>::build(es.comm())),
     extra_linear_solver(libmesh_nullptr),
     inner_product_matrix(SparseMatrix<Number>::build(es.comm())),
-    use_relative_bound_in_greedy(false),
     exit_on_repeated_greedy_parameters(true),
     impose_internal_fluxes(false),
     compute_RB_inner_product(false),
@@ -77,7 +76,9 @@ RBConstruction::RBConstruction (EquationSystems & es,
     assert_convergence(true),
     rb_eval(libmesh_nullptr),
     inner_product_assembly(libmesh_nullptr),
-    training_tolerance(-1.)
+    rel_training_tolerance(1.e-4),
+    abs_training_tolerance(1.e-12),
+    normalize_rb_bound_in_greedy(false)
 {
   // set assemble_before_solve flag to false
   // so that we control matrix assembly.
@@ -93,7 +94,7 @@ RBConstruction::~RBConstruction ()
 
 void RBConstruction::clear()
 {
-  START_LOG("clear()", "RBConstruction");
+  LOG_SCOPE("clear()", "RBConstruction");
 
   Parent::clear();
 
@@ -147,8 +148,6 @@ void RBConstruction::clear()
   // Set Fq_representor_innerprods_computed flag to false now
   // that we've cleared the Fq representors
   Fq_representor_innerprods_computed = false;
-
-  STOP_LOG("clear()", "RBConstruction");
 }
 
 std::string RBConstruction::system_type () const
@@ -224,16 +223,21 @@ void RBConstruction::process_parameters_file (const std::string & parameters_fil
 
   const unsigned int n_training_samples = infile("n_training_samples",0);
   const bool deterministic_training = infile("deterministic_training",false);
-  const bool use_relative_bound_in_greedy_in = infile("use_relative_bound_in_greedy",
-                                                      use_relative_bound_in_greedy);
   unsigned int training_parameters_random_seed_in =
     static_cast<unsigned int>(-1);
   training_parameters_random_seed_in = infile("training_parameters_random_seed",
                                               training_parameters_random_seed_in);
   const bool quiet_mode_in = infile("quiet_mode", quiet_mode);
   const unsigned int Nmax_in = infile("Nmax", Nmax);
-  const Real training_tolerance_in = infile("training_tolerance",
-                                            training_tolerance);
+  const Real rel_training_tolerance_in = infile("rel_training_tolerance",
+                                                rel_training_tolerance);
+  const Real abs_training_tolerance_in = infile("abs_training_tolerance",
+                                                abs_training_tolerance);
+
+  // Initialize value to false, let the input file value override.
+  bool normalize_rb_bound_in_greedy = false;
+  const bool normalize_rb_bound_in_greedy_in = infile("normalize_rb_bound_in_greedy",
+                                                      normalize_rb_bound_in_greedy);
 
   // Read in the parameters from the input file too
   unsigned int n_continuous_parameters = infile.vector_variable_size("parameter_names");
@@ -288,11 +292,12 @@ void RBConstruction::process_parameters_file (const std::string & parameters_fil
   // Set the parameters that have been read in
   set_rb_construction_parameters(n_training_samples,
                                  deterministic_training,
-                                 use_relative_bound_in_greedy_in,
                                  training_parameters_random_seed_in,
                                  quiet_mode_in,
                                  Nmax_in,
-                                 training_tolerance_in,
+                                 rel_training_tolerance_in,
+                                 abs_training_tolerance_in,
+                                 normalize_rb_bound_in_greedy_in,
                                  mu_min_in,
                                  mu_max_in,
                                  discrete_parameter_values_in,
@@ -302,20 +307,17 @@ void RBConstruction::process_parameters_file (const std::string & parameters_fil
 void RBConstruction::set_rb_construction_parameters(
                                                     unsigned int n_training_samples_in,
                                                     bool deterministic_training_in,
-                                                    bool use_relative_bound_in_greedy_in,
                                                     unsigned int training_parameters_random_seed_in,
                                                     bool quiet_mode_in,
                                                     unsigned int Nmax_in,
-                                                    Real training_tolerance_in,
+                                                    Real rel_training_tolerance_in,
+                                                    Real abs_training_tolerance_in,
+                                                    bool normalize_rb_bound_in_greedy_in,
                                                     RBParameters mu_min_in,
                                                     RBParameters mu_max_in,
                                                     std::map< std::string, std::vector<Real> > discrete_parameter_values_in,
                                                     std::map<std::string,bool> log_scaling_in)
 {
-  // Tell the system whether or not to use a relative error bound
-  // in the Greedy algorithm
-  use_relative_bound_in_greedy = use_relative_bound_in_greedy_in;
-
   // Read in training_parameters_random_seed value.  This is used to
   // seed the RNG when picking the training parameters.  By default the
   // value is -1, which means use std::time to seed the RNG.
@@ -327,7 +329,10 @@ void RBConstruction::set_rb_construction_parameters(
   // Initialize RB parameters
   set_Nmax(Nmax_in);
 
-  set_training_tolerance(training_tolerance_in);
+  set_rel_training_tolerance(rel_training_tolerance_in);
+  set_abs_training_tolerance(abs_training_tolerance_in);
+
+  set_normalize_rb_bound_in_greedy(normalize_rb_bound_in_greedy_in);
 
   // Initialize the parameter ranges and the parameters themselves
   initialize_parameters(mu_min_in, mu_max_in, discrete_parameter_values_in);
@@ -345,8 +350,9 @@ void RBConstruction::print_info()
   libMesh::out << std::endl << "RBConstruction parameters:" << std::endl;
   libMesh::out << "system name: " << this->name() << std::endl;
   libMesh::out << "Nmax: " << Nmax << std::endl;
-  if(training_tolerance > 0.)
-    libMesh::out << "Basis training error tolerance: " << get_training_tolerance() << std::endl;
+  libMesh::out << "Greedy relative error tolerance: " << get_rel_training_tolerance() << std::endl;
+  libMesh::out << "Greedy absolute error tolerance: " << get_abs_training_tolerance() << std::endl;
+  libMesh::out << "Do we normalize RB error bound in greedy? " << get_normalize_rb_bound_in_greedy() << std::endl;
   if( is_rb_eval_initialized() )
     {
       libMesh::out << "Aq operators attached: " << get_rb_theta_expansion().get_n_A_terms() << std::endl;
@@ -374,7 +380,6 @@ void RBConstruction::print_info()
     }
   print_discrete_parameter_values();
   libMesh::out << "n_training_samples: " << get_n_training_samples() << std::endl;
-  libMesh::out << "use a relative error bound in greedy? " << use_relative_bound_in_greedy << std::endl;
   libMesh::out << "quiet mode? " << is_quiet() << std::endl;
   libMesh::out << std::endl;
 }
@@ -604,7 +609,7 @@ void RBConstruction::add_scaled_matrix_and_vector(Number scalar,
                                                   bool symmetrize,
                                                   bool apply_dof_constraints)
 {
-  START_LOG("add_scaled_matrix_and_vector()", "RBConstruction");
+  LOG_SCOPE("add_scaled_matrix_and_vector()", "RBConstruction");
 
   bool assemble_matrix = (input_matrix != libmesh_nullptr);
   bool assemble_vector = (input_vector != libmesh_nullptr);
@@ -628,7 +633,7 @@ void RBConstruction::add_scaled_matrix_and_vector(Number scalar,
 
       for (unsigned int i=0; i<node_id_list.size(); i++)
         {
-          const Node & node = mesh.node(node_id_list[i]);
+          const Node & node = mesh.node_ref(node_id_list[i]);
 
           // If node is on this processor, then all dofs on node are too
           // so we can do the add below safely
@@ -695,7 +700,7 @@ void RBConstruction::add_scaled_matrix_and_vector(Number scalar,
            ++context.side )
         {
           // May not need to apply fluxes on non-boundary elements
-          if( (context.get_elem().neighbor(context.get_side()) != libmesh_nullptr) && !impose_internal_fluxes )
+          if( (context.get_elem().neighbor_ptr(context.get_side()) != libmesh_nullptr) && !impose_internal_fluxes )
             continue;
 
           // Impose boundary (e.g. Neumann) term
@@ -792,8 +797,6 @@ void RBConstruction::add_scaled_matrix_and_vector(Number scalar,
     input_matrix->close();
   if(assemble_vector)
     input_vector->close();
-
-  STOP_LOG("add_scaled_matrix_and_vector()", "RBConstruction");
 }
 
 void RBConstruction::set_context_solution_vec(NumericVector<Number> & vec)
@@ -806,7 +809,7 @@ void RBConstruction::set_context_solution_vec(NumericVector<Number> & vec)
 
 void RBConstruction::truth_assembly()
 {
-  START_LOG("truth_assembly()", "RBConstruction");
+  LOG_SCOPE("truth_assembly()", "RBConstruction");
 
   const RBParameters & mu = get_parameters();
 
@@ -838,8 +841,6 @@ void RBConstruction::truth_assembly()
 
   this->matrix->close();
   this->rhs->close();
-
-  STOP_LOG("truth_assembly()", "RBConstruction");
 }
 
 void RBConstruction::assemble_inner_product_matrix(SparseMatrix<Number> * input_matrix,
@@ -876,7 +877,7 @@ void RBConstruction::add_scaled_Aq(Number scalar,
                                    SparseMatrix<Number> * input_matrix,
                                    bool symmetrize)
 {
-  START_LOG("add_scaled_Aq()", "RBConstruction");
+  LOG_SCOPE("add_scaled_Aq()", "RBConstruction");
 
   if(q_a >= get_rb_theta_expansion().get_n_A_terms())
     libmesh_error_msg("Error: We must have q < Q_a in add_scaled_Aq.");
@@ -894,8 +895,6 @@ void RBConstruction::add_scaled_Aq(Number scalar,
                                    libmesh_nullptr,
                                    symmetrize);
     }
-
-  STOP_LOG("add_scaled_Aq()", "RBConstruction");
 }
 
 void RBConstruction::assemble_misc_matrices()
@@ -1000,7 +999,7 @@ void RBConstruction::assemble_all_output_vectors()
 
 Real RBConstruction::train_reduced_basis(const bool resize_rb_eval_data)
 {
-  START_LOG("train_reduced_basis()", "RBConstruction");
+  LOG_SCOPE("train_reduced_basis()", "RBConstruction");
 
   int count = 0;
 
@@ -1041,6 +1040,8 @@ Real RBConstruction::train_reduced_basis(const bool resize_rb_eval_data)
   compute_Fq_representor_innerprods();
 
   libMesh::out << std::endl << "---- Performing Greedy basis enrichment ----" << std::endl;
+  Real initial_greedy_error = 0.;
+  bool initial_greedy_error_initialized = false;
   while(true)
     {
       libMesh::out << std::endl << "---- Basis dimension: "
@@ -1051,15 +1052,19 @@ Real RBConstruction::train_reduced_basis(const bool resize_rb_eval_data)
           libMesh::out << "Performing RB solves on training set" << std::endl;
           training_greedy_error = compute_max_error_bound();
 
-          libMesh::out << "Maximum " << (use_relative_bound_in_greedy ? "(relative)" : "(absolute)")
-                       << " error bound is " << training_greedy_error << std::endl << std::endl;
+          libMesh::out << "Maximum error bound is " << training_greedy_error << std::endl << std::endl;
+
+          // record the initial error
+          if (!initial_greedy_error_initialized)
+            {
+              initial_greedy_error = training_greedy_error;
+              initial_greedy_error_initialized = true;
+            }
 
           // Break out of training phase if we have reached Nmax
           // or if the training_tolerance is satisfied.
-          if( greedy_termination_test(training_greedy_error, count) )
-            {
-              break;
-            }
+          if (greedy_termination_test(training_greedy_error, initial_greedy_error, count))
+            break;
         }
 
       libMesh::out << "Performing truth solve at parameter:" << std::endl;
@@ -1081,16 +1086,24 @@ Real RBConstruction::train_reduced_basis(const bool resize_rb_eval_data)
       count++;
     }
   this->update_greedy_param_list();
-  STOP_LOG("train_reduced_basis()", "RBConstruction");
 
   return training_greedy_error;
 }
 
-bool RBConstruction::greedy_termination_test(Real training_greedy_error, int)
+bool RBConstruction::greedy_termination_test(Real abs_greedy_error,
+                                             Real initial_error,
+                                             int)
 {
-  if(training_greedy_error < this->training_tolerance)
+  if(abs_greedy_error < this->abs_training_tolerance)
     {
-      libMesh::out << "Specified error tolerance reached." << std::endl;
+      libMesh::out << "Absolute error tolerance reached." << std::endl;
+      return true;
+    }
+
+  Real rel_greedy_error = abs_greedy_error/initial_error;
+  if(rel_greedy_error < this->rel_training_tolerance)
+    {
+      libMesh::out << "Relative error tolerance reached." << std::endl;
       return true;
     }
 
@@ -1133,7 +1146,7 @@ const RBParameters & RBConstruction::get_greedy_parameter(unsigned int i)
 
 Real RBConstruction::truth_solve(int plot_solution)
 {
-  START_LOG("truth_solve()", "RBConstruction");
+  LOG_SCOPE("truth_solve()", "RBConstruction");
 
   truth_assembly();
 
@@ -1185,8 +1198,6 @@ Real RBConstruction::truth_solve(int plot_solution)
   inner_product_matrix->vector_mult(*inner_product_storage_vector, *solution);
   Number truth_X_norm = std::sqrt(inner_product_storage_vector->dot(*solution));
 
-  STOP_LOG("truth_solve()", "RBConstruction");
-
   return libmesh_real(truth_X_norm);
 }
 
@@ -1197,20 +1208,18 @@ void RBConstruction::set_Nmax(unsigned int Nmax_in)
 
 void RBConstruction::load_basis_function(unsigned int i)
 {
-  START_LOG("load_basis_function()", "RBConstruction");
+  LOG_SCOPE("load_basis_function()", "RBConstruction");
 
   libmesh_assert_less (i, get_rb_evaluation().get_n_basis_functions());
 
   *solution = get_rb_evaluation().get_basis_function(i);
 
   this->update();
-
-  STOP_LOG("load_basis_function()", "RBConstruction");
 }
 
 void RBConstruction::enrich_RB_space()
 {
-  START_LOG("enrich_RB_space()", "RBConstruction");
+  LOG_SCOPE("enrich_RB_space()", "RBConstruction");
 
   NumericVector<Number> * new_bf = NumericVector<Number>::build(this->comm()).release();
   new_bf->init (this->n_dofs(), this->n_local_dofs(), false, PARALLEL);
@@ -1240,8 +1249,6 @@ void RBConstruction::enrich_RB_space()
 
   // load the new basis function into the basis_functions vector.
   get_rb_evaluation().basis_functions.push_back( new_bf );
-
-  STOP_LOG("enrich_RB_space()", "RBConstruction");
 }
 
 void RBConstruction::update_system()
@@ -1260,10 +1267,19 @@ Real RBConstruction::get_RB_error_bound()
 
   Real error_bound = get_rb_evaluation().rb_solve(get_rb_evaluation().get_n_basis_functions());
 
-  // Should we normalize the error bound to return a relative bound?
-  if(use_relative_bound_in_greedy)
+  if (normalize_rb_bound_in_greedy)
     {
-      error_bound /= get_rb_evaluation().get_rb_solution_norm();
+      Real error_bound_normalization = get_rb_evaluation().get_error_bound_normalization();
+
+      if ((error_bound < abs_training_tolerance) ||
+          (error_bound_normalization < abs_training_tolerance))
+        {
+          // We don't want to normalize this error bound if the bound or the
+          // normalization value are below the absolute tolerance. Hence do nothing
+          // in this case.
+        }
+      else
+        error_bound /= error_bound_normalization;
     }
 
   return error_bound;
@@ -1286,7 +1302,7 @@ void RBConstruction::recompute_all_residual_terms(bool compute_inner_products)
 
 Real RBConstruction::compute_max_error_bound()
 {
-  START_LOG("compute_max_error_bound()", "RBConstruction");
+  LOG_SCOPE("compute_max_error_bound()", "RBConstruction");
 
   // Treat the case with no parameters in a special way
   if(get_n_params() == 0)
@@ -1301,8 +1317,6 @@ Real RBConstruction::compute_max_error_bound()
           max_val = std::numeric_limits<Real>::max();
         }
 
-      STOP_LOG("compute_max_error_bound()", "RBConstruction");
-
       // Make sure we do at least one solve, but otherwise return a zero error bound
       // when we have no parameters
       return (get_rb_evaluation().get_n_basis_functions() == 0) ? max_val : 0.;
@@ -1314,7 +1328,7 @@ Real RBConstruction::compute_max_error_bound()
   unsigned int max_err_index = 0;
   Real max_err = 0.;
 
-  unsigned int first_index = get_first_local_training_index();
+  numeric_index_type first_index = get_first_local_training_index();
   for(unsigned int i=0; i<get_local_n_training_samples(); i++)
     {
       // Load training parameter i, this is only loaded
@@ -1330,7 +1344,7 @@ Real RBConstruction::compute_max_error_bound()
         }
     }
 
-  std::pair<unsigned int,Real> error_pair(first_index+max_err_index, max_err);
+  std::pair<numeric_index_type, Real> error_pair(first_index+max_err_index, max_err);
   get_global_max_error_pair(this->comm(),error_pair);
 
   // If we have a serial training set (i.e. a training set that is the same on all processors)
@@ -1354,14 +1368,12 @@ Real RBConstruction::compute_max_error_bound()
       broadcast_parameters(root_id);
     }
 
-  STOP_LOG("compute_max_error_bound()", "RBConstruction");
-
   return error_pair.second;
 }
 
 void RBConstruction::update_RB_system_matrices()
 {
-  START_LOG("update_RB_system_matrices()", "RBConstruction");
+  LOG_SCOPE("update_RB_system_matrices()", "RBConstruction");
 
   unsigned int RB_size = get_rb_evaluation().get_n_basis_functions();
 
@@ -1425,14 +1437,12 @@ void RBConstruction::update_RB_system_matrices()
             }
         }
     }
-
-  STOP_LOG("update_RB_system_matrices()", "RBConstruction");
 }
 
 
 void RBConstruction::update_residual_terms(bool compute_inner_products)
 {
-  START_LOG("update_residual_terms()", "RBConstruction");
+  LOG_SCOPE("update_residual_terms()", "RBConstruction");
 
   unsigned int RB_size = get_rb_evaluation().get_n_basis_functions();
 
@@ -1521,8 +1531,6 @@ void RBConstruction::update_residual_terms(bool compute_inner_products)
             }
         }
     } // end if (compute_inner_products)
-
-  STOP_LOG("update_residual_terms()", "RBConstruction");
 }
 
 SparseMatrix<Number> & RBConstruction::get_matrix_for_output_dual_solves()
@@ -1543,7 +1551,7 @@ void RBConstruction::compute_output_dual_innerprods()
         }
 
       // Only log if we get to here
-      START_LOG("compute_output_dual_innerprods()", "RBConstruction");
+      LOG_SCOPE("compute_output_dual_innerprods()", "RBConstruction");
 
       libMesh::out << "Compute output dual inner products" << std::endl;
 
@@ -1630,9 +1638,6 @@ void RBConstruction::compute_output_dual_innerprods()
       linear_solver->reuse_preconditioner(false);
 
       output_dual_innerprods_computed = true;
-
-      STOP_LOG("compute_output_dual_innerprods()", "RBConstruction");
-
     }
 
   get_rb_evaluation().output_dual_innerprods = output_dual_innerprods;
@@ -1645,7 +1650,7 @@ void RBConstruction::compute_Fq_representor_innerprods(bool compute_inner_produc
   if(!Fq_representor_innerprods_computed)
     {
       // Only log if we get to here
-      START_LOG("compute_Fq_representor_innerprods()", "RBConstruction");
+      LOG_SCOPE("compute_Fq_representor_innerprods()", "RBConstruction");
 
       for(unsigned int q_f=0; q_f<get_rb_theta_expansion().get_n_F_terms(); q_f++)
         {
@@ -1703,8 +1708,6 @@ void RBConstruction::compute_Fq_representor_innerprods(bool compute_inner_produc
         } // end if (compute_inner_products)
 
       Fq_representor_innerprods_computed = true;
-
-      STOP_LOG("compute_Fq_representor_innerprods()", "RBConstruction");
     }
 
   get_rb_evaluation().Fq_representor_innerprods = Fq_representor_innerprods;
@@ -1712,7 +1715,7 @@ void RBConstruction::compute_Fq_representor_innerprods(bool compute_inner_produc
 
 void RBConstruction::load_rb_solution()
 {
-  START_LOG("load_rb_solution()", "RBConstruction");
+  LOG_SCOPE("load_rb_solution()", "RBConstruction");
 
   solution->zero();
 
@@ -1727,15 +1730,13 @@ void RBConstruction::load_rb_solution()
     }
 
   update();
-
-  STOP_LOG("load_rb_solution()", "RBConstruction");
 }
 
 // The slow (but simple, non-error prone) way to compute the residual dual norm
 // Useful for error checking
 //Real RBConstruction::compute_residual_dual_norm(const unsigned int N)
 //{
-//  START_LOG("compute_residual_dual_norm()", "RBConstruction");
+//   LOG_SCOPE("compute_residual_dual_norm()", "RBConstruction");
 //
 //   // Put the residual in rhs in order to compute the norm of the Riesz representor
 //   // Note that this only works in serial since otherwise each processor will
@@ -1779,9 +1780,7 @@ void RBConstruction::load_rb_solution()
 //
 //   Real slow_residual_norm_sq = solution->dot(*inner_product_storage_vector);
 //
-//  STOP_LOG("compute_residual_dual_norm()", "RBConstruction");
-//
-//  return std::sqrt( libmesh_real(slow_residual_norm_sq) );
+//   return std::sqrt( libmesh_real(slow_residual_norm_sq) );
 //}
 
 SparseMatrix<Number> * RBConstruction::get_inner_product_matrix()
@@ -1918,7 +1917,7 @@ UniquePtr<DirichletBoundary> RBConstruction::build_zero_dirichlet_boundary_objec
 void RBConstruction::write_riesz_representors_to_files(const std::string & riesz_representors_dir,
                                                        const bool write_binary_residual_representors)
 {
-  START_LOG("write_riesz_representors_to_files()", "RBConstruction");
+  LOG_SCOPE("write_riesz_representors_to_files()", "RBConstruction");
 
   // Write out Riesz representors. These are useful to have when restarting,
   // so you don't have to recompute them all over again.
@@ -2018,8 +2017,6 @@ void RBConstruction::write_riesz_representors_to_files(const std::string & riesz
           // for the system call, be sure to do it only on one processor, etc.
         }
       }
-
-  STOP_LOG("write_riesz_representors_to_files()", "RBConstruction");
 }
 
 
@@ -2027,7 +2024,7 @@ void RBConstruction::write_riesz_representors_to_files(const std::string & riesz
 void RBConstruction::read_riesz_representors_from_files(const std::string & riesz_representors_dir,
                                                         const bool read_binary_residual_representors)
 {
-  START_LOG("read_riesz_representors_from_files()", "RBConstruction");
+  LOG_SCOPE("read_riesz_representors_from_files()", "RBConstruction");
 
   libMesh::out << "Reading in the Fq_representors..." << std::endl;
 
@@ -2117,8 +2114,6 @@ void RBConstruction::read_riesz_representors_from_files(const std::string & ries
         //*Aq_representor[i][j] = *solution;
         get_rb_evaluation().Aq_representor[i][j]->swap(*solution);
       }
-
-  STOP_LOG("read_riesz_representors_from_files()", "RBConstruction");
 }
 
 void RBConstruction::check_convergence(LinearSolver<Number> & input_solver)
@@ -2129,7 +2124,9 @@ void RBConstruction::check_convergence(LinearSolver<Number> & input_solver)
 
   if (conv_flag < 0)
     {
-      libmesh_error_msg("Error, conv_flag < 0!");
+      std::stringstream err_msg;
+      err_msg << "Convergence error. Error id: " << conv_flag;
+      libmesh_error_msg(err_msg.str());
     }
 }
 

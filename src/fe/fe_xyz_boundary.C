@@ -76,7 +76,7 @@ void FEXYZ<Dim>::reinit(const Elem * elem,
   libmesh_assert_not_equal_to (Dim, 1);
 
   // Build the side of interest
-  const UniquePtr<Elem> side(elem->build_side(s));
+  const UniquePtr<const Elem> side(elem->build_side_ptr(s));
 
   // Initialize the shape functions at the user-specified
   // points
@@ -132,7 +132,7 @@ void FEXYZ<Dim>::compute_face_values(const Elem * elem,
   libmesh_assert(elem);
   libmesh_assert(side);
 
-  START_LOG("compute_face_values()", "FEXYZ");
+  LOG_SCOPE("compute_face_values()", "FEXYZ");
 
   // The number of quadrature points.
   const std::size_t n_qp = qw.size();
@@ -218,8 +218,6 @@ void FEXYZ<Dim>::compute_face_values(const Elem * elem,
     default:
       libmesh_error_msg("Invalid dim " << this->dim);
     }
-
-  STOP_LOG("compute_face_values()", "FEXYZ");
 }
 
 

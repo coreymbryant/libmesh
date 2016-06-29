@@ -165,32 +165,32 @@ dof_id_type Hex27::key (const unsigned int s) const
     case 0:  // the face at z=0
 
       return
-        this->compute_key (this->node(20));
+        this->compute_key (this->node_id(20));
 
     case 1:  // the face at y = 0
 
       return
-        this->compute_key (this->node(21));
+        this->compute_key (this->node_id(21));
 
     case 2:  // the face at x=1
 
       return
-        this->compute_key (this->node(22));
+        this->compute_key (this->node_id(22));
 
     case 3: // the face at y=1
 
       return
-        this->compute_key (this->node(23));
+        this->compute_key (this->node_id(23));
 
     case 4: // the face at x=0
 
       return
-        this->compute_key (this->node(24));
+        this->compute_key (this->node_id(24));
 
     case 5: // the face at z=1
 
       return
-        this->compute_key (this->node(25));
+        this->compute_key (this->node_id(25));
 
     default:
       libmesh_error_msg("Invalid side " << s);
@@ -202,8 +202,8 @@ dof_id_type Hex27::key (const unsigned int s) const
 
 
 
-UniquePtr<Elem> Hex27::build_side (const unsigned int i,
-                                   bool proxy) const
+UniquePtr<Elem> Hex27::build_side_ptr (const unsigned int i,
+                                       bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -216,7 +216,7 @@ UniquePtr<Elem> Hex27::build_side (const unsigned int i,
       face->subdomain_id() = this->subdomain_id();
 
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(Hex27::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(Hex27::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -227,7 +227,7 @@ UniquePtr<Elem> Hex27::build_side (const unsigned int i,
 
 
 
-UniquePtr<Elem> Hex27::build_edge (const unsigned int i) const
+UniquePtr<Elem> Hex27::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_edges());
 
@@ -254,105 +254,105 @@ void Hex27::connectivity(const unsigned int sc,
           {
           case 0:
 
-            conn[0] = this->node(0)+1;
-            conn[1] = this->node(8)+1;
-            conn[2] = this->node(20)+1;
-            conn[3] = this->node(11)+1;
-            conn[4] = this->node(12)+1;
-            conn[5] = this->node(21)+1;
-            conn[6] = this->node(26)+1;
-            conn[7] = this->node(24)+1;
+            conn[0] = this->node_id(0)+1;
+            conn[1] = this->node_id(8)+1;
+            conn[2] = this->node_id(20)+1;
+            conn[3] = this->node_id(11)+1;
+            conn[4] = this->node_id(12)+1;
+            conn[5] = this->node_id(21)+1;
+            conn[6] = this->node_id(26)+1;
+            conn[7] = this->node_id(24)+1;
 
             return;
 
           case 1:
 
-            conn[0] = this->node(8)+1;
-            conn[1] = this->node(1)+1;
-            conn[2] = this->node(9)+1;
-            conn[3] = this->node(20)+1;
-            conn[4] = this->node(21)+1;
-            conn[5] = this->node(13)+1;
-            conn[6] = this->node(22)+1;
-            conn[7] = this->node(26)+1;
+            conn[0] = this->node_id(8)+1;
+            conn[1] = this->node_id(1)+1;
+            conn[2] = this->node_id(9)+1;
+            conn[3] = this->node_id(20)+1;
+            conn[4] = this->node_id(21)+1;
+            conn[5] = this->node_id(13)+1;
+            conn[6] = this->node_id(22)+1;
+            conn[7] = this->node_id(26)+1;
 
             return;
 
           case 2:
 
-            conn[0] = this->node(11)+1;
-            conn[1] = this->node(20)+1;
-            conn[2] = this->node(10)+1;
-            conn[3] = this->node(3)+1;
-            conn[4] = this->node(24)+1;
-            conn[5] = this->node(26)+1;
-            conn[6] = this->node(23)+1;
-            conn[7] = this->node(15)+1;
+            conn[0] = this->node_id(11)+1;
+            conn[1] = this->node_id(20)+1;
+            conn[2] = this->node_id(10)+1;
+            conn[3] = this->node_id(3)+1;
+            conn[4] = this->node_id(24)+1;
+            conn[5] = this->node_id(26)+1;
+            conn[6] = this->node_id(23)+1;
+            conn[7] = this->node_id(15)+1;
 
             return;
 
           case 3:
 
-            conn[0] = this->node(20)+1;
-            conn[1] = this->node(9)+1;
-            conn[2] = this->node(2)+1;
-            conn[3] = this->node(10)+1;
-            conn[4] = this->node(26)+1;
-            conn[5] = this->node(22)+1;
-            conn[6] = this->node(14)+1;
-            conn[7] = this->node(23)+1;
+            conn[0] = this->node_id(20)+1;
+            conn[1] = this->node_id(9)+1;
+            conn[2] = this->node_id(2)+1;
+            conn[3] = this->node_id(10)+1;
+            conn[4] = this->node_id(26)+1;
+            conn[5] = this->node_id(22)+1;
+            conn[6] = this->node_id(14)+1;
+            conn[7] = this->node_id(23)+1;
 
             return;
 
           case 4:
 
-            conn[0] = this->node(12)+1;
-            conn[1] = this->node(21)+1;
-            conn[2] = this->node(26)+1;
-            conn[3] = this->node(24)+1;
-            conn[4] = this->node(4)+1;
-            conn[5] = this->node(16)+1;
-            conn[6] = this->node(25)+1;
-            conn[7] = this->node(19)+1;
+            conn[0] = this->node_id(12)+1;
+            conn[1] = this->node_id(21)+1;
+            conn[2] = this->node_id(26)+1;
+            conn[3] = this->node_id(24)+1;
+            conn[4] = this->node_id(4)+1;
+            conn[5] = this->node_id(16)+1;
+            conn[6] = this->node_id(25)+1;
+            conn[7] = this->node_id(19)+1;
 
             return;
 
           case 5:
 
-            conn[0] = this->node(21)+1;
-            conn[1] = this->node(13)+1;
-            conn[2] = this->node(22)+1;
-            conn[3] = this->node(26)+1;
-            conn[4] = this->node(16)+1;
-            conn[5] = this->node(5)+1;
-            conn[6] = this->node(17)+1;
-            conn[7] = this->node(25)+1;
+            conn[0] = this->node_id(21)+1;
+            conn[1] = this->node_id(13)+1;
+            conn[2] = this->node_id(22)+1;
+            conn[3] = this->node_id(26)+1;
+            conn[4] = this->node_id(16)+1;
+            conn[5] = this->node_id(5)+1;
+            conn[6] = this->node_id(17)+1;
+            conn[7] = this->node_id(25)+1;
 
             return;
 
           case 6:
 
-            conn[0] = this->node(24)+1;
-            conn[1] = this->node(26)+1;
-            conn[2] = this->node(23)+1;
-            conn[3] = this->node(15)+1;
-            conn[4] = this->node(19)+1;
-            conn[5] = this->node(25)+1;
-            conn[6] = this->node(18)+1;
-            conn[7] = this->node(7)+1;
+            conn[0] = this->node_id(24)+1;
+            conn[1] = this->node_id(26)+1;
+            conn[2] = this->node_id(23)+1;
+            conn[3] = this->node_id(15)+1;
+            conn[4] = this->node_id(19)+1;
+            conn[5] = this->node_id(25)+1;
+            conn[6] = this->node_id(18)+1;
+            conn[7] = this->node_id(7)+1;
 
             return;
 
           case 7:
 
-            conn[0] = this->node(26)+1;
-            conn[1] = this->node(22)+1;
-            conn[2] = this->node(14)+1;
-            conn[3] = this->node(23)+1;
-            conn[4] = this->node(25)+1;
-            conn[5] = this->node(17)+1;
-            conn[6] = this->node(6)+1;
-            conn[7] = this->node(18)+1;
+            conn[0] = this->node_id(26)+1;
+            conn[1] = this->node_id(22)+1;
+            conn[2] = this->node_id(14)+1;
+            conn[3] = this->node_id(23)+1;
+            conn[4] = this->node_id(25)+1;
+            conn[5] = this->node_id(17)+1;
+            conn[6] = this->node_id(6)+1;
+            conn[7] = this->node_id(18)+1;
 
             return;
 
@@ -366,33 +366,33 @@ void Hex27::connectivity(const unsigned int sc,
         // VTK now supports VTK_TRIQUADRATIC_HEXAHEDRON directly
         conn.resize(27);
 
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
-        conn[4] = this->node(4);
-        conn[5] = this->node(5);
-        conn[6] = this->node(6);
-        conn[7] = this->node(7);
-        conn[8] = this->node(8);
-        conn[9] = this->node(9);
-        conn[10] = this->node(10);
-        conn[11] = this->node(11); //
-        conn[12] = this->node(16);
-        conn[13] = this->node(17);
-        conn[14] = this->node(18);
-        conn[15] = this->node(19);
-        conn[16] = this->node(12);
-        conn[17] = this->node(13); //
-        conn[18] = this->node(14);
-        conn[19] = this->node(15);
-        conn[20] = this->node(24);
-        conn[21] = this->node(22);
-        conn[22] = this->node(21);
-        conn[23] = this->node(23);
-        conn[24] = this->node(20);
-        conn[25] = this->node(25);
-        conn[26] = this->node(26);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
+        conn[4] = this->node_id(4);
+        conn[5] = this->node_id(5);
+        conn[6] = this->node_id(6);
+        conn[7] = this->node_id(7);
+        conn[8] = this->node_id(8);
+        conn[9] = this->node_id(9);
+        conn[10] = this->node_id(10);
+        conn[11] = this->node_id(11); //
+        conn[12] = this->node_id(16);
+        conn[13] = this->node_id(17);
+        conn[14] = this->node_id(18);
+        conn[15] = this->node_id(19);
+        conn[16] = this->node_id(12);
+        conn[17] = this->node_id(13); //
+        conn[18] = this->node_id(14);
+        conn[19] = this->node_id(15);
+        conn[20] = this->node_id(24);
+        conn[21] = this->node_id(22);
+        conn[22] = this->node_id(21);
+        conn[23] = this->node_id(23);
+        conn[24] = this->node_id(20);
+        conn[25] = this->node_id(25);
+        conn[26] = this->node_id(26);
 
         return;
 
@@ -401,105 +401,105 @@ void Hex27::connectivity(const unsigned int sc,
           {
           case 0:
 
-          conn[0] = this->node(0);
-          conn[1] = this->node(8);
-          conn[2] = this->node(20);
-          conn[3] = this->node(11);
-          conn[4] = this->node(12);
-          conn[5] = this->node(21);
-          conn[6] = this->node(26);
-          conn[7] = this->node(24);
+          conn[0] = this->node_id(0);
+          conn[1] = this->node_id(8);
+          conn[2] = this->node_id(20);
+          conn[3] = this->node_id(11);
+          conn[4] = this->node_id(12);
+          conn[5] = this->node_id(21);
+          conn[6] = this->node_id(26);
+          conn[7] = this->node_id(24);
 
           return;
 
           case 1:
 
-          conn[0] = this->node(8);
-          conn[1] = this->node(1);
-          conn[2] = this->node(9);
-          conn[3] = this->node(20);
-          conn[4] = this->node(21);
-          conn[5] = this->node(13);
-          conn[6] = this->node(22);
-          conn[7] = this->node(26);
+          conn[0] = this->node_id(8);
+          conn[1] = this->node_id(1);
+          conn[2] = this->node_id(9);
+          conn[3] = this->node_id(20);
+          conn[4] = this->node_id(21);
+          conn[5] = this->node_id(13);
+          conn[6] = this->node_id(22);
+          conn[7] = this->node_id(26);
 
           return;
 
           case 2:
 
-          conn[0] = this->node(11);
-          conn[1] = this->node(20);
-          conn[2] = this->node(10);
-          conn[3] = this->node(3);
-          conn[4] = this->node(24);
-          conn[5] = this->node(26);
-          conn[6] = this->node(23);
-          conn[7] = this->node(15);
+          conn[0] = this->node_id(11);
+          conn[1] = this->node_id(20);
+          conn[2] = this->node_id(10);
+          conn[3] = this->node_id(3);
+          conn[4] = this->node_id(24);
+          conn[5] = this->node_id(26);
+          conn[6] = this->node_id(23);
+          conn[7] = this->node_id(15);
 
           return;
 
           case 3:
 
-          conn[0] = this->node(20);
-          conn[1] = this->node(9);
-          conn[2] = this->node(2);
-          conn[3] = this->node(10);
-          conn[4] = this->node(26);
-          conn[5] = this->node(22);
-          conn[6] = this->node(14);
-          conn[7] = this->node(23);
+          conn[0] = this->node_id(20);
+          conn[1] = this->node_id(9);
+          conn[2] = this->node_id(2);
+          conn[3] = this->node_id(10);
+          conn[4] = this->node_id(26);
+          conn[5] = this->node_id(22);
+          conn[6] = this->node_id(14);
+          conn[7] = this->node_id(23);
 
           return;
 
           case 4:
 
-          conn[0] = this->node(12);
-          conn[1] = this->node(21);
-          conn[2] = this->node(26);
-          conn[3] = this->node(24);
-          conn[4] = this->node(4);
-          conn[5] = this->node(16);
-          conn[6] = this->node(25);
-          conn[7] = this->node(19);
+          conn[0] = this->node_id(12);
+          conn[1] = this->node_id(21);
+          conn[2] = this->node_id(26);
+          conn[3] = this->node_id(24);
+          conn[4] = this->node_id(4);
+          conn[5] = this->node_id(16);
+          conn[6] = this->node_id(25);
+          conn[7] = this->node_id(19);
 
           return;
 
           case 5:
 
-          conn[0] = this->node(21);
-          conn[1] = this->node(13);
-          conn[2] = this->node(22);
-          conn[3] = this->node(26);
-          conn[4] = this->node(16);
-          conn[5] = this->node(5);
-          conn[6] = this->node(17);
-          conn[7] = this->node(25);
+          conn[0] = this->node_id(21);
+          conn[1] = this->node_id(13);
+          conn[2] = this->node_id(22);
+          conn[3] = this->node_id(26);
+          conn[4] = this->node_id(16);
+          conn[5] = this->node_id(5);
+          conn[6] = this->node_id(17);
+          conn[7] = this->node_id(25);
 
           return;
 
           case 6:
 
-          conn[0] = this->node(24);
-          conn[1] = this->node(26);
-          conn[2] = this->node(23);
-          conn[3] = this->node(15);
-          conn[4] = this->node(19);
-          conn[5] = this->node(25);
-          conn[6] = this->node(18);
-          conn[7] = this->node(7);
+          conn[0] = this->node_id(24);
+          conn[1] = this->node_id(26);
+          conn[2] = this->node_id(23);
+          conn[3] = this->node_id(15);
+          conn[4] = this->node_id(19);
+          conn[5] = this->node_id(25);
+          conn[6] = this->node_id(18);
+          conn[7] = this->node_id(7);
 
           return;
 
           case 7:
 
-          conn[0] = this->node(26);
-          conn[1] = this->node(22);
-          conn[2] = this->node(14);
-          conn[3] = this->node(23);
-          conn[4] = this->node(25);
-          conn[5] = this->node(17);
-          conn[6] = this->node(6);
-          conn[7] = this->node(18);
+          conn[0] = this->node_id(26);
+          conn[1] = this->node_id(22);
+          conn[2] = this->node_id(14);
+          conn[3] = this->node_id(23);
+          conn[4] = this->node_id(25);
+          conn[5] = this->node_id(17);
+          conn[6] = this->node_id(6);
+          conn[7] = this->node_id(18);
 
           return;
 
@@ -634,6 +634,230 @@ Hex27::second_order_child_vertex (const unsigned int n) const
   return std::pair<unsigned short int, unsigned short int>
     (_second_order_vertex_child_number[n],
      _second_order_vertex_child_index[n]);
+}
+
+
+
+Real Hex27::volume () const
+{
+  // Make copies of our points.  It makes the subsequent calculations a bit
+  // shorter and avoids dereferencing the same pointer multiple times.
+  Point
+    x0 = point(0),   x1 = point(1),   x2 = point(2),   x3 = point(3),   x4 = point(4),   x5 = point(5),   x6 = point(6),   x7 = point(7),   x8 = point(8),
+    x9 = point(9),   x10 = point(10), x11 = point(11), x12 = point(12), x13 = point(13), x14 = point(14), x15 = point(15), x16 = point(16), x17 = point(17),
+    x18 = point(18), x19 = point(19), x20 = point(20), x21 = point(21), x22 = point(22), x23 = point(23), x24 = point(24), x25 = point(25), x26 = point(26);
+
+  // The constant components of the dx/dxi vector,
+  // dx/dxi = \vec{a000} + \vec{a001}*zeta + \vec{a002}*zeta^2 + ...
+  // All of the xi^2 terms are zero.
+  // These were copied directly from the output of a Python script.
+  Point dx_dxi[3][3][3] =
+    {
+      {
+        {
+          x22/2 - x24/2, // 0, 0, 0
+          x11/4 + x17/4 - x19/4 - x9/4, // 0, 0, 1
+          -x11/4 + x17/4 - x19/4 - x22/2 + x24/2 + x9/4 // 0, 0, 2
+        },
+
+        {
+          x12/4 - x13/4 + x14/4 - x15/4, // 0, 1, 0
+          -x0/8 + x1/8 - x2/8 + x3/8 + x4/8 - x5/8 + x6/8 - x7/8, // 0, 1, 1
+          x0/8 - x1/8 - x12/4 + x13/4 - x14/4 + x15/4 + x2/8 - x3/8 + x4/8 - x5/8 + x6/8 - x7/8 // 0, 1, 2
+        },
+
+        {
+          -x12/4 + x13/4 + x14/4 - x15/4 - x22/2 + x24/2, // 0, 2, 0
+          x0/8 - x1/8 - x11/4 - x17/4 + x19/4 - x2/8 + x3/8 - x4/8 + x5/8 + x6/8 - x7/8 + x9/4, // 0, 2, 1
+          -x0/8 + x1/8 + x11/4 + x12/4 - x13/4 - x14/4 + x15/4 - x17/4 + x19/4 + x2/8 + x22/2 - x24/2 - x3/8 - x4/8 + x5/8 + x6/8 - x7/8 - x9/4 // 0, 2, 2
+        }
+      },
+      {
+        {
+          x22 + x24 - 2*x26, // 1, 0, 0
+          -x11/2 + x17/2 + x19/2 + x20 - x25 - x9/2, // 1, 0, 1
+          x11/2 + x17/2 + x19/2 - x20 - x22 - x24 - x25 + 2*x26 + x9/2 // 1, 0, 2
+        },
+
+        {
+          -x12/2 - x13/2 + x14/2 + x15/2 + x21 - x23, // 1, 1, 0
+          x0/4 + x1/4 + x10/2 + x16/2 - x18/2 - x2/4 - x3/4 - x4/4 - x5/4 + x6/4 + x7/4 - x8/2, // 1, 1, 1
+          -x0/4 - x1/4 - x10/2 + x12/2 + x13/2 - x14/2 - x15/2 + x16/2 - x18/2 + x2/4 - x21 + x23 + x3/4 - x4/4 - x5/4 + x6/4 + x7/4 + x8/2 // 1, 1, 2
+        },
+
+        {
+          x12/2 + x13/2 + x14/2 + x15/2 - x21 - x22 - x23 - x24 + 2*x26, // 1, 2, 0
+          -x0/4 - x1/4 + x10/2 + x11/2 - x16/2 - x17/2 - x18/2 - x19/2 - x2/4 - x20 + x25 - x3/4 + x4/4 + x5/4 + x6/4 + x7/4 + x8/2 + x9/2, // 1, 2, 1
+          x0/4 + x1/4 - x10/2 - x11/2 - x12/2 - x13/2 - x14/2 - x15/2 - x16/2 - x17/2 - x18/2 - x19/2 + x2/4 + x20 + x21 + x22 + x23 + x24 + x25 - 2*x26 + x3/4 + x4/4 + x5/4 + x6/4 + x7/4 - x8/2 - x9/2 // 1, 2, 2
+        }
+      },
+      {
+        {Point(0,0,0), Point(0,0,0), Point(0,0,0)},
+        {Point(0,0,0), Point(0,0,0), Point(0,0,0)},
+        {Point(0,0,0), Point(0,0,0), Point(0,0,0)}
+      }
+    };
+
+
+
+  // The constant components of the dx/deta vector, all of the eta^2
+  // terms are zero. These were copied directly from the output of a
+  // Python script.
+  Point dx_deta[3][3][3] =
+    {
+      {
+        {
+          -x21/2 + x23/2, // 0, 0, 0
+          -x10/4 - x16/4 + x18/4 + x8/4, // 0, 0, 1
+          x10/4 - x16/4 + x18/4 + x21/2 - x23/2 - x8/4 // 0, 0, 2
+        },
+        {
+          x21 + x23 - 2*x26, // 0, 1, 0
+          -x10/2 + x16/2 + x18/2 + x20 - x25 - x8/2, // 0, 1, 1
+          x10/2 + x16/2 + x18/2 - x20 - x21 - x23 - x25 + 2*x26 + x8/2 // 0, 1, 2
+        },
+        {
+          Point(0,0,0), // 0, 2, 0
+          Point(0,0,0), // 0, 2, 1
+          Point(0,0,0)  // 0, 2, 2
+        }
+      },
+
+      {
+        {
+          x12/4 - x13/4 + x14/4 - x15/4, // 1, 0, 0
+          -x0/8 + x1/8 - x2/8 + x3/8 + x4/8 - x5/8 + x6/8 - x7/8, // 1, 0, 1
+          x0/8 - x1/8 - x12/4 + x13/4 - x14/4 + x15/4 + x2/8 - x3/8 + x4/8 - x5/8 + x6/8 - x7/8 // 1, 0, 2
+        },
+        {
+          -x12/2 + x13/2 + x14/2 - x15/2 - x22 + x24, // 1, 1, 0
+          x0/4 - x1/4 - x11/2 - x17/2 + x19/2 - x2/4 + x3/4 - x4/4 + x5/4 + x6/4 - x7/4 + x9/2, // 1, 1, 1
+          -x0/4 + x1/4 + x11/2 + x12/2 - x13/2 - x14/2 + x15/2 - x17/2 + x19/2 + x2/4 + x22 - x24 - x3/4 - x4/4 + x5/4 + x6/4 - x7/4 - x9/2 // 1, 1, 2
+        },
+        {
+          Point(0,0,0), // 1, 2, 0
+          Point(0,0,0), // 1, 2, 1
+          Point(0,0,0)  // 1, 2, 2
+        }
+      },
+
+      {
+        {
+          -x12/4 - x13/4 + x14/4 + x15/4 + x21/2 - x23/2, // 2, 0, 0
+          x0/8 + x1/8 + x10/4 + x16/4 - x18/4 - x2/8 - x3/8 - x4/8 - x5/8 + x6/8 + x7/8 - x8/4, // 2, 0, 1
+          -x0/8 - x1/8 - x10/4 + x12/4 + x13/4 - x14/4 - x15/4 + x16/4 - x18/4 + x2/8 - x21/2 + x23/2 + x3/8 - x4/8 - x5/8 + x6/8 + x7/8 + x8/4, // 2, 0, 2
+        },
+        {
+          x12/2 + x13/2 + x14/2 + x15/2 - x21 - x22 - x23 - x24 + 2*x26, // 2, 1, 0
+          -x0/4 - x1/4 + x10/2 + x11/2 - x16/2 - x17/2 - x18/2 - x19/2 - x2/4 - x20 + x25 - x3/4 + x4/4 + x5/4 + x6/4 + x7/4 + x8/2 + x9/2, // 2, 1, 1
+          x0/4 + x1/4 - x10/2 - x11/2 - x12/2 - x13/2 - x14/2 - x15/2 - x16/2 - x17/2 - x18/2 - x19/2 + x2/4 + x20 + x21 + x22 + x23 + x24 + x25 - 2*x26 + x3/4 + x4/4 + x5/4 + x6/4 + x7/4 - x8/2 - x9/2 // 2, 1, 2
+        },
+        {
+          Point(0,0,0), // 2, 2, 0
+          Point(0,0,0), // 2, 2, 1
+          Point(0,0,0)  // 2, 2, 2
+        }
+      }
+    };
+
+
+
+  // The constant components of the dx/dzeta vector, all of the zeta^2
+  // terms are zero. These were copied directly from the output of a
+  // Python script.
+  Point dx_dzeta[3][3][3] =
+    {
+      {
+        {
+          -x20/2 + x25/2, // 0, 0, 0
+          x20 + x25 - 2*x26, // 0, 0, 1
+          Point(0,0,0) // 0, 0, 2
+        },
+        {
+          -x10/4 - x16/4 + x18/4 + x8/4, // 0, 1, 0
+          x10/2 - x16/2 + x18/2 + x21 - x23 - x8/2, // 0, 1, 1
+          Point(0,0,0) // 0, 1, 2
+        },
+        {
+          -x10/4 + x16/4 + x18/4 + x20/2 - x25/2 - x8/4, // 0, 2, 0
+          x10/2 + x16/2 + x18/2 - x20 - x21 - x23 - x25 + 2*x26 + x8/2, // 0, 2, 1
+          Point(0,0,0) // 0, 2, 2
+        }
+      },
+      {
+        {
+          x11/4 + x17/4 - x19/4 - x9/4, // 1, 0, 0
+          -x11/2 + x17/2 - x19/2 - x22 + x24 + x9/2, // 1, 0, 1
+          Point(0,0,0) // 1, 0, 2
+        },
+        {
+          -x0/8 + x1/8 - x2/8 + x3/8 + x4/8 - x5/8 + x6/8 - x7/8, // 1, 1, 0
+          x0/4 - x1/4 - x12/2 + x13/2 - x14/2 + x15/2 + x2/4 - x3/4 + x4/4 - x5/4 + x6/4 - x7/4, // 1, 1, 1
+          Point(0,0,0) // 1, 1, 2
+        },
+        {
+          x0/8 - x1/8 - x11/4 - x17/4 + x19/4 - x2/8 + x3/8 - x4/8 + x5/8 + x6/8 - x7/8 + x9/4, // 1, 2, 0
+          -x0/4 + x1/4 + x11/2 + x12/2 - x13/2 - x14/2 + x15/2 - x17/2 + x19/2 + x2/4 + x22 - x24 - x3/4 - x4/4 + x5/4 + x6/4 - x7/4 - x9/2, // 1, 2, 1
+          Point(0,0,0) // 1, 2, 2
+        }
+      },
+      {
+        {
+          -x11/4 + x17/4 + x19/4 + x20/2 - x25/2 - x9/4, // 2, 0, 0
+          x11/2 + x17/2 + x19/2 - x20 - x22 - x24 - x25 + 2*x26 + x9/2, // 2, 0, 1
+          Point(0,0,0) // 2, 0, 2
+        },
+        {
+          x0/8 + x1/8 + x10/4 + x16/4 - x18/4 - x2/8 - x3/8 - x4/8 - x5/8 + x6/8 + x7/8 - x8/4, // 2, 1, 0
+          -x0/4 - x1/4 - x10/2 + x12/2 + x13/2 - x14/2 - x15/2 + x16/2 - x18/2 + x2/4 - x21 + x23 + x3/4 - x4/4 - x5/4 + x6/4 + x7/4 + x8/2, // 2, 1, 1
+          Point(0,0,0)  // 2, 1, 2
+        },
+        {
+          -x0/8 - x1/8 + x10/4 + x11/4 - x16/4 - x17/4 - x18/4 - x19/4 - x2/8 - x20/2 + x25/2 - x3/8 + x4/8 + x5/8 + x6/8 + x7/8 + x8/4 + x9/4, // 2, 2, 0
+          x0/4 + x1/4 - x10/2 - x11/2 - x12/2 - x13/2 - x14/2 - x15/2 - x16/2 - x17/2 - x18/2 - x19/2 + x2/4 + x20 + x21 + x22 + x23 + x24 + x25 - 2*x26 + x3/4 + x4/4 + x5/4 + x6/4 + x7/4 - x8/2 - x9/2, // 2, 2, 1
+          Point(0,0,0) // 2, 2, 2
+        }
+      }
+    };
+
+  // 3x3 quadrature, exact for bi-quintics
+  const int N = 3;
+  const Real w[N] = {5./9, 8./9, 5./9};
+
+  // Quadrature point locations raised to powers.  q[0][2] is
+  // quadrature point 0, squared, q[1][1] is quadrature point 1 to the
+  // first power, etc.
+  const Real q[N][N] =
+    {
+      //^0   ^1                 ^2
+      {  1., -std::sqrt(15)/5., 15./25},
+      {  1., 0.,                0.},
+      {  1., std::sqrt(15)/5.,  15./25}
+    };
+
+  Real vol = 0.;
+  for (int i=0; i<N; ++i)
+    for (int j=0; j<N; ++j)
+      for (int k=0; k<N; ++k)
+        {
+          // Compute dx_dxi, dx_deta, dx_dzeta at the current quadrature point.
+          Point dx_dxi_q, dx_deta_q, dx_dzeta_q;
+          for (int ii=0; ii<N; ++ii)
+            for (int jj=0; jj<N; ++jj)
+              for (int kk=0; kk<N; ++kk)
+                {
+                  Real coeff = q[i][ii] * q[j][jj] * q[k][kk];
+
+                  dx_dxi_q   += coeff * dx_dxi[ii][jj][kk];
+                  dx_deta_q  += coeff * dx_deta[ii][jj][kk];
+                  dx_dzeta_q += coeff * dx_dzeta[ii][jj][kk];
+                }
+
+          // Compute scalar triple product, multiply by weight, and accumulate volume.
+          vol += w[i] * w[j] * w[k] * triple_product(dx_dxi_q, dx_deta_q, dx_dzeta_q);
+        }
+
+  return vol;
 }
 
 

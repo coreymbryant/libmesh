@@ -337,13 +337,11 @@ void EquationSystems::allgather ()
 
 void EquationSystems::update ()
 {
-  START_LOG("update()","EquationSystems");
+  LOG_SCOPE("update()", "EquationSystems");
 
   // Localize each system's vectors
   for (unsigned int i=0; i != this->n_systems(); ++i)
     this->get_system(i).update();
-
-  STOP_LOG("update()","EquationSystems");
 }
 
 
@@ -658,17 +656,17 @@ void EquationSystems::build_solution_vector (std::vector<Number> &,
   //       // Copy the nodal solution over into the correct place in
   //       // the global soln vector which will be returned to the user.
   //       for (unsigned int n=0; n<elem->n_nodes(); n++)
-  // soln[elem->node(n)] = nodal_soln[n];
+  // soln[elem->node_id(n)] = nodal_soln[n];
   //     }
 }
 
 
 
 
-void EquationSystems::build_solution_vector (std::vector<Number> & soln,
-                                             const std::set<std::string> * system_names) const
+UniquePtr<NumericVector<Number> >
+EquationSystems::build_parallel_solution_vector(const std::set<std::string> * system_names) const
 {
-  START_LOG("build_solution_vector()", "EquationSystems");
+  LOG_SCOPE("build_parallel_solution_vector()", "EquationSystems");
 
   // This function must be run on all processors at once
   parallel_object_only();
@@ -843,10 +841,10 @@ void EquationSystems::build_solution_vector (std::vector<Number> & soln,
                             {
                               // For vector-valued elements, all components are in nodal_soln. For each
                               // node, the components are stored in order, i.e. node_0 -> s0_x, s0_y, s0_z
-                              parallel_soln.add(nv*(elem->node(n)) + (var+d + var_num), nodal_soln[n_vec_dim*n+d]);
+                              parallel_soln.add(nv*(elem->node_id(n)) + (var+d + var_num), nodal_soln[n_vec_dim*n+d]);
 
                               // Increment the repeat count for this position
-                              repeat_count.add(nv*(elem->node(n)) + (var+d + var_num), 1);
+                              repeat_count.add(nv*(elem->node_id(n)) + (var+d + var_num), 1);
                             }
                         }
                     }
@@ -854,9 +852,9 @@ void EquationSystems::build_solution_vector (std::vector<Number> & soln,
               else // If this variable doesn't exist on this subdomain we have to still increment repeat_count so that we won't divide by 0 later:
                 for (unsigned int n=0; n<elem->n_nodes(); n++)
                   // Only do this if this variable has NO DoFs at this node... it might have some from an ajoining element...
-                  if(!elem->get_node(n)->n_dofs(sys_num, var))
+                  if(!elem->node_ptr(n)->n_dofs(sys_num, var))
                     for( unsigned int d=0; d < n_vec_dim; d++ )
-                      repeat_count.add(nv*(elem->node(n)) + (var+d + var_num), 1);
+                      repeat_count.add(nv*(elem->node_id(n)) + (var+d + var_num), 1);
 
             } // end loop over elements
         } // end loop on variables in this system
@@ -870,34 +868,43 @@ void EquationSystems::build_solution_vector (std::vector<Number> & soln,
   // Divide to get the average value at the nodes
   parallel_soln /= repeat_count;
 
-  parallel_soln.localize_to_one(soln);
-
-  STOP_LOG("build_solution_vector()", "EquationSystems");
+  return UniquePtr<NumericVector<Number> >(parallel_soln_ptr.release());
 }
 
 
+
+void EquationSystems::build_solution_vector (std::vector<Number> & soln,
+                                             const std::set<std::string> * system_names) const
+{
+  LOG_SCOPE("build_solution_vector()", "EquationSystems");
+
+  // Call the parallel implementation
+  UniquePtr<NumericVector<Number> > parallel_soln =
+    this->build_parallel_solution_vector(system_names);
+
+  // Localize the NumericVector into the provided std::vector.
+  parallel_soln->localize_to_one(soln);
+}
+
+
+
 void EquationSystems::get_solution (std::vector<Number> & soln,
-                                    std::vector<std::string> & names ) const
+                                    std::vector<std::string> & names) const
 {
   // This function must be run on all processors at once
   parallel_object_only();
 
   libmesh_assert (this->n_systems());
 
-  const dof_id_type ne  = _mesh.n_elem();
+  const dof_id_type ne = _mesh.n_elem();
 
   libmesh_assert_equal_to (ne, _mesh.max_elem_id());
-
-  // Get the number of local elements
-  dof_id_type n_local_elems = cast_int<dof_id_type>
-    (std::distance(_mesh.local_elements_begin(),
-                   _mesh.local_elements_end()));
 
   // If the names vector has entries, we will only populate the soln vector
   // with names included in that list.  Note: The names vector may be
   // reordered upon exiting this function
   std::vector<std::string> filter_names = names;
-  bool is_filter_names = ! filter_names.empty();
+  bool is_filter_names = !filter_names.empty();
 
   soln.clear();
   names.clear();
@@ -907,33 +914,57 @@ void EquationSystems::get_solution (std::vector<Number> & soln,
   dof_id_type nv = 0;
 
   // Find the total number of variables to output
+  std::vector<std::vector<unsigned> > do_output(_systems.size());
   {
     const_system_iterator       pos = _systems.begin();
     const const_system_iterator end = _systems.end();
+    unsigned sys_ctr = 0;
 
-    for (; pos != end; ++pos)
+    for (; pos != end; ++pos, ++sys_ctr)
       {
-        const System & system  = *(pos->second);
+        const System & system = *(pos->second);
         const unsigned int nv_sys = system.n_vars();
+
+        do_output[sys_ctr].resize(nv_sys);
 
         for (unsigned int var=0; var < nv_sys; ++var)
           {
-            if ( system.variable_type( var ) != type ||
-                 ( is_filter_names && std::find(filter_names.begin(), filter_names.end(), system.variable_name( var )) == filter_names.end()) )
+            if (system.variable_type(var) != type ||
+                 (is_filter_names && std::find(filter_names.begin(), filter_names.end(), system.variable_name(var)) == filter_names.end()))
               continue;
 
+            // Otherwise, this variable should be output
             nv++;
+            do_output[sys_ctr][var] = 1;
           }
       }
   }
 
-  if(!nv) // If there are no variables to write out don't do anything...
+  // If there are no variables to write out don't do anything...
+  if (!nv)
     return;
+
+  // We can handle the case where there are NULLs in the Elem vector
+  // by just having extra zeros in the solution vector.
+  numeric_index_type parallel_soln_global_size = ne*nv;
+
+  numeric_index_type div = parallel_soln_global_size / this->n_processors();
+  numeric_index_type mod = parallel_soln_global_size % this->n_processors();
+
+  // Initialize all processors to the average size.
+  numeric_index_type parallel_soln_local_size = div;
+
+  // The first "mod" processors get an extra entry.
+  if (this->processor_id() < mod)
+    parallel_soln_local_size = div+1;
 
   // Create a NumericVector to hold the parallel solution
   UniquePtr<NumericVector<Number> > parallel_soln_ptr = NumericVector<Number>::build(_communicator);
   NumericVector<Number> & parallel_soln = *parallel_soln_ptr;
-  parallel_soln.init(ne*nv, n_local_elems*nv, false, PARALLEL);
+  parallel_soln.init(parallel_soln_global_size,
+                     parallel_soln_local_size,
+                     /*fast=*/false,
+                     /*ParallelType=*/PARALLEL);
 
   dof_id_type var_num = 0;
 
@@ -943,8 +974,9 @@ void EquationSystems::get_solution (std::vector<Number> & soln,
   // format.
   const_system_iterator       pos = _systems.begin();
   const const_system_iterator end = _systems.end();
+  unsigned sys_ctr = 0;
 
-  for (; pos != end; ++pos)
+  for (; pos != end; ++pos, ++sys_ctr)
     {
       const System & system  = *(pos->second);
       const unsigned int nv_sys = system.n_vars();
@@ -965,16 +997,17 @@ void EquationSystems::get_solution (std::vector<Number> & soln,
 
       NumericVector<Number> & sys_soln(*system.current_local_solution);
 
-      std::vector<dof_id_type> dof_indices; // The DOF indices for the finite element
+      // The DOF indices for the finite element
+      std::vector<dof_id_type> dof_indices;
 
       // Loop over the variable names and load them in order
       for (unsigned int var=0; var < nv_sys; ++var)
         {
-          if ( system.variable_type( var ) != type ||
-               ( is_filter_names && std::find(filter_names.begin(), filter_names.end(), system.variable_name( var )) == filter_names.end()) )
+          // Skip this variable if we are not outputting it.
+          if (!do_output[sys_ctr][var])
             continue;
 
-          names.push_back( system.variable_name( var ) );
+          names.push_back(system.variable_name(var));
 
           const Variable & variable = system.variable(var);
           const DofMap & dof_map = system.get_dof_map();
@@ -984,13 +1017,13 @@ void EquationSystems::get_solution (std::vector<Number> & soln,
 
           for ( ; it != end_elem; ++it)
             {
-              if (variable.active_on_subdomain((*it)->subdomain_id()))
-                {
-                  const Elem * elem = *it;
+              const Elem * elem = *it;
 
+              if (variable.active_on_subdomain(elem->subdomain_id()))
+                {
                   dof_map.dof_indices (elem, dof_indices, var);
 
-                  libmesh_assert_equal_to ( 1, dof_indices.size() );
+                  libmesh_assert_equal_to (1, dof_indices.size());
 
                   parallel_soln.set((ne*var_num)+elem->id(), sys_soln(dof_indices[0]));
                 }
@@ -1010,7 +1043,7 @@ void EquationSystems::get_solution (std::vector<Number> & soln,
 void EquationSystems::build_discontinuous_solution_vector (std::vector<Number> & soln,
                                                            const std::set<std::string> * system_names) const
 {
-  START_LOG("build_discontinuous_solution_vector()", "EquationSystems");
+  LOG_SCOPE("build_discontinuous_solution_vector()", "EquationSystems");
 
   libmesh_assert (this->n_systems());
 
@@ -1134,8 +1167,6 @@ void EquationSystems::build_discontinuous_solution_vector (std::vector<Number> &
         var_num += nv_sys;
       }
   }
-
-  STOP_LOG("build_discontinuous_solution_vector()", "EquationSystems");
 }
 
 

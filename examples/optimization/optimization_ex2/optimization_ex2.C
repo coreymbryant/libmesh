@@ -425,6 +425,15 @@ int main (int argc, char ** argv)
 
 #endif
 
+  // We use a 2D domain.
+  libmesh_example_requires(LIBMESH_DIM > 1, "--disable-1D-only");
+
+  // TAO is giving us problems in parallel?
+  if (init.comm().size() != 1)
+    {
+      libMesh::out << "This example can currently only be run in serial." << std::endl;
+      return 77;
+    }
 
   GetPot infile("optimization_ex2.in");
   const std::string approx_order = infile("approx_order", "FIRST");

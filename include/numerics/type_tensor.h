@@ -167,7 +167,7 @@ public:
   /**
    * Return one row of the tensor as a TypeVector.
    */
-  TypeVector<T> row(const unsigned int r);
+  TypeVector<T> row(const unsigned int r) const;
 
   /**
    * Add two tensors.
@@ -290,16 +290,36 @@ public:
   TypeTensor<T> inverse() const;
 
   /**
+   * Solve the 2x2 or 3x3 system of equations A*x = b for x
+   * by directly inverting A and multiplying it by b.
+   */
+  void solve(const TypeVector<T> & b, TypeVector<T> & x) const;
+
+  /**
+   * Returns the Frobenius norm of the tensor, i.e. the square-root of
+   * the sum of the elements squared.  This function is deprecated,
+   * used norm() instead.
+   */
+  Real size() const;
+
+  /**
    * Returns the Frobenius norm of the tensor, i.e. the square-root of
    * the sum of the elements squared.
    */
-  Real size() const;
+  Real norm() const;
+
+  /**
+   * Returns the Frobenius norm of the tensor squared, i.e.  sum of the
+   * element magnitudes squared.  This function is deprecated,
+   * used norm() instead.
+   */
+  Real size_sq() const;
 
   /**
    * Returns the Frobenius norm of the tensor squared, i.e.  sum of the
    * element magnitudes squared.
    */
-  Real size_sq() const;
+  Real norm_sq() const;
 
   /**
    * Returns the determinant of the tensor.  Because these are 3x3
@@ -650,7 +670,7 @@ TypeTensor<T>::slice (const unsigned int i)
 template <typename T>
 inline
 TypeVector<T>
-TypeTensor<T>::row(const unsigned int r)
+TypeTensor<T>::row(const unsigned int r) const
 {
   TypeVector<T> return_vector;
 
@@ -1010,6 +1030,54 @@ TypeTensor<T> TypeTensor<T>::inverse() const
 
 template <typename T>
 inline
+void TypeTensor<T>::solve(const TypeVector<T> & b, TypeVector<T> & x) const
+{
+#if LIBMESH_DIM == 1
+  libmesh_assert_not_equal_to(_coords[0], static_cast<T>(0.));
+  x(0) = b(0) / _coords[0];
+#endif
+
+#if LIBMESH_DIM == 2
+  T my_det = _coords[0]*_coords[3] - _coords[1]*_coords[2];
+
+  libmesh_assert_not_equal_to(my_det, static_cast<T>(0.));
+
+  T my_det_inv = 1./my_det;
+
+  x(0) = my_det_inv*( _coords[3]*b(0) - _coords[1]*b(1));
+  x(1) = my_det_inv*(-_coords[2]*b(0) + _coords[0]*b(1));
+#endif
+
+#if LIBMESH_DIM == 3
+  T my_det =
+    //           a11*(a33       *a22        - a32       *a23)
+    /**/  _coords[0]*(_coords[8]*_coords[4] - _coords[7]*_coords[5])
+    //          -a21*(a33       *a12        - a32       *a13)
+    /**/ -_coords[3]*(_coords[8]*_coords[1] - _coords[7]*_coords[2]) +
+    //          +a31*(a23       *a12        - a22       *a13)
+    /**/ +_coords[6]*(_coords[5]*_coords[1] - _coords[4]*_coords[2]);
+
+  libmesh_assert_not_equal_to(my_det, static_cast<T>(0.));
+
+  T my_det_inv = 1./my_det;
+  x(0) = my_det_inv*((_coords[8]*_coords[4] - _coords[7]*_coords[5])*b(0) -
+                     (_coords[8]*_coords[1] - _coords[7]*_coords[2])*b(1) +
+                     (_coords[5]*_coords[1] - _coords[4]*_coords[2])*b(2));
+
+  x(1) = my_det_inv*((_coords[6]*_coords[5] - _coords[8]*_coords[3])*b(0) +
+                     (_coords[8]*_coords[0] - _coords[6]*_coords[2])*b(1) -
+                     (_coords[5]*_coords[0] - _coords[3]*_coords[2])*b(2));
+
+  x(2) = my_det_inv*((_coords[7]*_coords[3] - _coords[6]*_coords[4])*b(0) -
+                     (_coords[7]*_coords[0] - _coords[6]*_coords[1])*b(1) +
+                     (_coords[4]*_coords[0] - _coords[3]*_coords[1])*b(2));
+#endif
+}
+
+
+
+template <typename T>
+inline
 const TypeTensor<T> & TypeTensor<T>::operator /= (const T factor)
 {
   libmesh_assert_not_equal_to (factor, static_cast<T>(0.));
@@ -1077,7 +1145,17 @@ template <typename T>
 inline
 Real TypeTensor<T>::size() const
 {
-  return std::sqrt(this->size_sq());
+  libmesh_deprecated();
+  return this->norm();
+}
+
+
+
+template <typename T>
+inline
+Real TypeTensor<T>::norm() const
+{
+  return std::sqrt(this->norm_sq());
 }
 
 
@@ -1135,6 +1213,16 @@ void TypeTensor<T>::zero()
 template <typename T>
 inline
 Real TypeTensor<T>::size_sq () const
+{
+  libmesh_deprecated();
+  return this->norm_sq();
+}
+
+
+
+template <typename T>
+inline
+Real TypeTensor<T>::norm_sq () const
 {
   Real sum = 0.;
   for (unsigned int i=0; i<LIBMESH_DIM*LIBMESH_DIM; i++)

@@ -56,21 +56,21 @@ dof_id_type Tet::key (const unsigned int s) const
 {
   libmesh_assert_less (s, this->n_sides());
 
-  return this->compute_key(this->node(Tet4::side_nodes_map[s][0]),
-                           this->node(Tet4::side_nodes_map[s][1]),
-                           this->node(Tet4::side_nodes_map[s][2]));
+  return this->compute_key(this->node_id(Tet4::side_nodes_map[s][0]),
+                           this->node_id(Tet4::side_nodes_map[s][1]),
+                           this->node_id(Tet4::side_nodes_map[s][2]));
 }
 
 
 
-UniquePtr<Elem> Tet::side (const unsigned int i) const
+UniquePtr<Elem> Tet::side_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_sides());
 
   Elem * face = new Tri3;
 
   for (unsigned n=0; n<face->n_nodes(); ++n)
-    face->set_node(n) = this->get_node(Tet4::side_nodes_map[i][n]);
+    face->set_node(n) = this->node_ptr(Tet4::side_nodes_map[i][n]);
 
   return UniquePtr<Elem>(face);
 }
@@ -146,9 +146,9 @@ void Tet::choose_diagonal() const
   // Check for uninitialized diagonal selection
   if (this->_diagonal_selection==INVALID_DIAG)
     {
-      Real diag_01_23 = (this->point(0)+this->point(1)-this->point(2)-this->point(3)).size_sq();
-      Real diag_02_13 = (this->point(0)-this->point(1)+this->point(2)-this->point(3)).size_sq();
-      Real diag_03_12 = (this->point(0)-this->point(1)-this->point(2)+this->point(3)).size_sq();
+      Real diag_01_23 = (this->point(0) + this->point(1) - this->point(2) - this->point(3)).norm_sq();
+      Real diag_02_13 = (this->point(0) - this->point(1) + this->point(2) - this->point(3)).norm_sq();
+      Real diag_03_12 = (this->point(0) - this->point(1) - this->point(2) + this->point(3)).norm_sq();
 
       this->_diagonal_selection=DIAG_02_13;
 

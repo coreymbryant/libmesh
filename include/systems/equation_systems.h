@@ -285,6 +285,16 @@ public:
                               const std::set<std::string> * system_names=libmesh_nullptr) const;
 
   /**
+   * A version of build_solution_vector which is appropriate for
+   * "parallel" output formats like Nemesis.  Returns a UniquePtr to a
+   * node-major NumericVector of total length n_nodes*n_vars that
+   * various I/O classes can then use to get the local values they
+   * need to write on each processor.
+   */
+  UniquePtr<NumericVector<Number> >
+  build_parallel_solution_vector(const std::set<std::string> * system_names=libmesh_nullptr) const;
+
+  /**
    * Retrieve the solution data for CONSTANT MONOMIALs.  If \p names
    * is populated, only the variables corresponding to those names will
    * be retrieved.  This can be used to filter which variables are retrieved.
@@ -318,6 +328,9 @@ public:
    * If XdrMODE is omitted, it will be inferred as READ for filenames
    * containing .xda or as DECODE for filenames containing .xdr
    *
+   * @param name Name of the file to be read.
+   * @param read_flags Single flag created by bitwise-OR'ing several flags together.
+   * @param mode Controls whether reading is done in binary or ascii mode.
    * @param partition_agnostic If true then the mesh and degrees of freedom
    * will be temporarily renumbered in a partition agnostic way so that
    * files written using "n" mpi processes can be re-read on "m" mpi
@@ -362,6 +375,9 @@ public:
    * If XdrMODE is omitted, it will be inferred as WRITE for filenames
    * containing .xda or as ENCODE for filenames containing .xdr
    *
+   * @param name Name of the file to be read.
+   * @param write_flags Single flag created by bitwise-OR'ing several flags together.
+   * @param mode Controls whether reading is done in binary or ascii mode.
    * @param partition_agnostic If true then the mesh and degrees of freedom
    * will be temporarily renumbered in a partition agnostic way so that
    * files written using "n" mpi processes can be re-read on "m" mpi
@@ -479,6 +495,8 @@ private:
    * Actual read implementation.  This can be called repeatedly
    * inside a try-catch block in an attempt to read broken files.
    *
+   * @param name Name of the file to be read.
+   * @param read_flags Single flag created by bitwise-OR'ing several flags together.
    * @param partition_agnostic If true then the mesh and degrees of freedom
    * will be temporarily renumbered in a partition agnostic way so that
    * files written using "n" mpi processes can be re-read on "m" mpi

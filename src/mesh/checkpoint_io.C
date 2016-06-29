@@ -76,15 +76,15 @@ CheckpointIO::~CheckpointIO ()
 
 void CheckpointIO::write (const std::string & name)
 {
-  START_LOG("write()","CheckpointIO");
+  LOG_SCOPE("write()", "CheckpointIO");
 
   // convenient reference to our mesh
   const MeshBase & mesh = MeshOutput<MeshBase>::mesh();
 
-  // Try to dynamic cast the mesh to see if it's a ParallelMesh object
+  // Try to dynamic cast the mesh to see if it's a DistributedMesh object
   // Note: Just using is_serial() is not good enough because the Mesh won't
   // have been prepared yet when is when that flag gets set to false... sigh.
-  bool parallel_mesh = dynamic_cast<const ParallelMesh *>(&mesh);
+  bool parallel_mesh = dynamic_cast<const DistributedMesh *>(&mesh);
 
   // If this is a serial mesh then we're only going to write it on processor 0
   if(parallel_mesh || this->processor_id() == 0)
@@ -138,8 +138,6 @@ void CheckpointIO::write (const std::string & name)
     }
 
   this->comm().barrier();
-
-  STOP_LOG("write()","CheckpointIO");
 }
 
 
@@ -287,7 +285,7 @@ void CheckpointIO::write_connectivity (Xdr & io) const
           std::vector<largest_id_type> conn_data(n_nodes);
 
           for(unsigned int i=0; i<n_nodes; i++)
-            conn_data[i] = elem.node(i);
+            conn_data[i] = elem.node_id(i);
 
           io.data_stream(&elem_data[0],
                          cast_int<unsigned int>(elem_data.size()),
@@ -401,14 +399,14 @@ void CheckpointIO::write_bc_names (Xdr & io, const BoundaryInfo & info, bool is_
 
 void CheckpointIO::read (const std::string & name)
 {
-  START_LOG("read()","CheckpointIO");
+  LOG_SCOPE("read()","CheckpointIO");
 
   MeshBase & mesh = MeshInput<MeshBase>::mesh();
 
-  // Try to dynamic cast the mesh to see if it's a ParallelMesh object
+  // Try to dynamic cast the mesh to see if it's a DistributedMesh object
   // Note: Just using is_serial() is not good enough because the Mesh won't
   // have been prepared yet when is when that flag gets set to false... sigh.
-  bool parallel_mesh = dynamic_cast<ParallelMesh *>(&mesh);
+  bool parallel_mesh = dynamic_cast<DistributedMesh *>(&mesh);
 
   // If this is a serial mesh then we're going to only read it on processor 0 and broadcast it
   if(parallel_mesh || this->processor_id() == 0)
@@ -472,8 +470,6 @@ void CheckpointIO::read (const std::string & name)
   // If the mesh is serial then we only read it on processor 0 so we need to broadcast it
   if(!parallel_mesh)
     MeshCommunication().broadcast(mesh);
-
-  STOP_LOG("read()","CheckpointIO");
 }
 
 
@@ -611,7 +607,9 @@ void CheckpointIO::read_connectivity (Xdr & io)
           const dof_id_type parent_id          =
             cast_int<dof_id_type>      (elem_data[4]);
 
-          Elem * parent = (parent_id == DofObject::invalid_processor_id) ? libmesh_nullptr : mesh.elem(parent_id);
+          Elem * parent =
+            (parent_id == DofObject::invalid_processor_id) ?
+            libmesh_nullptr : mesh.elem_ptr(parent_id);
 
           // Create the element
           Elem * elem = Elem::build(elem_type, parent).release();

@@ -108,13 +108,13 @@ void Edge3::connectivity(const unsigned int sc,
         switch (sc)
           {
           case 0:
-            conn[0] = this->node(0)+1;
-            conn[1] = this->node(2)+1;
+            conn[0] = this->node_id(0)+1;
+            conn[1] = this->node_id(2)+1;
             return;
 
           case 1:
-            conn[0] = this->node(2)+1;
-            conn[1] = this->node(1)+1;
+            conn[0] = this->node_id(2)+1;
+            conn[1] = this->node_id(1)+1;
             return;
 
           default:
@@ -126,23 +126,23 @@ void Edge3::connectivity(const unsigned int sc,
     case VTK:
       {
         conn.resize(3);
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
         return;
 
         /*
           switch (sc)
           {
           case 0:
-          conn[0] = this->node(0);
-          conn[1] = this->node(2);
+          conn[0] = this->node_id(0);
+          conn[1] = this->node_id(2);
 
           return;
 
           case 1:
-          conn[0] = this->node(2);
-          conn[1] = this->node(1);
+          conn[0] = this->node_id(2);
+          conn[1] = this->node_id(1);
 
           return;
 
@@ -174,13 +174,13 @@ Real Edge3::volume () const
   Point A = this->point(0) + this->point(1) - 2*this->point(2);
   Point B = (this->point(1) - this->point(0))/2;
 
-  const Real a = A.size_sq();
+  const Real a = A.norm_sq();
   const Real b = 2.*(A*B);
-  const Real c = B.size_sq();
+  const Real c = B.norm_sq();
 
   // Degenerate straight line case
   if (a < TOLERANCE*TOLERANCE*TOLERANCE)
-    return (this->point(1) - this->point(0)).size();
+    return (this->point(1) - this->point(0)).norm();
 
   const Real ba=b/a;
   const Real ca=c/a;
@@ -200,7 +200,7 @@ Real Edge3::volume () const
 
 dof_id_type Edge3::key () const
 {
-  return this->compute_key(this->node(2));
+  return this->compute_key(this->node_id(2));
 }
 
 

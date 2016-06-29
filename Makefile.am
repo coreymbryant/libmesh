@@ -42,6 +42,7 @@ nobase_data_DATA = \
         reference_elements/3D/one_prism15.xda \
         reference_elements/3D/one_prism18.xda \
         reference_elements/3D/one_pyramid.xda \
+        reference_elements/3D/one_pyramid13.xda \
         reference_elements/3D/one_pyramid14.xda \
         reference_elements/3D/one_tet.xda \
         reference_elements/3D/one_tet10.xda
@@ -88,7 +89,7 @@ install-data-hook:
 	@if (test "x$(prefix)" != "x@prefix@") ; then \
           oldprefix="@prefix@" ; \
           newprefix="$(prefix)" ; \
-          for genfile in `find $(DESTDIR)$(prefix) -name "*.pc" -o -name Make.common -o -name libmesh-config -type f` ; do \
+          for genfile in `echo $(DESTDIR)$(prefix)/lib/pkgconfig/*.pc $(DESTDIR)$(prefix)/etc/libmesh/*.pc $(DESTDIR)$(prefix)/etc/libmesh/Make.common $(DESTDIR)$(prefix)/lib/pkgconfig/Make.common $(DESTDIR)$(prefix)/bin/libmesh-config` ; do \
             echo " " ; \
             echo " *** replacing $$oldprefix" ; \
             echo " ***      with $$newprefix" ; \
@@ -536,7 +537,6 @@ upload:
 # special things to do when running 'make dist'
 dist-hook:
 	rm -rf `find $(distdir) -name libmesh_config.h`
-	rm -rf `find $(distdir) -name .svn`
 
 
 #

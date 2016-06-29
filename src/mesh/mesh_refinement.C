@@ -38,7 +38,7 @@
 #include "libmesh/remote_elem.h"
 
 #ifdef DEBUG
-// Some extra validation for ParallelMesh
+// Some extra validation for DistributedMesh
 #include "libmesh/mesh_tools.h"
 #include "libmesh/parallel_mesh.h"
 #endif // DEBUG
@@ -46,6 +46,8 @@
 #ifdef LIBMESH_ENABLE_PERIODIC
 #include "libmesh/periodic_boundaries.h"
 #endif
+
+#include "libmesh/parallel_mesh.h"
 
 namespace libMesh
 {
@@ -100,20 +102,17 @@ void MeshRefinement::clear ()
 
 
 
-Node * MeshRefinement::add_node(const Elem & parent,
+Node * MeshRefinement::add_node(Elem & parent,
                                 unsigned int child,
                                 unsigned int node,
                                 processor_id_type proc_id)
 {
-  START_LOG("add_node()", "MeshRefinement");
+  LOG_SCOPE("add_node()", "MeshRefinement");
 
   unsigned int parent_n = parent.as_parent_node(child, node);
 
   if (parent_n != libMesh::invalid_uint)
-    {
-      STOP_LOG("add_node()", "MeshRefinement");
-      return parent.get_node(parent_n);
-    }
+    return parent.node_ptr(parent_n);
 
   const std::vector<std::pair<dof_id_type, dof_id_type> >
     bracketing_nodes = parent.bracketing_nodes(child, node);
@@ -127,10 +126,7 @@ Node * MeshRefinement::add_node(const Elem & parent,
 
   // Return the node if it already exists
   if (new_node_id != DofObject::invalid_id)
-    {
-      STOP_LOG("add_node()", "MeshRefinement");
-      return _mesh.node_ptr(new_node_id);
-    }
+    return _mesh.node_ptr(new_node_id);
 
   // Otherwise we need to add a new node, with a default id and the
   // requested processor_id.  Figure out where to add the point:
@@ -157,8 +153,6 @@ Node * MeshRefinement::add_node(const Elem & parent,
 
   // Add the node to the map.
   _new_nodes_map.add_node(*new_node, bracketing_nodes);
-
-  STOP_LOG("add_node()", "MeshRefinement");
 
   // Return the address of the new node
   return new_node;
@@ -533,6 +527,7 @@ bool MeshRefinement::refine_and_coarsen_elements ()
   const bool coarsening_changed_mesh =
     this->_coarsen_elements ();
 
+  // First coarsen the flagged elements.
   // FIXME: test_level_one now tests consistency across periodic
   // boundaries, which requires a point_locator, which just got
   // invalidated by _coarsen_elements() and hasn't yet been cleared by
@@ -551,11 +546,13 @@ bool MeshRefinement::refine_and_coarsen_elements ()
   // need to restrict old coefficient vectors first
   // _mesh.contract();
 
+  // First coarsen the flagged elements.
   // Now refine the flagged elements.  This will
   // take up some space, maybe more than what was freed.
   const bool refining_changed_mesh =
     this->_refine_elements();
 
+  // First coarsen the flagged elements.
   // Finally, the new mesh needs to be prepared for use
   if (coarsening_changed_mesh || refining_changed_mesh)
     {
@@ -786,10 +783,10 @@ struct SyncRefinementFlags
       {
         // Look for this element in the mesh
         // We'd better find every element we're asked for
-        Elem * elem = mesh.elem(ids[i]);
+        Elem & elem = mesh.elem_ref(ids[i]);
 
         // Return the element's refinement flag
-        flags[i] = (elem->*get_flag)();
+        flags[i] = (elem.*get_flag)();
       }
   }
 
@@ -798,9 +795,9 @@ struct SyncRefinementFlags
   {
     for (std::size_t i=0; i != ids.size(); ++i)
       {
-        Elem * elem = mesh.elem(ids[i]);
+        Elem & elem = mesh.elem_ref(ids[i]);
 
-        datum old_flag = (elem->*get_flag)();
+        datum old_flag = (elem.*get_flag)();
         datum & new_flag = flags[i];
 
         if (old_flag != new_flag)
@@ -814,7 +811,7 @@ struct SyncRefinementFlags
             // libmesh_assert (!(new_flag != Elem::REFINE &&
             //                   old_flag == Elem::REFINE));
             //
-            (elem->*set_flag)
+            (elem.*set_flag)
               (static_cast<Elem::RefinementState>(new_flag));
             parallel_consistent = false;
           }
@@ -830,7 +827,7 @@ bool MeshRefinement::make_flags_parallel_consistent()
   // This function must be run on all processors at once
   parallel_object_only();
 
-  START_LOG ("make_flags_parallel_consistent()", "MeshRefinement");
+  LOG_SCOPE ("make_flags_parallel_consistent()", "MeshRefinement");
 
   SyncRefinementFlags hsync(_mesh, &Elem::refinement_flag,
                             &Elem::set_refinement_flag);
@@ -847,8 +844,6 @@ bool MeshRefinement::make_flags_parallel_consistent()
   bool parallel_consistent = hsync.parallel_consistent &&
     psync.parallel_consistent;
   this->comm().min(parallel_consistent);
-
-  STOP_LOG ("make_flags_parallel_consistent()", "MeshRefinement");
 
   return parallel_consistent;
 }
@@ -874,7 +869,7 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
     point_locator = _mesh.sub_point_locator();
 #endif
 
-  START_LOG ("make_coarsening_compatible()", "MeshRefinement");
+  LOG_SCOPE ("make_coarsening_compatible()", "MeshRefinement");
 
   bool _maintain_level_one = maintain_level_one;
 
@@ -931,8 +926,6 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
   // there is no work for us to do
   if (max_level == 0 && max_p_level == 0)
     {
-      STOP_LOG ("make_coarsening_compatible()", "MeshRefinement");
-
       // But we still have to check with other processors
       this->comm().min(compatible_with_refinement);
 
@@ -1037,7 +1030,7 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
                               libmesh_assert(neighbor->has_children());
                               for (unsigned int c=0; c!=neighbor->n_children(); c++)
                                 {
-                                  Elem * subneighbor = neighbor->child(c);
+                                  const Elem * subneighbor = neighbor->child_ptr(c);
                                   if (subneighbor != remote_elem &&
                                       subneighbor->active() &&
                                       has_topological_neighbor(subneighbor, point_locator.get(), elem))
@@ -1087,8 +1080,8 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
                     // test all descendants
                     if (neigh->has_children())
                       for (unsigned int c=0; c != neigh->n_children(); ++c)
-                        if (neigh->child(c) == remote_elem ||
-                            neigh->child(c)->processor_id() !=
+                        if (neigh->child_ptr(c) == remote_elem ||
+                            neigh->child_ptr(c)->processor_id() !=
                             this->processor_id())
                           {
                             compatible_with_refinement = false;
@@ -1125,7 +1118,7 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
 
               for (unsigned int c=0; c<elem->n_children(); c++)
                 {
-                  Elem * child = elem->child(c);
+                  Elem * child = elem->child_ptr(c);
                   if (child == remote_elem)
                     found_remote_child = true;
                   else if ((child->refinement_flag() != Elem::COARSEN) ||
@@ -1139,7 +1132,7 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
 
                   for (unsigned int c=0; c<elem->n_children(); c++)
                     {
-                      Elem * child = elem->child(c);
+                      Elem * child = elem->child_ptr(c);
                       if (child == remote_elem)
                         continue;
                       if (child->refinement_flag() == Elem::COARSEN)
@@ -1173,7 +1166,7 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
 
           for (unsigned int c=0; c<elem->n_children(); c++)
             {
-              Elem * child = elem->child(c);
+              Elem * child = elem->child_ptr(c);
               if (child == remote_elem)
                 found_remote_child = true;
               else if (child->refinement_flag() != Elem::COARSEN)
@@ -1187,8 +1180,6 @@ bool MeshRefinement::make_coarsening_compatible(const bool maintain_level_one)
             elem->set_refinement_flag(Elem::INACTIVE);
         }
     }
-
-  STOP_LOG ("make_coarsening_compatible()", "MeshRefinement");
 
   // If one processor finds an incompatibility, we're globally
   // incompatible
@@ -1223,7 +1214,7 @@ bool MeshRefinement::make_refinement_compatible(const bool maintain_level_one)
     point_locator = _mesh.sub_point_locator();
 #endif
 
-  START_LOG ("make_refinement_compatible()", "MeshRefinement");
+  LOG_SCOPE ("make_refinement_compatible()", "MeshRefinement");
 
   bool _maintain_level_one = maintain_level_one;
 
@@ -1351,7 +1342,7 @@ bool MeshRefinement::make_refinement_compatible(const bool maintain_level_one)
                               libmesh_assert(neighbor->has_children());
                               for (unsigned int c=0; c!=neighbor->n_children(); c++)
                                 {
-                                  Elem * subneighbor = neighbor->child(c);
+                                  Elem * subneighbor = neighbor->child_ptr(c);
                                   if (subneighbor == remote_elem)
                                     continue;
                                   if (subneighbor->active() &&
@@ -1391,8 +1382,6 @@ bool MeshRefinement::make_refinement_compatible(const bool maintain_level_one)
   // compatible
   this->comm().min(compatible_with_coarsening);
 
-  STOP_LOG ("make_refinement_compatible()", "MeshRefinement");
-
   return compatible_with_coarsening;
 }
 
@@ -1404,10 +1393,11 @@ bool MeshRefinement::_coarsen_elements ()
   // This function must be run on all processors at once
   parallel_object_only();
 
-  START_LOG ("_coarsen_elements()", "MeshRefinement");
+  LOG_SCOPE ("_coarsen_elements()", "MeshRefinement");
 
-  // Flag indicating if this call actually changes the mesh
+  // Flags indicating if this call actually changes the mesh
   bool mesh_changed = false;
+  bool mesh_p_changed = false;
 
   // Clear the unused_elements data structure.
   // The elements have been packed since it was built,
@@ -1471,7 +1461,7 @@ bool MeshRefinement::_coarsen_elements ()
             {
               elem->set_p_refinement_flag(Elem::JUST_COARSENED);
               elem->set_p_level(elem->p_level() - 1);
-              mesh_changed = true;
+              mesh_p_changed = true;
             }
           else
             {
@@ -1482,7 +1472,9 @@ bool MeshRefinement::_coarsen_elements ()
 
   // If the mesh changed on any processor, it changed globally
   this->comm().max(mesh_changed);
-  // And we may need to update ParallelMesh values reflecting the changes
+  this->comm().max(mesh_p_changed);
+
+  // And we may need to update DistributedMesh values reflecting the changes
   if (mesh_changed)
     _mesh.update_parallel_id_counts();
 
@@ -1504,9 +1496,14 @@ bool MeshRefinement::_coarsen_elements ()
 #endif
     }
 
-  STOP_LOG ("_coarsen_elements()", "MeshRefinement");
+  // If p levels changed all we need to do is make sure that parent p
+  // levels changed in sync
+  if (mesh_p_changed && !_mesh.is_serial())
+    {
+      MeshCommunication().make_p_levels_parallel_consistent (_mesh);
+    }
 
-  return mesh_changed;
+  return (mesh_changed || mesh_p_changed);
 }
 
 
@@ -1520,7 +1517,7 @@ bool MeshRefinement::_refine_elements ()
   // find nodes to connect to.
   this->update_nodes_map ();
 
-  START_LOG ("_refine_elements()", "MeshRefinement");
+  LOG_SCOPE ("_refine_elements()", "MeshRefinement");
 
   // Iterate over the elements, counting the elements
   // flagged for h refinement.
@@ -1542,6 +1539,10 @@ bool MeshRefinement::_refine_elements ()
   std::vector<Elem *> local_copy_of_elements;
   local_copy_of_elements.reserve(n_elems_flagged);
 
+  // If mesh p levels changed, we might need to synchronize parent p
+  // levels on a distributed mesh.
+  bool mesh_p_changed = false;
+
   // Iterate over the elements, looking for elements
   // flagged for refinement.
   for (it = _mesh.elements_begin(); it != end; ++it)
@@ -1554,6 +1555,7 @@ bool MeshRefinement::_refine_elements ()
         {
           elem->set_p_level(elem->p_level()+1);
           elem->set_p_refinement_flag(Elem::JUST_REFINED);
+          mesh_p_changed = true;
         }
     }
 
@@ -1569,8 +1571,9 @@ bool MeshRefinement::_refine_elements ()
 
   // If the mesh changed on any processor, it changed globally
   this->comm().max(mesh_changed);
+  this->comm().max(mesh_p_changed);
 
-  // And we may need to update ParallelMesh values reflecting the changes
+  // And we may need to update DistributedMesh values reflecting the changes
   if (mesh_changed)
     _mesh.update_parallel_id_counts();
 
@@ -1583,12 +1586,15 @@ bool MeshRefinement::_refine_elements ()
 #endif
     }
 
+  if (mesh_p_changed && !_mesh.is_serial())
+    {
+      MeshCommunication().make_p_levels_parallel_consistent (_mesh);
+    }
+
   // Clear the _new_nodes_map and _unused_elements data structures.
   this->clear();
 
-  STOP_LOG ("_refine_elements()", "MeshRefinement");
-
-  return mesh_changed;
+  return (mesh_changed || mesh_p_changed);
 }
 
 
@@ -1764,14 +1770,14 @@ Elem * MeshRefinement::topological_neighbor(Elem * elem,
       return elem->topological_neighbor(side, _mesh, *point_locator, _periodic_boundaries);
     }
 #endif
-  return elem->neighbor(side);
+  return elem->neighbor_ptr(side);
 }
 
 
 
-bool MeshRefinement::has_topological_neighbor(Elem * elem,
+bool MeshRefinement::has_topological_neighbor(const Elem * elem,
                                               const PointLocatorBase * point_locator,
-                                              Elem * neighbor)
+                                              const Elem * neighbor)
 {
 #ifdef LIBMESH_ENABLE_PERIODIC
   if (_periodic_boundaries && !_periodic_boundaries->empty())

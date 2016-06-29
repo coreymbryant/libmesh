@@ -78,7 +78,7 @@ RBEvaluationDeserialization::~RBEvaluationDeserialization()
 void RBEvaluationDeserialization::read_from_file(const std::string & path,
                                                  bool read_error_bound_data)
 {
-  START_LOG("read_from_file()", "RBEvaluationDeserialization");
+  LOG_SCOPE("read_from_file()", "RBEvaluationDeserialization");
 
   int fd = open(path.c_str(), O_RDONLY);
   if (!fd)
@@ -99,8 +99,6 @@ void RBEvaluationDeserialization::read_from_file(const std::string & path,
 #endif
 
   load_rb_evaluation_data(_rb_eval, rb_eval_reader, read_error_bound_data);
-
-  STOP_LOG("read_from_file()", "RBEvaluationDeserialization");
 }
 
 // ---- RBEvaluationDeserialization (END) ----
@@ -119,7 +117,7 @@ TransientRBEvaluationDeserialization::~TransientRBEvaluationDeserialization()
 void TransientRBEvaluationDeserialization::read_from_file(const std::string & path,
                                                           bool read_error_bound_data)
 {
-  START_LOG("read_from_file()", "TransientRBEvaluationDeserialization");
+  LOG_SCOPE("read_from_file()", "TransientRBEvaluationDeserialization");
 
   int fd = open(path.c_str(), O_RDONLY);
   if (!fd)
@@ -147,8 +145,6 @@ void TransientRBEvaluationDeserialization::read_from_file(const std::string & pa
                                     rb_eval_reader,
                                     trans_rb_eval_reader,
                                     read_error_bound_data);
-
-  STOP_LOG("read_from_file()", "TransientRBEvaluationDeserialization");
 }
 
 // ---- TransientRBEvaluationDeserialization (END) ----
@@ -166,7 +162,7 @@ RBEIMEvaluationDeserialization::~RBEIMEvaluationDeserialization()
 
 void RBEIMEvaluationDeserialization::read_from_file(const std::string & path)
 {
-  START_LOG("read_from_file()", "RBEIMEvaluationDeserialization");
+  LOG_SCOPE("read_from_file()", "RBEIMEvaluationDeserialization");
 
   int fd = open(path.c_str(), O_RDONLY);
   if (!fd)
@@ -193,8 +189,6 @@ void RBEIMEvaluationDeserialization::read_from_file(const std::string & path)
   load_rb_eim_evaluation_data(_rb_eim_eval,
                               rb_eval_reader,
                               rb_eim_eval_reader);
-
-  STOP_LOG("read_from_file()", "RBEIMEvaluationDeserialization");
 }
 
 // ---- RBEIMEvaluationDeserialization (END) ----
@@ -216,7 +210,7 @@ RBSCMEvaluationDeserialization::~RBSCMEvaluationDeserialization()
 
 void RBSCMEvaluationDeserialization::read_from_file(const std::string & path)
 {
-  START_LOG("read_from_file()", "RBSCMEvaluationDeserialization");
+  LOG_SCOPE("read_from_file()", "RBSCMEvaluationDeserialization");
 
   int fd = open(path.c_str(), O_RDONLY);
   if (!fd)
@@ -233,8 +227,6 @@ void RBSCMEvaluationDeserialization::read_from_file(const std::string & path)
 
   load_rb_scm_evaluation_data(_rb_scm_eval,
                               rb_scm_eval_reader);
-
-  STOP_LOG("read_from_file()", "RBSCMEvaluationDeserialization");
 }
 
 #endif // LIBMESH_HAVE_SLEPC && LIBMESH_HAVE_GLPK
@@ -713,7 +705,7 @@ void load_rb_eim_evaluation_data(RBEIMEvaluation & rb_eim_evaluation,
   // Interpolation elements (including the "extra one")
   {
     libMesh::dof_id_type elem_id = 0;
-    libMesh::SerialMesh & interpolation_points_mesh =
+    libMesh::ReplicatedMesh & interpolation_points_mesh =
       rb_eim_evaluation.get_interpolation_points_mesh();
     interpolation_points_mesh.clear();
 
@@ -863,7 +855,7 @@ void load_point(RBData::Point3D::Reader point_reader, Point & point)
 
 void load_elem_into_mesh(RBData::MeshElem::Reader mesh_elem_reader,
                          libMesh::Elem * elem,
-                         libMesh::SerialMesh & mesh)
+                         libMesh::ReplicatedMesh & mesh)
 {
   auto mesh_elem_point_list = mesh_elem_reader.getPoints();
   unsigned int n_points = mesh_elem_point_list.size();

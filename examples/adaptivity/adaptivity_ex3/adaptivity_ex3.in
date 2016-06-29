@@ -4,11 +4,11 @@ max_r_steps = 10
 # Maximum h refinement level for an element.
 max_r_level = 15
 
-# Percentage of elements to refine at each step
+# Fraction of elements to refine at each step
 refine_percentage = 0.7
 
-# Percentage of elements to (attempt to) coarsen at each step
-coarsen_percentage = 0.0
+# Fraction of elements to (attempt to) coarsen at each step
+coarsen_percentage = 0.05
 
 # Option to uniformly or adaptively refine.
 # If uniform_refine == 1, uniform refinement is done.
@@ -16,7 +16,7 @@ coarsen_percentage = 0.0
 uniform_refine = 0
 
 # Basis function type (as named in enum_fe_family.h)
-approx_type = LAGRANGE
+approx_type = HIERARCHIC
 
 # minimum approximation order
 # Use approx_order = 1 or 2 for LAGRANGE elements
@@ -37,7 +37,7 @@ indicator_type = kelly
 # Use an exact indicator with matchedhp/hp.
 # matchedhp refinement stupidly does both h and p or neither
 # on every element; hp refinement tries to do one or the other
-refinement_type = h
+# refinement_type = h
 
 # Mesh dimensionality
 # We generate 1D meshes on [-1, 0].
@@ -58,3 +58,6 @@ singularity = true
 
 # Output intermediate solves?
 output_intermediate = false
+
+# Use how many linear iterations max before giving up?
+max_linear_iterations = 1000

@@ -44,7 +44,7 @@ class Elem;
  * Class \p TetGenMeshInterface provides an interface for
  * tetrahedrization of meshes using the TetGen library.  For
  * information about TetGen cf.
- * <a href="http://tetgen.berlios.de/">TetGen home page</a>.
+ * <a href="http://tetgen.org/">TetGen home page</a>.
  *
  * \author Steffen Petersen
  * \date 2004
@@ -101,7 +101,7 @@ protected:
   /**
    * This function copies nodes from the _mesh into TetGen's
    * pointlist.  Takes some pains to ensure that non-sequential
-   * node numberings (which can happen with e.g. ParallelMesh)
+   * node numberings (which can happen with e.g. DistributedMesh)
    * are handled.
    */
   void fill_pointlist(TetGenWrapper & wrapper);
@@ -147,7 +147,7 @@ protected:
 
   /**
    * We should not assume libmesh nodes are numbered sequentially...
-   * This is not the default behavior of ParallelMesh, for example,
+   * This is not the default behavior of DistributedMesh, for example,
    * unless you specify node IDs explicitly.  So this array allows us
    * to keep a mapping between the sequential numbering in
    * tetgen_data.pointlist.

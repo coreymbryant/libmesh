@@ -153,8 +153,8 @@ bool Tet10::has_affine_map() const
 
 
 
-UniquePtr<Elem> Tet10::build_side (const unsigned int i,
-                                   bool proxy) const
+UniquePtr<Elem> Tet10::build_side_ptr (const unsigned int i,
+                                       bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -167,7 +167,7 @@ UniquePtr<Elem> Tet10::build_side (const unsigned int i,
       face->subdomain_id() = this->subdomain_id();
 
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(Tet10::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(Tet10::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -178,7 +178,7 @@ UniquePtr<Elem> Tet10::build_side (const unsigned int i,
 
 
 
-UniquePtr<Elem> Tet10::build_edge (const unsigned int i) const
+UniquePtr<Elem> Tet10::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_edges());
 
@@ -207,112 +207,112 @@ void Tet10::connectivity(const unsigned int sc,
             // Linear sub-tet 0
           case 0:
 
-            conn[0] = this->node(0)+1;
-            conn[1] = this->node(4)+1;
-            conn[2] = this->node(6)+1;
-            conn[3] = this->node(6)+1;
-            conn[4] = this->node(7)+1;
-            conn[5] = this->node(7)+1;
-            conn[6] = this->node(7)+1;
-            conn[7] = this->node(7)+1;
+            conn[0] = this->node_id(0)+1;
+            conn[1] = this->node_id(4)+1;
+            conn[2] = this->node_id(6)+1;
+            conn[3] = this->node_id(6)+1;
+            conn[4] = this->node_id(7)+1;
+            conn[5] = this->node_id(7)+1;
+            conn[6] = this->node_id(7)+1;
+            conn[7] = this->node_id(7)+1;
 
             return;
 
             // Linear sub-tet 1
           case 1:
 
-            conn[0] = this->node(4)+1;
-            conn[1] = this->node(1)+1;
-            conn[2] = this->node(5)+1;
-            conn[3] = this->node(5)+1;
-            conn[4] = this->node(8)+1;
-            conn[5] = this->node(8)+1;
-            conn[6] = this->node(8)+1;
-            conn[7] = this->node(8)+1;
+            conn[0] = this->node_id(4)+1;
+            conn[1] = this->node_id(1)+1;
+            conn[2] = this->node_id(5)+1;
+            conn[3] = this->node_id(5)+1;
+            conn[4] = this->node_id(8)+1;
+            conn[5] = this->node_id(8)+1;
+            conn[6] = this->node_id(8)+1;
+            conn[7] = this->node_id(8)+1;
 
             return;
 
             // Linear sub-tet 2
           case 2:
 
-            conn[0] = this->node(5)+1;
-            conn[1] = this->node(2)+1;
-            conn[2] = this->node(6)+1;
-            conn[3] = this->node(6)+1;
-            conn[4] = this->node(9)+1;
-            conn[5] = this->node(9)+1;
-            conn[6] = this->node(9)+1;
-            conn[7] = this->node(9)+1;
+            conn[0] = this->node_id(5)+1;
+            conn[1] = this->node_id(2)+1;
+            conn[2] = this->node_id(6)+1;
+            conn[3] = this->node_id(6)+1;
+            conn[4] = this->node_id(9)+1;
+            conn[5] = this->node_id(9)+1;
+            conn[6] = this->node_id(9)+1;
+            conn[7] = this->node_id(9)+1;
 
             return;
 
             // Linear sub-tet 3
           case 3:
 
-            conn[0] = this->node(7)+1;
-            conn[1] = this->node(8)+1;
-            conn[2] = this->node(9)+1;
-            conn[3] = this->node(9)+1;
-            conn[4] = this->node(3)+1;
-            conn[5] = this->node(3)+1;
-            conn[6] = this->node(3)+1;
-            conn[7] = this->node(3)+1;
+            conn[0] = this->node_id(7)+1;
+            conn[1] = this->node_id(8)+1;
+            conn[2] = this->node_id(9)+1;
+            conn[3] = this->node_id(9)+1;
+            conn[4] = this->node_id(3)+1;
+            conn[5] = this->node_id(3)+1;
+            conn[6] = this->node_id(3)+1;
+            conn[7] = this->node_id(3)+1;
 
             return;
 
             // Linear sub-tet 4
           case 4:
 
-            conn[0] = this->node(4)+1;
-            conn[1] = this->node(8)+1;
-            conn[2] = this->node(6)+1;
-            conn[3] = this->node(6)+1;
-            conn[4] = this->node(7)+1;
-            conn[5] = this->node(7)+1;
-            conn[6] = this->node(7)+1;
-            conn[7] = this->node(7)+1;
+            conn[0] = this->node_id(4)+1;
+            conn[1] = this->node_id(8)+1;
+            conn[2] = this->node_id(6)+1;
+            conn[3] = this->node_id(6)+1;
+            conn[4] = this->node_id(7)+1;
+            conn[5] = this->node_id(7)+1;
+            conn[6] = this->node_id(7)+1;
+            conn[7] = this->node_id(7)+1;
 
             return;
 
             // Linear sub-tet 5
           case 5:
 
-            conn[0] = this->node(4)+1;
-            conn[1] = this->node(5)+1;
-            conn[2] = this->node(6)+1;
-            conn[3] = this->node(6)+1;
-            conn[4] = this->node(8)+1;
-            conn[5] = this->node(8)+1;
-            conn[6] = this->node(8)+1;
-            conn[7] = this->node(8)+1;
+            conn[0] = this->node_id(4)+1;
+            conn[1] = this->node_id(5)+1;
+            conn[2] = this->node_id(6)+1;
+            conn[3] = this->node_id(6)+1;
+            conn[4] = this->node_id(8)+1;
+            conn[5] = this->node_id(8)+1;
+            conn[6] = this->node_id(8)+1;
+            conn[7] = this->node_id(8)+1;
 
             return;
 
             // Linear sub-tet 6
           case 6:
 
-            conn[0] = this->node(5)+1;
-            conn[1] = this->node(9)+1;
-            conn[2] = this->node(6)+1;
-            conn[3] = this->node(6)+1;
-            conn[4] = this->node(8)+1;
-            conn[5] = this->node(8)+1;
-            conn[6] = this->node(8)+1;
-            conn[7] = this->node(8)+1;
+            conn[0] = this->node_id(5)+1;
+            conn[1] = this->node_id(9)+1;
+            conn[2] = this->node_id(6)+1;
+            conn[3] = this->node_id(6)+1;
+            conn[4] = this->node_id(8)+1;
+            conn[5] = this->node_id(8)+1;
+            conn[6] = this->node_id(8)+1;
+            conn[7] = this->node_id(8)+1;
 
             return;
 
             // Linear sub-tet 7
           case 7:
 
-            conn[0] = this->node(7)+1;
-            conn[1] = this->node(6)+1;
-            conn[2] = this->node(9)+1;
-            conn[3] = this->node(9)+1;
-            conn[4] = this->node(8)+1;
-            conn[5] = this->node(8)+1;
-            conn[6] = this->node(8)+1;
-            conn[7] = this->node(8)+1;
+            conn[0] = this->node_id(7)+1;
+            conn[1] = this->node_id(6)+1;
+            conn[2] = this->node_id(9)+1;
+            conn[3] = this->node_id(9)+1;
+            conn[4] = this->node_id(8)+1;
+            conn[5] = this->node_id(8)+1;
+            conn[6] = this->node_id(8)+1;
+            conn[7] = this->node_id(8)+1;
 
             return;
 
@@ -325,16 +325,16 @@ void Tet10::connectivity(const unsigned int sc,
     case VTK:
       {
         conn.resize(10);
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
-        conn[4] = this->node(4);
-        conn[5] = this->node(5);
-        conn[6] = this->node(6);
-        conn[7] = this->node(7);
-        conn[8] = this->node(8);
-        conn[9] = this->node(9);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
+        conn[4] = this->node_id(4);
+        conn[5] = this->node_id(5);
+        conn[6] = this->node_id(6);
+        conn[7] = this->node_id(7);
+        conn[8] = this->node_id(8);
+        conn[9] = this->node_id(9);
         return;
         /*
           conn.resize(4);
@@ -343,80 +343,80 @@ void Tet10::connectivity(const unsigned int sc,
           // Linear sub-tet 0
           case 0:
 
-          conn[0] = this->node(0);
-          conn[1] = this->node(4);
-          conn[2] = this->node(6);
-          conn[3] = this->node(7);
+          conn[0] = this->node_id(0);
+          conn[1] = this->node_id(4);
+          conn[2] = this->node_id(6);
+          conn[3] = this->node_id(7);
 
           return;
 
           // Linear sub-tet 1
           case 1:
 
-          conn[0] = this->node(4);
-          conn[1] = this->node(1);
-          conn[2] = this->node(5);
-          conn[3] = this->node(8);
+          conn[0] = this->node_id(4);
+          conn[1] = this->node_id(1);
+          conn[2] = this->node_id(5);
+          conn[3] = this->node_id(8);
 
           return;
 
           // Linear sub-tet 2
           case 2:
 
-          conn[0] = this->node(5);
-          conn[1] = this->node(2);
-          conn[2] = this->node(6);
-          conn[3] = this->node(9);
+          conn[0] = this->node_id(5);
+          conn[1] = this->node_id(2);
+          conn[2] = this->node_id(6);
+          conn[3] = this->node_id(9);
 
           return;
 
           // Linear sub-tet 3
           case 3:
 
-          conn[0] = this->node(7);
-          conn[1] = this->node(8);
-          conn[2] = this->node(9);
-          conn[3] = this->node(3);
+          conn[0] = this->node_id(7);
+          conn[1] = this->node_id(8);
+          conn[2] = this->node_id(9);
+          conn[3] = this->node_id(3);
 
           return;
 
           // Linear sub-tet 4
           case 4:
 
-          conn[0] = this->node(4);
-          conn[1] = this->node(8);
-          conn[2] = this->node(6);
-          conn[3] = this->node(7);
+          conn[0] = this->node_id(4);
+          conn[1] = this->node_id(8);
+          conn[2] = this->node_id(6);
+          conn[3] = this->node_id(7);
 
           return;
 
           // Linear sub-tet 5
           case 5:
 
-          conn[0] = this->node(4);
-          conn[1] = this->node(5);
-          conn[2] = this->node(6);
-          conn[3] = this->node(8);
+          conn[0] = this->node_id(4);
+          conn[1] = this->node_id(5);
+          conn[2] = this->node_id(6);
+          conn[3] = this->node_id(8);
 
           return;
 
           // Linear sub-tet 6
           case 6:
 
-          conn[0] = this->node(5);
-          conn[1] = this->node(9);
-          conn[2] = this->node(6);
-          conn[3] = this->node(8);
+          conn[0] = this->node_id(5);
+          conn[1] = this->node_id(9);
+          conn[2] = this->node_id(6);
+          conn[3] = this->node_id(8);
 
           return;
 
           // Linear sub-tet 7
           case 7:
 
-          conn[0] = this->node(7);
-          conn[1] = this->node(6);
-          conn[2] = this->node(9);
-          conn[3] = this->node(8);
+          conn[0] = this->node_id(7);
+          conn[1] = this->node_id(6);
+          conn[2] = this->node_id(9);
+          conn[3] = this->node_id(8);
 
           return;
 
@@ -615,9 +615,6 @@ const float Tet10::_embedding_matrix[8][10][10] =
 
 
 
-
-
-
 float Tet10::embedding_matrix (const unsigned int i,
                                const unsigned int j,
                                const unsigned int k) const
@@ -673,5 +670,116 @@ float Tet10::embedding_matrix (const unsigned int i,
 }
 
 #endif // #ifdef LIBMESH_ENABLE_AMR
+
+
+
+Real Tet10::volume () const
+{
+  // Make copies of our points.  It makes the subsequent calculations a bit
+  // shorter and avoids dereferencing the same pointer multiple times.
+  Point
+    x0 = point(0), x1 = point(1), x2 = point(2), x3 = point(3), x4 = point(4),
+    x5 = point(5), x6 = point(6), x7 = point(7), x8 = point(8), x9 = point(9);
+
+  // The constant components of the dx/dxi vector, linear in xi, eta, zeta.
+  // These were copied directly from the output of a Python script.
+  Point dx_dxi[4] =
+    {
+      -3*x0 - x1 + 4*x4,         // constant
+      4*x0 - 4*x4 - 4*x7 + 4*x8, // zeta
+      4*x0 - 4*x4 + 4*x5 - 4*x6, // eta
+      4*x0 + 4*x1 - 8*x4         // xi
+    };
+
+  // The constant components of the dx/deta vector, linear in xi, eta, zeta.
+  // These were copied directly from the output of a Python script.
+  Point dx_deta[4] =
+    {
+      -3*x0 - x2 + 4*x6,         // constant
+      4*x0 - 4*x6 - 4*x7 + 4*x9, // zeta
+      4*x0 + 4*x2 - 8*x6,        // eta
+      4*x0 - 4*x4 + 4*x5 - 4*x6  // xi
+    };
+
+  // The constant components of the dx/dzeta vector, linear in xi, eta, zeta.
+  // These were copied directly from the output of a Python script.
+  Point dx_dzeta[4] =
+    {
+      -3*x0 - x3 + 4*x7,         // constant
+      4*x0 + 4*x3 - 8*x7,        // zeta
+      4*x0 - 4*x6 - 4*x7 + 4*x9, // eta
+      4*x0 - 4*x4 - 4*x7 + 4*x8  // xi
+    };
+
+  // 2x2x2 conical quadrature rule.  Note: there is also a five point
+  // rule for tets with a negative weight which would be cheaper, but
+  // we'll use this one to preclude any possible issues with
+  // cancellation error.
+  const int N = 8;
+  static const Real w[N] =
+    {
+      3.6979856358852914509238091810505e-02L,
+      1.6027040598476613723156741868689e-02L,
+      2.1157006454524061178256145400082e-02L,
+      9.1694299214797439226823542540576e-03L,
+      3.6979856358852914509238091810505e-02L,
+      1.6027040598476613723156741868689e-02L,
+      2.1157006454524061178256145400082e-02L,
+      9.1694299214797439226823542540576e-03L
+    };
+
+  static const Real xi[N] =
+    {
+      1.2251482265544137786674043037115e-01L,
+      5.4415184401122528879992623629551e-01L,
+      1.2251482265544137786674043037115e-01L,
+      5.4415184401122528879992623629551e-01L,
+      1.2251482265544137786674043037115e-01L,
+      5.4415184401122528879992623629551e-01L,
+      1.2251482265544137786674043037115e-01L,
+      5.4415184401122528879992623629551e-01L
+    };
+
+  static const Real eta[N] =
+    {
+      1.3605497680284601717109468420738e-01L,
+      7.0679724159396903069267439165167e-02L,
+      5.6593316507280088053551297149570e-01L,
+      2.9399880063162286589079157179842e-01L,
+      1.3605497680284601717109468420738e-01L,
+      7.0679724159396903069267439165167e-02L,
+      5.6593316507280088053551297149570e-01L,
+      2.9399880063162286589079157179842e-01L
+    };
+
+  static const Real zeta[N] =
+    {
+      1.5668263733681830907933725249176e-01L,
+      8.1395667014670255076709592007207e-02L,
+      6.5838687060044409936029672711329e-02L,
+      3.4202793236766414300604458388142e-02L,
+      5.8474756320489429588282763292971e-01L,
+      3.0377276481470755305409673253211e-01L,
+      2.4571332521171333166171692542182e-01L,
+      1.2764656212038543100867773351792e-01L
+    };
+
+  Real vol = 0.;
+  for (int q=0; q<N; ++q)
+    {
+      // Compute dx_dxi, dx_deta, dx_dzeta at the current quadrature point.
+      Point
+        dx_dxi_q   = dx_dxi[0]   + zeta[q]*dx_dxi[1]   + eta[q]*dx_dxi[2]   + xi[q]*dx_dxi[3],
+        dx_deta_q  = dx_deta[0]  + zeta[q]*dx_deta[1]  + eta[q]*dx_deta[2]  + xi[q]*dx_deta[3],
+        dx_dzeta_q = dx_dzeta[0] + zeta[q]*dx_dzeta[1] + eta[q]*dx_dzeta[2] + xi[q]*dx_dzeta[3];
+
+      // Compute scalar triple product, multiply by weight, and accumulate volume.
+      vol += w[q] * triple_product(dx_dxi_q, dx_deta_q, dx_dzeta_q);
+    }
+
+  return vol;
+}
+
+
 
 } // namespace libMesh

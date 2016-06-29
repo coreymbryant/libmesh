@@ -285,7 +285,7 @@ bool MeshRefinement::flag_elements_by_nelem_target (const ErrorVector & error_pe
 
   sorted_error.reserve (n_active_elem);
 
-  // On a ParallelMesh, we need to communicate to know which remote ids
+  // On a DistributedMesh, we need to communicate to know which remote ids
   // correspond to active elements.
   {
     std::vector<bool> is_active(max_elem_id, false);
@@ -368,7 +368,7 @@ bool MeshRefinement::flag_elements_by_nelem_target (const ErrorVector & error_pe
       refine_count++;
     }
 
-  // On a ParallelMesh, we need to communicate to know which remote ids
+  // On a DistributedMesh, we need to communicate to know which remote ids
   // correspond to refinable elements
   dof_id_type successful_refine_count = 0;
   {
@@ -377,7 +377,7 @@ bool MeshRefinement::flag_elements_by_nelem_target (const ErrorVector & error_pe
     for (dof_id_type i=0; i != sorted_error.size(); ++i)
       {
         dof_id_type eid = sorted_error[i].second;
-        Elem * elem = _mesh.query_elem(eid);
+        Elem * elem = _mesh.query_elem_ptr(eid);
         if (elem && elem->level() < _max_h_level)
           is_refinable[eid] = true;
       }
@@ -391,7 +391,7 @@ bool MeshRefinement::flag_elements_by_nelem_target (const ErrorVector & error_pe
           break;
 
         dof_id_type eid = sorted_error[i].second;
-        Elem * elem = _mesh.query_elem(eid);
+        Elem * elem = _mesh.query_elem_ptr(eid);
         if (is_refinable[eid])
           {
             if (elem)
@@ -420,16 +420,16 @@ bool MeshRefinement::flag_elements_by_nelem_target (const ErrorVector & error_pe
             break;
 
           dof_id_type parent_id = sorted_parent_error[i].second;
-          Elem * parent = _mesh.query_elem(parent_id);
+          Elem * parent = _mesh.query_elem_ptr(parent_id);
 
-          // On a ParallelMesh we skip remote elements
+          // On a DistributedMesh we skip remote elements
           if (!parent)
             continue;
 
           libmesh_assert(parent->has_children());
           for (unsigned int c=0; c != parent->n_children(); ++c)
             {
-              Elem * elem = parent->child(c);
+              Elem * elem = parent->child_ptr(c);
               if (elem && elem != remote_elem)
                 {
                   libmesh_assert(elem->active());

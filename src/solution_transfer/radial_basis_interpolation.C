@@ -54,7 +54,7 @@ void RadialBasisInterpolation<KDDim,RBF>::prepare_for_use()
   libmesh_error_msg("ERROR: this functionality presently requires Eigen!");
 
 #else
-  START_LOG ("prepare_for_use()", "RadialBasisInterpolation<>");
+  LOG_SCOPE ("prepare_for_use()", "RadialBasisInterpolation<>");
 
   // Construct a bounding box for our source points
   _src_bbox.invalidate();
@@ -87,7 +87,7 @@ void RadialBasisInterpolation<KDDim,RBF>::prepare_for_use()
 
   // Construct the Radial Basis Function, giving it the size of the domain
   if(_r_override < 0)
-    _r_bbox = (_src_bbox.max() - _src_bbox.min()).size();
+    _r_bbox = (_src_bbox.max() - _src_bbox.min()).norm();
   else
     _r_bbox = _r_override;
 
@@ -117,7 +117,7 @@ void RadialBasisInterpolation<KDDim,RBF>::prepare_for_use()
         {
           const Point & x_j (_src_pts[j]);
 
-          const Real r_ij = (x_j - x_i).size();
+          const Real r_ij = (x_j - x_i).norm();
 
           A(i,j) = A(j,i) = rbf(r_ij);
         }
@@ -139,8 +139,6 @@ void RadialBasisInterpolation<KDDim,RBF>::prepare_for_use()
     for (unsigned int var=0; var<n_vars; var++)
       _weights[i*n_vars + var] = x(i,var);
 
-
-  STOP_LOG  ("prepare_for_use()", "RadialBasisInterpolation<>");
 #endif
 
 }
@@ -152,7 +150,7 @@ void RadialBasisInterpolation<KDDim,RBF>::interpolate_field_data (const std::vec
                                                                   const std::vector<Point> & tgt_pts,
                                                                   std::vector<Number> & tgt_vals) const
 {
-  START_LOG ("interpolate_field_data()", "RadialBasisInterpolation<>");
+  LOG_SCOPE ("interpolate_field_data()", "RadialBasisInterpolation<>");
 
   libmesh_experimental();
 
@@ -188,15 +186,13 @@ void RadialBasisInterpolation<KDDim,RBF>::interpolate_field_data (const std::vec
         {
           const Point & x_i(_src_pts[i]);
           const Real
-            r_i   = (p - x_i).size(),
+            r_i   = (p - x_i).norm(),
             phi_i = rbf(r_i);
 
           for (unsigned int var=0; var<n_vars; var++)
             tgt_vals[tgt*n_vars + var] += _weights[i*n_vars + var]*phi_i;
         }
     }
-
-  STOP_LOG ("interpolate_field_data()", "RadialBasisInterpolation<>");
 }
 
 

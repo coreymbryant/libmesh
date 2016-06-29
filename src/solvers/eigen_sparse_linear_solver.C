@@ -84,7 +84,7 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> & matrix_in,
                                    const double tol,
                                    const unsigned int m_its)
 {
-  START_LOG("solve()", "EigenSparseLinearSolver");
+  LOG_SCOPE("solve()", "EigenSparseLinearSolver");
   this->init ();
 
   // Make sure the data passed in are really Eigen types
@@ -158,6 +158,53 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> & matrix_in,
         break;
       }
 
+    case SPARSELU:
+      {
+        // SparseLU solver code adapted from:
+        // http://eigen.tuxfamily.org/dox-devel/classEigen_1_1SparseLU.html
+        //
+        // From Eigen docs:
+        // The input matrix A should be in a compressed and
+        // column-major form. Otherwise an expensive copy will be
+        // made. You can call the inexpensive makeCompressed() to get
+        // a compressed matrix.
+        //
+        // Note: we don't have a column-major storage format here, so
+        // I think a copy must be made in order to use SparseLU.  It
+        // appears that we also have to call makeCompressed(),
+        // otherwise you get a segfault.
+        matrix._mat.makeCompressed();
+
+        // Build the SparseLU solver object.  Note, there is one other
+        // sparse direct solver available in Eigen:
+        //
+        // Eigen::SparseQR<EigenSM, Eigen::AMDOrdering<int> > solver;
+        //
+        // I've tested it, and it works, but it is much slower than
+        // SparseLU.  The main benefit of SparseQR is that it can
+        // handle non-square matrices, but we don't allow non-square
+        // sparse matrices to be built in libmesh...
+        Eigen::SparseLU<EigenSM> solver;
+
+        // Compute the ordering permutation vector from the structural pattern of the matrix.
+        solver.analyzePattern(matrix._mat);
+
+        // Compute the numerical factorization
+        solver.factorize(matrix._mat);
+
+        // Use the factors to solve the linear system
+        solution._vec = solver.solve(rhs._vec);
+
+        // Set up the return value.  The SparseLU solver doesn't
+        // support asking for the number of iterations or the final
+        // error, so we'll just report back 1 and 0, respectively.
+        retval = std::make_pair(/*n. iterations=*/1, /*error=*/0);
+
+        // Store the success/failure reason and break out.
+        _comp_info = solver.info();
+        break;
+      }
+
       // Unknown solver, use BICGSTAB
     default:
       {
@@ -167,8 +214,6 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> & matrix_in,
 
         this->_solver_type = BICGSTAB;
 
-        STOP_LOG("solve()", "EigenSparseLinearSolver");
-
         return this->solve (matrix,
                             solution,
                             rhs,
@@ -177,7 +222,6 @@ EigenSparseLinearSolver<T>::solve (SparseMatrix<T> & matrix_in,
       }
     }
 
-  STOP_LOG("solve()", "EigenSparseLinearSolver");
   return retval;
 }
 
@@ -191,8 +235,7 @@ EigenSparseLinearSolver<T>::adjoint_solve (SparseMatrix<T> & matrix_in,
                                            const double tol,
                                            const unsigned int m_its)
 {
-
-  START_LOG("adjoint_solve()", "EigenSparseLinearSolver");
+  LOG_SCOPE("adjoint_solve()", "EigenSparseLinearSolver");
 
   libmesh_experimental();
   EigenSparseMatrix<T> mat_trans(this->comm());
@@ -203,8 +246,6 @@ EigenSparseLinearSolver<T>::adjoint_solve (SparseMatrix<T> & matrix_in,
                                                       rhs_in,
                                                       tol,
                                                       m_its);
-
-  STOP_LOG("adjoint_solve()", "EigenSparseLinearSolver");
 
   return retval;
 }

@@ -46,7 +46,7 @@ void WeightedPatchRecoveryErrorEstimator::estimate_error (const System & system,
                                                           const NumericVector<Number> * solution_vector,
                                                           bool)
 {
-  START_LOG("estimate_error()", "WeightedPatchRecoveryErrorEstimator");
+  LOG_SCOPE("estimate_error()", "WeightedPatchRecoveryErrorEstimator");
 
   // The current mesh
   const MeshBase & mesh = system.get_mesh();
@@ -94,8 +94,6 @@ void WeightedPatchRecoveryErrorEstimator::estimate_error (const System & system,
       newsol->swap(*sys.solution);
       sys.update();
     }
-
-  STOP_LOG("estimate_error()", "WeightedPatchRecoveryErrorEstimator");
 }
 
 
@@ -199,7 +197,7 @@ void WeightedPatchRecoveryErrorEstimator::EstimateError::operator()(const ConstE
                  (error_estimator.error_norm.type(var-1) == L_INF ||
                   error_estimator.error_norm.type(var-1) == W1_INF_SEMINORM ||
                   error_estimator.error_norm.type(var-1) == W2_INF_SEMINORM));
-                libmesh_assert (is_valid_norm_type);
+              libmesh_assert (is_valid_norm_type);
             }
 #endif // DEBUG
 

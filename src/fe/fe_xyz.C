@@ -123,8 +123,10 @@ unsigned int xyz_n_dofs(const ElemType t, const Order o)
             return 2;
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 3;
@@ -166,8 +168,10 @@ unsigned int xyz_n_dofs(const ElemType t, const Order o)
             return 3;
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 6;
@@ -209,8 +213,10 @@ unsigned int xyz_n_dofs(const ElemType t, const Order o)
             return 4;
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 10;
@@ -251,8 +257,10 @@ unsigned int xyz_n_dofs(const ElemType t, const Order o)
             return 5;
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 15;
@@ -292,8 +300,10 @@ unsigned int xyz_n_dofs(const ElemType t, const Order o)
             return (order+1);
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return (order+1)*(order+2)/2;
@@ -354,8 +364,10 @@ unsigned int xyz_n_dofs_per_elem(const ElemType t,
 
             // 2D linears have 3 DOFs per element
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 3;
@@ -400,8 +412,10 @@ unsigned int xyz_n_dofs_per_elem(const ElemType t,
 
             // 2D quadratics have 6 DOFs per element
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 6;
@@ -444,8 +458,10 @@ unsigned int xyz_n_dofs_per_elem(const ElemType t,
             return 4;
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 10;
@@ -487,8 +503,10 @@ unsigned int xyz_n_dofs_per_elem(const ElemType t,
             return 5;
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 15;
@@ -527,8 +545,10 @@ unsigned int xyz_n_dofs_per_elem(const ElemType t,
             return (order+1);
 
           case TRI3:
+          case TRISHELL3:
           case TRI6:
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return (order+1)*(order+2)/2;
@@ -584,8 +604,7 @@ void FEXYZ<Dim>::init_shape_functions(const std::vector<Point> & qp,
 #endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
 
   // Start logging the shape function initialization
-  START_LOG("init_shape_functions()", "FE");
-
+  LOG_SCOPE("init_shape_functions()", "FE");
 
   // The number of quadrature points.
   const std::size_t n_qp = qp.size();
@@ -673,9 +692,6 @@ void FEXYZ<Dim>::init_shape_functions(const std::vector<Point> & qp,
 
   }
 #endif // ifdef LIBMESH_ENABLE_INFINITE_ELEMENTS
-
-  // Stop logging the shape function initialization
-  STOP_LOG("init_shape_functions()", "FE");
 }
 
 
@@ -693,7 +709,7 @@ void FEXYZ<Dim>::compute_shape_functions (const Elem * elem,
   // have already been computed via init_shape_functions
 
   // Start logging the shape function computation
-  START_LOG("compute_shape_functions()", "FE");
+  LOG_SCOPE("compute_shape_functions()", "FE");
 
   const std::vector<Point> & xyz_qp = this->get_xyz();
 
@@ -838,9 +854,6 @@ void FEXYZ<Dim>::compute_shape_functions (const Elem * elem,
     default:
       libmesh_error_msg("ERROR: Invalid dimension " << this->dim);
     }
-
-  // Stop logging the shape function computation
-  STOP_LOG("compute_shape_functions()", "FE");
 }
 
 

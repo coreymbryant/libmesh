@@ -41,20 +41,24 @@ CondensedEigenSystem::CondensedEigenSystem (EquationSystems & es,
 {
 }
 
-void CondensedEigenSystem::initialize_condensed_dofs(std::set<unsigned int> & global_dirichlet_dofs_set)
+void
+CondensedEigenSystem::initialize_condensed_dofs(const std::set<dof_id_type> & global_dirichlet_dofs_set)
 {
-  // First, put all local dofs into non_dirichlet_dofs_set and
-  std::set<unsigned int> local_non_condensed_dofs_set;
-  for(unsigned int i=this->get_dof_map().first_dof(); i<this->get_dof_map().end_dof(); i++)
-    local_non_condensed_dofs_set.insert(i);
+  const DofMap & dof_map = this->get_dof_map();
+
+  // First, put all unconstrained local dofs into non_dirichlet_dofs_set
+  std::set<dof_id_type> local_non_condensed_dofs_set;
+  for(dof_id_type i=this->get_dof_map().first_dof(); i<this->get_dof_map().end_dof(); i++)
+    if (!dof_map.is_constrained_dof(i))
+      local_non_condensed_dofs_set.insert(i);
 
   // Now erase the condensed dofs
-  std::set<unsigned int>::iterator iter     = global_dirichlet_dofs_set.begin();
-  std::set<unsigned int>::iterator iter_end = global_dirichlet_dofs_set.end();
+  std::set<dof_id_type>::iterator iter     = global_dirichlet_dofs_set.begin();
+  std::set<dof_id_type>::iterator iter_end = global_dirichlet_dofs_set.end();
 
   for ( ; iter != iter_end ; ++iter)
     {
-      unsigned int condensed_dof_index = *iter;
+      dof_id_type condensed_dof_index = *iter;
       if ( (this->get_dof_map().first_dof() <= condensed_dof_index) &&
            (condensed_dof_index < this->get_dof_map().end_dof()) )
         {
@@ -70,7 +74,7 @@ void CondensedEigenSystem::initialize_condensed_dofs(std::set<unsigned int> & gl
 
   for ( ; iter != iter_end; ++iter)
     {
-      unsigned int non_condensed_dof_index = *iter;
+      dof_id_type non_condensed_dof_index = *iter;
 
       this->local_non_condensed_dofs_vector.push_back(non_condensed_dof_index);
     }
@@ -78,7 +82,7 @@ void CondensedEigenSystem::initialize_condensed_dofs(std::set<unsigned int> & gl
   condensed_dofs_initialized = true;
 }
 
-unsigned int CondensedEigenSystem::n_global_non_condensed_dofs() const
+dof_id_type CondensedEigenSystem::n_global_non_condensed_dofs() const
 {
   if(!condensed_dofs_initialized)
     {
@@ -86,7 +90,7 @@ unsigned int CondensedEigenSystem::n_global_non_condensed_dofs() const
     }
   else
     {
-      unsigned int n_global_non_condensed_dofs = local_non_condensed_dofs_vector.size();
+      dof_id_type n_global_non_condensed_dofs = local_non_condensed_dofs_vector.size();
       this->comm().sum(n_global_non_condensed_dofs);
 
       return n_global_non_condensed_dofs;
@@ -96,13 +100,12 @@ unsigned int CondensedEigenSystem::n_global_non_condensed_dofs() const
 
 void CondensedEigenSystem::solve()
 {
-  START_LOG("solve()", "CondensedEigenSystem");
+  LOG_SCOPE("solve()", "CondensedEigenSystem");
 
   // If we haven't initialized any condensed dofs,
   // just use the default eigen_system
   if(!condensed_dofs_initialized)
     {
-      STOP_LOG("solve()", "CondensedEigenSystem");
       Parent::solve();
       return;
     }
@@ -169,23 +172,18 @@ void CondensedEigenSystem::solve()
 
   set_n_converged(solve_data.first);
   set_n_iterations(solve_data.second);
-
-  STOP_LOG("solve()", "CondensedEigenSystem");
 }
 
 
 
-std::pair<Real, Real> CondensedEigenSystem::get_eigenpair(unsigned int i)
+std::pair<Real, Real> CondensedEigenSystem::get_eigenpair(dof_id_type i)
 {
-  START_LOG("get_eigenpair()", "CondensedEigenSystem");
+  LOG_SCOPE("get_eigenpair()", "CondensedEigenSystem");
 
   // If we haven't initialized any condensed dofs,
   // just use the default eigen_system
-  if(!condensed_dofs_initialized)
-    {
-      STOP_LOG("get_eigenpair()", "CondensedEigenSystem");
-      return Parent::get_eigenpair(i);
-    }
+  if (!condensed_dofs_initialized)
+    return Parent::get_eigenpair(i);
 
   // If we reach here, then there should be some non-condensed dofs
   libmesh_assert(!local_non_condensed_dofs_vector.empty());
@@ -193,8 +191,8 @@ std::pair<Real, Real> CondensedEigenSystem::get_eigenpair(unsigned int i)
   // This function assumes that condensed_solve has just been called.
   // If this is not the case, then we will trip an asset in get_eigenpair
   UniquePtr< NumericVector<Number> > temp = NumericVector<Number>::build(this->comm());
-  unsigned int n_local = local_non_condensed_dofs_vector.size();
-  unsigned int n       = n_local;
+  dof_id_type n_local = local_non_condensed_dofs_vector.size();
+  dof_id_type n       = n_local;
   this->comm().sum(n);
 
   temp->init (n, n_local, false, PARALLEL);
@@ -203,16 +201,14 @@ std::pair<Real, Real> CondensedEigenSystem::get_eigenpair(unsigned int i)
 
   // Now map temp to solution. Loop over local entries of local_non_condensed_dofs_vector
   this->solution->zero();
-  for (unsigned int j=0; j<local_non_condensed_dofs_vector.size(); j++)
+  for (dof_id_type j=0; j<local_non_condensed_dofs_vector.size(); j++)
     {
-      unsigned int index = local_non_condensed_dofs_vector[j];
+      dof_id_type index = local_non_condensed_dofs_vector[j];
       solution->set(index,(*temp)(temp->first_local_index()+j));
     }
 
   solution->close();
   this->update();
-
-  STOP_LOG("get_eigenpair()", "CondensedEigenSystem");
 
   return eval;
 }

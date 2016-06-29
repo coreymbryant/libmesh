@@ -190,6 +190,10 @@
 /* define if the Boost library is available */
 #undef HAVE_BOOST
 
+/* Flag indicating whether the library will use Boost Move's unique_ptr
+   implementation */
+#undef HAVE_BOOST_MOVELIB_UNIQUE_PTR
+
 /* Flag indicating bzip2/bunzip2 are available for handling compressed .bz2
    files */
 #undef HAVE_BZIP
@@ -207,38 +211,121 @@
 /* define if the compiler supports basic C++11 syntax */
 #undef HAVE_CXX11
 
+/* Flag indicating whether compiler supports alias declarations */
+#undef HAVE_CXX11_ALIAS_DECLARATIONS
+
+/* Compiler supports alias declarations, but they are disabled in libmesh */
+#undef HAVE_CXX11_ALIAS_DECLARATIONS_BUT_DISABLED
+
+/* Flag indicating whether compiler supports the auto keyword */
+#undef HAVE_CXX11_AUTO
+
+/* Compiler supports auto keyword, but it is disabled in libmesh */
+#undef HAVE_CXX11_AUTO_BUT_DISABLED
+
+/* Flag indicating whether compiler supports std::condition_variable */
+#undef HAVE_CXX11_CONDITION_VARIABLE
+
+/* Compiler supports std::condition_variable, but it is disabled in libmesh */
+#undef HAVE_CXX11_CONDITION_VARIABLE_BUT_DISABLED
+
+/* Flag indicating whether compiler supports constexpr */
+#undef HAVE_CXX11_CONSTEXPR
+
+/* Compiler supports constexper, but it is disabled in libmesh */
+#undef HAVE_CXX11_CONSTEXPR_BUT_DISABLED
+
+/* Flag indicating whether compiler supports decltype */
+#undef HAVE_CXX11_DECLTYPE
+
+/* Compiler supports decltype, but it is disabled in libmesh */
+#undef HAVE_CXX11_DECLTYPE_BUT_DISABLED
+
 /* Flag indicating whether compiler supports f() = delete; */
 #undef HAVE_CXX11_DELETED_FUNCTIONS
+
+/* Compiler supports deleted functions, but they are disabled in libmesh */
+#undef HAVE_CXX11_DELETED_FUNCTIONS_BUT_DISABLED
 
 /* Flag indicating whether compiler supports f() final; */
 #undef HAVE_CXX11_FINAL
 
+/* Compiler supports final keyword, but it is disabled in libmesh */
+#undef HAVE_CXX11_FINAL_BUT_DISABLED
+
 /* Flag indicating whether compiler supports initializer lists */
 #undef HAVE_CXX11_INITIALIZER_LIST
+
+/* Compiler supports initializer lists, but it is disabled in libmesh */
+#undef HAVE_CXX11_INITIALIZER_LIST_BUT_DISABLED
 
 /* Flag indicating whether compiler supports std::acosh */
 #undef HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE
 
-/* Flag indicating whether compiler supports std::asinh */
+/* Compiler supports std::acosh, but it is disabled in libmesh */
+#undef HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE_BUT_DISABLED
+
+/* Flag indicating whether compiler supports std::acosh(complex) */
 #undef HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE_COMPLEX
+
+/* Compiler supports std::acosh(complex), but it is disabled in libmesh */
+#undef HAVE_CXX11_INVERSE_HYPERBOLIC_COSINE_COMPLEX_BUT_DISABLED
 
 /* Flag indicating whether compiler supports std::asinh */
 #undef HAVE_CXX11_INVERSE_HYPERBOLIC_SINE
 
-/* Flag indicating whether compiler supports std::asinh */
+/* Compiler supports std::asinh, but it is disabled in libmesh */
+#undef HAVE_CXX11_INVERSE_HYPERBOLIC_SINE_BUT_DISABLED
+
+/* Flag indicating whether compiler supports std::asinh(complex) */
 #undef HAVE_CXX11_INVERSE_HYPERBOLIC_SINE_COMPLEX
+
+/* Compiler supports std::asinh(complex), but it is disabled in libmesh */
+#undef HAVE_CXX11_INVERSE_HYPERBOLIC_SINE_COMPLEX_BUT_DISABLED
 
 /* Flag indicating whether compiler supports std::atanh */
 #undef HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT
 
-/* Flag indicating whether compiler supports std::asinh */
+/* Compiler supports std::atanh, but it is disabled in libmesh */
+#undef HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT_BUT_DISABLED
+
+/* Flag indicating whether compiler supports std::atanh(complex) */
 #undef HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT_COMPLEX
+
+/* Compiler supports std::atanh(complex), but it is disabled in libmesh */
+#undef HAVE_CXX11_INVERSE_HYPERBOLIC_TANGENT_COMPLEX_BUT_DISABLED
+
+/* Flag indicating whether compiler supports lambdas */
+#undef HAVE_CXX11_LAMBDA
+
+/* Compiler supports lambdas, but they are disabled in libmesh */
+#undef HAVE_CXX11_LAMBDA_BUT_DISABLED
+
+/* Flag indicating whether compiler supports C++11 std::make_unique workaround
+   */
+#undef HAVE_CXX11_MAKE_UNIQUE_WORKAROUND
+
+/* Compiler supports C++11 std::make_unique workaround, but it is disabled in
+   libmesh */
+#undef HAVE_CXX11_MAKE_UNIQUE_WORKAROUND_BUT_DISABLED
 
 /* Flag indicating whether compiler supports std::move */
 #undef HAVE_CXX11_MOVE
 
+/* Compiler supports std::move, but it is disabled in libmesh */
+#undef HAVE_CXX11_MOVE_BUT_DISABLED
+
+/* Flag indicating whether compiler supports noexcept */
+#undef HAVE_CXX11_NOEXCEPT
+
+/* Compiler supports noexcept, but it is disabled in libmesh */
+#undef HAVE_CXX11_NOEXCEPT_BUT_DISABLED
+
 /* Flag indicating whether compiler supports nullptr */
 #undef HAVE_CXX11_NULLPTR
+
+/* Compiler supports nullptr, but it is disabled in libmesh */
+#undef HAVE_CXX11_NULLPTR_BUT_DISABLED
 
 /* Flag indicating whether C++03 compatible nullptr workaround works */
 #undef HAVE_CXX11_NULLPTR_WORKAROUND
@@ -246,23 +333,68 @@
 /* Flag indicating whether compiler supports the override keyword */
 #undef HAVE_CXX11_OVERRIDE
 
+/* Compiler supports the override keyword, but it is disabled in libmesh */
+#undef HAVE_CXX11_OVERRIDE_BUT_DISABLED
+
+/* Flag indicating whether compiler supports range-based for loops */
+#undef HAVE_CXX11_RANGEFOR
+
+/* Compiler supports range-based for loops, but it is disabled in libmesh */
+#undef HAVE_CXX11_RANGEFOR_BUT_DISABLED
+
 /* Flag indicating whether compiler supports std::regex */
 #undef HAVE_CXX11_REGEX
+
+/* Compiler supports std::regex, but it is disabled in libmesh */
+#undef HAVE_CXX11_REGEX_BUT_DISABLED
+
+/* Flag indicating whether compiler supports rvalue references */
+#undef HAVE_CXX11_RVALUE_REFERENCES
+
+/* Compiler supports rvalue references, but they are disabled in libmesh */
+#undef HAVE_CXX11_RVALUE_REFERENCES_BUT_DISABLED
 
 /* Flag indicating whether compiler supports std::shared_ptr */
 #undef HAVE_CXX11_SHARED_PTR
 
+/* Compiler supports std::shared_ptr, but it is disabled in libmesh */
+#undef HAVE_CXX11_SHARED_PTR_BUT_DISABLED
+
 /* Flag indicating whether compiler supports std::thread */
 #undef HAVE_CXX11_THREAD
 
-/* Flag indicating whether compiler supports std::thread */
+/* Compiler supports std::thread, but it is disabled in libmesh */
+#undef HAVE_CXX11_THREAD_BUT_DISABLED
+
+/* Flag indicating whether compiler supports std::to_string() */
+#undef HAVE_CXX11_TO_STRING
+
+/* Compiler supports std::to_string(), but it is disabled in libmesh */
+#undef HAVE_CXX11_TO_STRING_BUT_DISABLED
+
+/* Flag indicating whether compiler supports <type_traits> */
 #undef HAVE_CXX11_TYPE_TRAITS
+
+/* Compiler supports <type_traits>, but it is disabled in libmesh */
+#undef HAVE_CXX11_TYPE_TRAITS_BUT_DISABLED
 
 /* Flag indicating whether compiler supports std::unique_ptr */
 #undef HAVE_CXX11_UNIQUE_PTR
 
+/* Compiler supports std::unique_ptr, but it is disabled in libmesh */
+#undef HAVE_CXX11_UNIQUE_PTR_BUT_DISABLED
+
 /* Flag indicating whether compiler supports variadic templates */
 #undef HAVE_CXX11_VARIADIC_TEMPLATES
+
+/* Compiler supports variadic templates, but it is disabled in libmesh */
+#undef HAVE_CXX11_VARIADIC_TEMPLATES_BUT_DISABLED
+
+/* Flag indicating whether compiler supports std::make_unique */
+#undef HAVE_CXX14_MAKE_UNIQUE
+
+/* Compiler supports std::make_unique, but it is disabled in libmesh */
+#undef HAVE_CXX14_MAKE_UNIQUE_BUT_DISABLED
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
@@ -352,6 +484,9 @@
 
 /* Define if HDF5 is available */
 #undef HAVE_HDF5
+
+/* Define if the HDF5 C++ interface is available */
+#undef HAVE_HDF5_CXX
 
 /* Flag indicating whether the library will be compiled with Howard Hinnant's
    C++03 unique_ptr implementation */
@@ -450,9 +585,6 @@
 /* define if the compiler supports std::hash */
 #undef HAVE_STD_HASH
 
-/* define if the compiler supports std::thread */
-#undef HAVE_STD_THREAD
-
 /* define if the compiler supports std::unordered_map */
 #undef HAVE_STD_UNORDERED_MAP
 
@@ -489,9 +621,6 @@
 /* Flag indicating whether the library shall be compiled to use the Threading
    Building Blocks */
 #undef HAVE_TBB_API
-
-/* define if the compiler supports tbb::tbb_thread */
-#undef HAVE_TBB_CXX_THREAD
 
 /* Flag indicating whether the library shall be compiled to use the Tecplot
    interface */
@@ -639,6 +768,9 @@
 
 /* The size of `short int', as computed by sizeof. */
 #undef SIZEOF_SHORT_INT
+
+/* The size of `size_t', as computed by sizeof. */
+#undef SIZEOF_SIZE_T
 
 /* The size of `unsigned int', as computed by sizeof. */
 #undef SIZEOF_UNSIGNED_INT

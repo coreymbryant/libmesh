@@ -126,7 +126,7 @@ void ParmetisPartitioner::_do_repartition (MeshBase & mesh,
       return;
     }
 
-  START_LOG("repartition()", "ParmetisPartitioner");
+  LOG_SCOPE("repartition()", "ParmetisPartitioner");
 
   // Initialize the data structures required by ParMETIS
   this->initialize (mesh, n_sbdmns);
@@ -147,12 +147,8 @@ void ParmetisPartitioner::_do_repartition (MeshBase & mesh,
       {
         // FIXME: revert to METIS, although this requires a serial mesh
         MeshSerializer serialize(mesh);
-
-        STOP_LOG ("repartition()", "ParmetisPartitioner");
-
         MetisPartitioner mp;
         mp.partition (mesh, n_sbdmns);
-
         return;
       }
   }
@@ -189,9 +185,6 @@ void ParmetisPartitioner::_do_repartition (MeshBase & mesh,
 
   // Assign the returned processor ids
   this->assign_partitioning (mesh);
-
-
-  STOP_LOG ("repartition()", "ParmetisPartitioner");
 
 #endif // #ifndef LIBMESH_HAVE_PARMETIS ... else ...
 
@@ -496,7 +489,7 @@ void ParmetisPartitioner::build_graph (const MeshBase & mesh)
       // adjacency corresponds to a face neighbor
       for (unsigned int ms=0; ms<elem->n_neighbors(); ms++)
         {
-          const Elem * neighbor = elem->neighbor(ms);
+          const Elem * neighbor = elem->neighbor_ptr(ms);
 
           if (neighbor != libmesh_nullptr)
             {
@@ -549,7 +542,7 @@ void ParmetisPartitioner::build_graph (const MeshBase & mesh)
                       // This does not assume a level-1 mesh.
                       // Note that since children have sides numbered
                       // coincident with the parent then this is a sufficient test.
-                      if (child->neighbor(ns) == elem)
+                      if (child->neighbor_ptr(ns) == elem)
                         {
                           libmesh_assert (child->active());
                           libmesh_assert (_global_index_by_pid_map.count(child->id()));

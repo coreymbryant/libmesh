@@ -52,7 +52,7 @@ void HPCoarsenTest::add_projection(const System & system,
     {
       libmesh_assert(!elem->subactive());
       for (unsigned int c = 0; c != elem->n_children(); ++c)
-        this->add_projection(system, elem->child(c), var);
+        this->add_projection(system, elem->child_ptr(c), var);
       return;
     }
 
@@ -144,7 +144,7 @@ void HPCoarsenTest::add_projection(const System & system,
 
 void HPCoarsenTest::select_refinement (System & system)
 {
-  START_LOG("select_refinement()", "HPCoarsenTest");
+  LOG_SCOPE("select_refinement()", "HPCoarsenTest");
 
   // The current mesh
   MeshBase & mesh = system.get_mesh();
@@ -179,8 +179,8 @@ void HPCoarsenTest::select_refinement (System & system)
 
   // Resize the error_per_cell vectors to handle
   // the number of elements, initialize them to 0.
-  std::vector<ErrorVectorReal> h_error_per_cell(mesh.n_elem(), 0.);
-  std::vector<ErrorVectorReal> p_error_per_cell(mesh.n_elem(), 0.);
+  std::vector<ErrorVectorReal> h_error_per_cell(mesh.max_elem_id(), 0.);
+  std::vector<ErrorVectorReal> p_error_per_cell(mesh.max_elem_id(), 0.);
 
   // Loop over all the variables in the system
   for (unsigned int var=0; var<n_vars; var++)
@@ -308,9 +308,9 @@ void HPCoarsenTest::select_refinement (System & system)
                 if (elem->is_vertex(n))
                   {
                     n_vertices++;
-                    const Node * const node = elem->get_node(n);
+                    const Node & node = elem->node_ref(n);
                     average_val += system.current_solution
-                      (node->dof_number(sys_num,var,0));
+                      (node.dof_number(sys_num,var,0));
                   }
               average_val /= n_vertices;
             }
@@ -428,11 +428,11 @@ void HPCoarsenTest::select_refinement (System & system)
               if (cont == C_ZERO || cont == C_ONE)
                 p_error_per_cell[e_id] += static_cast<ErrorVectorReal>
                   (component_scale[var] *
-                   (*JxW)[qp] * grad_error.size_sq());
+                   (*JxW)[qp] * grad_error.norm_sq());
               if (cont == C_ONE)
                 p_error_per_cell[e_id] += static_cast<ErrorVectorReal>
                   (component_scale[var] *
-                   (*JxW)[qp] * hessian_error.size_sq());
+                   (*JxW)[qp] * hessian_error.norm_sq());
             }
 
           // Calculate this variable's contribution to the h
@@ -500,11 +500,11 @@ void HPCoarsenTest::select_refinement (System & system)
                   if (cont == C_ZERO || cont == C_ONE)
                     h_error_per_cell[e_id] += static_cast<ErrorVectorReal>
                       (component_scale[var] *
-                       (*JxW)[qp] * grad_error.size_sq());
+                       (*JxW)[qp] * grad_error.norm_sq());
                   if (cont == C_ONE)
                     h_error_per_cell[e_id] += static_cast<ErrorVectorReal>
                       (component_scale[var] *
-                       (*JxW)[qp] * hessian_error.size_sq());
+                       (*JxW)[qp] * hessian_error.norm_sq());
                 }
 
             }
@@ -580,8 +580,6 @@ void HPCoarsenTest::select_refinement (System & system)
           elem->set_refinement_flag(Elem::DO_NOTHING);
         }
     }
-
-  STOP_LOG("select_refinement()", "HPCoarsenTest");
 }
 
 } // namespace libMesh

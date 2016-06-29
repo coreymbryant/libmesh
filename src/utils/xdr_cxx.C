@@ -40,14 +40,12 @@ namespace {
 void bzip_file (const std::string & unzipped_name)
 {
 #ifdef LIBMESH_HAVE_BZIP
-  START_LOG("system(bzip2)", "XdrIO");
+  LOG_SCOPE("system(bzip2)", "XdrIO");
 
   std::string system_string = "bzip2 -f ";
   system_string += unzipped_name;
   if (std::system(system_string.c_str()))
     libmesh_file_error(system_string);
-
-  STOP_LOG("system(bzip2)", "XdrIO");
 #else
   libmesh_error_msg("ERROR: need bzip2/bunzip2 to create " << unzipped_name << ".bz2");
 #endif
@@ -64,12 +62,11 @@ std::string unzip_file (const std::string & name)
 #ifdef LIBMESH_HAVE_BZIP
       new_name.erase(new_name.end() - 4, new_name.end());
       new_name += pid_suffix.str();
-      START_LOG("system(bunzip2)", "XdrIO");
+      LOG_SCOPE("system(bunzip2)", "XdrIO");
       std::string system_string = "bunzip2 -f -k -c ";
       system_string += name + " > " + new_name;
       if (std::system(system_string.c_str()))
         libmesh_file_error(system_string);
-      STOP_LOG("system(bunzip2)", "XdrIO");
 #else
       libmesh_error_msg("ERROR: need bzip2/bunzip2 to open .bz2 file " << name);
 #endif
@@ -79,12 +76,11 @@ std::string unzip_file (const std::string & name)
 #ifdef LIBMESH_HAVE_XZ
       new_name.erase(new_name.end() - 3, new_name.end());
       new_name += pid_suffix.str();
-      START_LOG("system(xz -d)", "XdrIO");
+      LOG_SCOPE("system(xz -d)", "XdrIO");
       std::string system_string = "xz -f -d -k -c ";
       system_string += name + " > " + new_name;
       if (std::system(system_string.c_str()))
         libmesh_file_error(system_string);
-      STOP_LOG("system(xz -d)", "XdrIO");
 #else
       libmesh_error_msg("ERROR: need xz to open .xz file " << name);
 #endif
@@ -95,14 +91,12 @@ std::string unzip_file (const std::string & name)
 void xzip_file (const std::string & unzipped_name)
 {
 #ifdef LIBMESH_HAVE_XZ
-  START_LOG("system(xz)", "XdrIO");
+  LOG_SCOPE("system(xz)", "XdrIO");
 
   std::string system_string = "xz -f ";
   system_string += unzipped_name;
   if (std::system(system_string.c_str()))
     libmesh_file_error(system_string);
-
-  STOP_LOG("system(xz)", "XdrIO");
 #else
   libmesh_error_msg("ERROR: need xz to create " << unzipped_name << ".xz");
 #endif
@@ -753,7 +747,14 @@ void Xdr::data (T & a, const char * comment_in)
              << std::setprecision(16);
 
         this->do_write(a);
-        *out << "\t " << comment_in << '\n';
+
+        // If there's a comment provided, write a tab character and
+        // then the comment.
+        if (std::string(comment_in) != "")
+          *out << "\t " << comment_in;
+
+        // Go to the next line.
+        *out << '\n';
 
         return;
       }
@@ -877,14 +878,19 @@ void Xdr::data_stream (T * val, const unsigned int len, const unsigned int line_
             }
         else
           {
+            const unsigned imax = std::min(line_break, len);
             unsigned int cnt=0;
             while (cnt < len)
               {
-                for (unsigned int i=0; i<std::min(line_break,len); i++)
+                for (unsigned int i=0; i<imax; i++)
                   {
                     libmesh_assert(out.get());
                     libmesh_assert (out->good());
-                    *out << val[cnt++] << " ";
+                    *out << val[cnt++];
+
+                    // Write a space unless this is the last character on the current line.
+                    if (i+1 != imax)
+                      *out << " ";
                   }
                 libmesh_assert(out.get());
                 libmesh_assert (out->good());
@@ -969,14 +975,19 @@ void Xdr::data_stream (double * val, const unsigned int len, const unsigned int 
             }
         else
           {
+            const unsigned imax = std::min(line_break, len);
             unsigned int cnt=0;
             while (cnt < len)
               {
-                for (unsigned int i=0; i<std::min(line_break,len); i++)
+                for (unsigned int i=0; i<imax; i++)
                   {
                     libmesh_assert(out.get());
                     libmesh_assert (out->good());
-                    *out << val[cnt++] << ' ';
+                    *out << val[cnt++];
+
+                    // Write a space unless this is the last character on the current line.
+                    if (i+1 != imax)
+                      *out << " ";
                   }
                 libmesh_assert(out.get());
                 libmesh_assert (out->good());
@@ -1063,14 +1074,19 @@ void Xdr::data_stream (float * val, const unsigned int len, const unsigned int l
             }
         else
           {
+            const unsigned imax = std::min(line_break, len);
             unsigned int cnt=0;
             while (cnt < len)
               {
-                for (unsigned int i=0; i<std::min(line_break,len); i++)
+                for (unsigned int i=0; i<imax; i++)
                   {
                     libmesh_assert(out.get());
                     libmesh_assert (out->good());
-                    *out << val[cnt++] << ' ';
+                    *out << val[cnt++];
+
+                    // Write a space unless this is the last character on the current line.
+                    if (i+1 != imax)
+                      *out << " ";
                   }
                 libmesh_assert(out.get());
                 libmesh_assert (out->good());
@@ -1183,14 +1199,19 @@ void Xdr::data_stream (long double * val, const unsigned int len, const unsigned
             }
         else
           {
+            const unsigned imax = std::min(line_break, len);
             unsigned int cnt=0;
             while (cnt < len)
               {
-                for (unsigned int i=0; i<std::min(line_break,len); i++)
+                for (unsigned int i=0; i<imax; i++)
                   {
                     libmesh_assert(out.get());
                     libmesh_assert (out->good());
-                    *out << val[cnt++] << ' ';
+                    *out << val[cnt++];
+
+                    // Write a space unless this is the last character on the current line.
+                    if (i+1 != imax)
+                      *out << " ";
                   }
                 libmesh_assert(out.get());
                 libmesh_assert (out->good());
@@ -1302,16 +1323,21 @@ void Xdr::data_stream (std::complex<double> * val, const unsigned int len, const
             }
         else
           {
+            const unsigned imax = std::min(line_break, len);
             unsigned int cnt=0;
             while (cnt < len)
               {
-                for (unsigned int i=0; i<std::min(line_break,len); i++)
+                for (unsigned int i=0; i<imax; i++)
                   {
                     libmesh_assert(out.get());
                     libmesh_assert (out->good());
                     *out << val[cnt].real() << ' ';
-                    *out << val[cnt].imag() << ' ';
+                    *out << val[cnt].imag();
                     cnt++;
+
+                    // Write a space unless this is the last character on the current line.
+                    if (i+1 != imax)
+                      *out << " ";
                   }
                 libmesh_assert(out.get());
                 libmesh_assert (out->good());
@@ -1429,15 +1455,20 @@ void Xdr::data_stream (std::complex<long double> * val, const unsigned int len, 
             }
         else
           {
+            const unsigned imax = std::min(line_break, len);
             unsigned int cnt=0;
             while (cnt < len)
               {
-                for (unsigned int i=0; i<std::min(line_break,len); i++)
+                for (unsigned int i=0; i<imax; i++)
                   {
                     libmesh_assert(out.get());
                     libmesh_assert (out->good());
-                    *out << val[cnt].real() << ' ' << val[cnt].imag() << ' ';
+                    *out << val[cnt].real() << ' ' << val[cnt].imag();
                     cnt++;
+
+                    // Write a space unless this is the last character on the current line.
+                    if (i+1 != imax)
+                      *out << " ";
                   }
                 libmesh_assert(out.get());
                 libmesh_assert (out->good());
@@ -1509,7 +1540,7 @@ template void Xdr::data<long double>                      (long double &,       
 template void Xdr::data<std::complex<float> >             (std::complex<float> &,             const char *);
 template void Xdr::data<std::complex<double> >            (std::complex<double> &,            const char *);
 template void Xdr::data<std::complex<long double> >       (std::complex<long double> &,       const char *);
-template void Xdr::data<std::string>                      (std::string &,                      const char *);
+template void Xdr::data<std::string>                      (std::string &,                     const char *);
 template void Xdr::data<std::vector<int> >                (std::vector<int> &,                const char *);
 template void Xdr::data<std::vector<unsigned int> >       (std::vector<unsigned int> &,       const char *);
 template void Xdr::data<std::vector<short int> >          (std::vector<short int> &,          const char *);

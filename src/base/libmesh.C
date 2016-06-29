@@ -60,18 +60,14 @@
 
 #if defined(LIBMESH_HAVE_PETSC)
 # include "libmesh/petsc_macro.h"
-EXTERN_C_FOR_PETSC_BEGIN
 # include <petsc.h>
 # include <petscerror.h>
 #if !PETSC_RELEASE_LESS_THAN(3,3,0)
 #include "libmesh/petscdmlibmesh.h"
 #endif
-EXTERN_C_FOR_PETSC_END
 # if defined(LIBMESH_HAVE_SLEPC)
 #  include "libmesh/slepc_macro.h"
-EXTERN_C_FOR_PETSC_BEGIN
 #  include <slepc.h>
-EXTERN_C_FOR_PETSC_END
 # endif // #if defined(LIBMESH_HAVE_SLEPC)
 #endif // #if defined(LIBMESH_HAVE_PETSC)
 
@@ -363,6 +359,16 @@ LibMeshInit::LibMeshInit (int argc, const char * const * argv,
     libMesh::libMeshPrivateData::_n_threads =
       libMesh::command_line_value (n_threads, 1);
 
+    // If there's no threading model active, force _n_threads==1
+#if !LIBMESH_USING_THREADS
+    if (libMesh::libMeshPrivateData::_n_threads != 1)
+      {
+        libMesh::libMeshPrivateData::_n_threads = 1;
+        libmesh_warning("Warning: You requested --n-threads>1 but no threading model is active!\n"
+                        << "Forcing --n-threads==1 instead!");
+      }
+#endif
+
     // Set the number of OpenMP threads to the same as the number of threads libMesh is going to use
 #ifdef LIBMESH_HAVE_OPENMP
     omp_set_num_threads(libMesh::libMeshPrivateData::_n_threads);
@@ -511,9 +517,7 @@ LibMeshInit::LibMeshInit (int argc, const char * const * argv,
       // duplicate Initialize/Finalize.
       // We assume that SLEPc will handle PETSc appropriately,
       // which it does in the versions we've checked.
-#  if !SLEPC_VERSION_LESS_THAN(2,3,3)
       if (!SlepcInitializeCalled)
-#  endif
         {
           ierr = SlepcInitialize  (&argc, const_cast<char ***>(&argv), libmesh_nullptr, libmesh_nullptr);
           CHKERRABORT(libMesh::GLOBAL_COMM_WORLD,ierr);
@@ -956,6 +960,12 @@ template float        command_line_value<float>       (const std::string &, floa
 template double       command_line_value<double>      (const std::string &, double);
 template long double  command_line_value<long double> (const std::string &, long double);
 template std::string  command_line_value<std::string> (const std::string &, std::string);
+
+template int          command_line_value<int>         (const std::vector<std::string> &, int);
+template float        command_line_value<float>       (const std::vector<std::string> &, float);
+template double       command_line_value<double>      (const std::vector<std::string> &, double);
+template long double  command_line_value<long double> (const std::vector<std::string> &, long double);
+template std::string  command_line_value<std::string> (const std::vector<std::string> &, std::string);
 
 template int          command_line_next<int>         (const std::string &, int);
 template float        command_line_next<float>       (const std::string &, float);

@@ -70,7 +70,7 @@ PostscriptIO::~PostscriptIO ()
 
 void PostscriptIO::write (const std::string & fname)
 {
-  // We may need to gather a ParallelMesh to output it, making that
+  // We may need to gather a DistributedMesh to output it, making that
   // const qualifier in our constructor a dirty lie
   MeshSerializer serialize(const_cast<MeshBase &>(this->mesh()), !_is_parallel_format);
 
@@ -239,7 +239,7 @@ void PostscriptIO::plot_quadratic_elem(const Elem * elem)
   for (unsigned int ns=0; ns<elem->n_sides(); ++ns)
     {
       // Build the quadratic side
-      UniquePtr<Elem> side = elem->build_side(ns);
+      UniquePtr<const Elem> side = elem->build_side_ptr(ns);
 
       // Be sure it's quadratic (Edge2).  Eventually we could
       // handle cubic elements as well...
@@ -277,26 +277,26 @@ void PostscriptIO::_compute_edge_bezier_coeffs(const Elem * elem)
     phys_coords[3] = {0., 0., 0.},
     bez_coords[3]  = {0., 0., 0.};
 
-    for (unsigned int i=0; i<2; ++i)
-      {
-        // Initialize vectors.  Physical coordinates are initialized
-        // by their postscript-scaled values.
-        for (unsigned int j=0; j<3; ++j)
-          {
-            phys_coords[j] = static_cast<float>
-              ((elem->point(j)(i) - _offset(i)) * _scale);
-            bez_coords[j] = 0.; // zero out result vector
-          }
+  for (unsigned int i=0; i<2; ++i)
+    {
+      // Initialize vectors.  Physical coordinates are initialized
+      // by their postscript-scaled values.
+      for (unsigned int j=0; j<3; ++j)
+        {
+          phys_coords[j] = static_cast<float>
+            ((elem->point(j)(i) - _offset(i)) * _scale);
+          bez_coords[j] = 0.; // zero out result vector
+        }
 
-        // Multiply matrix times vector
-        for (unsigned int j=0; j<3; ++j)
-          for (unsigned int k=0; k<3; ++k)
-            bez_coords[j] += _bezier_transform[j][k]*phys_coords[k];
+      // Multiply matrix times vector
+      for (unsigned int j=0; j<3; ++j)
+        for (unsigned int k=0; k<3; ++k)
+          bez_coords[j] += _bezier_transform[j][k]*phys_coords[k];
 
-        // Store result in _bezier_coeffs
-        for (unsigned int j=0; j<3; ++j)
-          _bezier_coeffs[j](i) = phys_coords[j];
-      }
+      // Store result in _bezier_coeffs
+      for (unsigned int j=0; j<3; ++j)
+        _bezier_coeffs[j](i) = phys_coords[j];
+    }
 }
 
 } // namespace libMesh

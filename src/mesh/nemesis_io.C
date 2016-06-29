@@ -148,7 +148,7 @@ void Nemesis_IO::read (const std::string & base_filename)
       return;
     }
 
-  START_LOG ("read()","Nemesis_IO");
+  LOG_SCOPE ("read()","Nemesis_IO");
 
   // This function must be run on all processors at once
   parallel_object_only();
@@ -428,7 +428,7 @@ void Nemesis_IO::read (const std::string & base_filename)
                  << my_node_offset
                  << std::endl;
 
-  // Add internal nodes to the ParallelMesh, using the node ID offset we
+  // Add internal nodes to the DistributedMesh, using the node ID offset we
   // computed and the current processor's ID.
   for (unsigned int i=0; i<to_uint(nemhelper->num_internal_nodes); ++i)
     {
@@ -792,7 +792,7 @@ void Nemesis_IO::read (const std::string & base_filename)
 
   // Instantiate the ElementMaps interface.  This is what translates LibMesh's
   // element numbering scheme to Exodus's.
-  ExodusII_IO_Helper::ElementMaps em(*nemhelper);
+  ExodusII_IO_Helper::ElementMaps em;
 
   // Read in the element connectivity for each block by
   // looping over all the blocks.
@@ -1011,23 +1011,17 @@ void Nemesis_IO::read (const std::string & base_filename)
   // Mesh data structure, and assign the appropriate side to the BoundaryInfo object.
   for (unsigned int e=0; e<nemhelper->elem_list.size(); e++)
     {
-      // Calling mesh.elem() feels wrong, for example, in
-      // ParallelMesh, Mesh::elem() can return NULL so we have to check for this...
+      // Calling mesh.elem_ptr() is an error if no element with that
+      // id exists on this processor...
       //
       // Perhaps we should iterate over elements and look them up in
       // the elem list instead?  Note that the IDs in elem_list are
       // not necessarily in order, so if we did instead loop over the
       // mesh, we would have to search the (unsorted) elem_list vector
       // for each entry!  We'll settle for doing some error checking instead.
-      Elem * elem = mesh.elem(my_elem_offset + (nemhelper->elem_list[e]-1)/*Exodus numbering is 1-based!*/);
-
-      if (elem == libmesh_nullptr)
-        libmesh_error_msg("Mesh returned a NULL pointer when asked for element " \
-                          << my_elem_offset                           \
-                          << " + "                                    \
-                          << nemhelper->elem_list[e]                  \
-                          << " = "                                    \
-                          << my_elem_offset+nemhelper->elem_list[e]);
+      Elem * elem = mesh.elem_ptr
+        (my_elem_offset + 
+         (nemhelper->elem_list[e]-1)/*Exodus numbering is 1-based!*/);
 
       // The side numberings in libmesh and exodus are not 1:1, so we need to map
       // whatever side number is stored in Exodus into a libmesh side number using
@@ -1133,21 +1127,19 @@ void Nemesis_IO::read (const std::string & base_filename)
       libMesh::out << "mesh.parallel_n_elem()=" << mesh.parallel_n_elem() << std::endl;
     }
 
-  STOP_LOG ("read()","Nemesis_IO");
-
-  // For ParallelMesh, it seems that _is_serial is true by default.  A hack to
+  // For DistributedMesh, it seems that _is_serial is true by default.  A hack to
   // make the Mesh think it's parallel might be to call:
   mesh.update_post_partitioning();
   MeshCommunication().make_node_unique_ids_parallel_consistent(mesh);
   mesh.delete_remote_elements();
 
   // And if that didn't work, then we're actually reading into a
-  // SerialMesh, so forget about gathering neighboring elements
+  // ReplicatedMesh, so forget about gathering neighboring elements
   if (mesh.is_serial())
     return;
 
   // Gather neighboring elements so that the mesh has the proper "ghost" neighbor information.
-  MeshCommunication().gather_neighboring_elements(cast_ref<ParallelMesh &>(mesh));
+  MeshCommunication().gather_neighboring_elements(cast_ref<DistributedMesh &>(mesh));
 }
 
 #else
@@ -1251,17 +1243,16 @@ void Nemesis_IO::write_timestep (const std::string &,
 
 #endif // #if defined(LIBMESH_HAVE_EXODUS_API) && defined(LIBMESH_HAVE_NEMESIS_API)
 
+
+
 #if defined(LIBMESH_HAVE_EXODUS_API) && defined(LIBMESH_HAVE_NEMESIS_API)
 
-void Nemesis_IO::write_nodal_data (const std::string & base_filename,
-                                   const std::vector<Number> & soln,
-                                   const std::vector<std::string> & names)
+void Nemesis_IO::prepare_to_write_nodal_data (const std::string & fname,
+                                              const std::vector<std::string> & names)
 {
-  START_LOG("write_nodal_data()", "Nemesis_IO");
-
   const MeshBase & mesh = MeshOutput<MeshBase>::mesh();
 
-  std::string nemesis_filename = nemhelper->construct_nemesis_filename(base_filename);
+  std::string nemesis_filename = nemhelper->construct_nemesis_filename(fname);
 
   if (!nemhelper->opened_for_writing)
     {
@@ -1307,24 +1298,71 @@ void Nemesis_IO::write_nodal_data (const std::string & base_filename,
 #endif
         }
     }
-
-  nemhelper->write_nodal_solution(soln, names, _timestep);
-
-  STOP_LOG("write_nodal_data()", "Nemesis_IO");
 }
 
 #else
 
-void Nemesis_IO::write_nodal_data (const std::string & ,
-                                   const std::vector<Number> & ,
-                                   const std::vector<std::string> & )
+void Nemesis_IO::prepare_to_write_nodal_data (const std::string & fname,
+                                              const std::vector<std::string> & names)
 {
   libmesh_error_msg("ERROR, Nemesis API is not defined.");
 }
 
+#endif
 
-#endif // #if defined(LIBMESH_HAVE_EXODUS_API) && defined(LIBMESH_HAVE_NEMESIS_API)
 
+
+#if defined(LIBMESH_HAVE_EXODUS_API) && defined(LIBMESH_HAVE_NEMESIS_API)
+
+void Nemesis_IO::write_nodal_data (const std::string & base_filename,
+                                   const NumericVector<Number> & parallel_soln,
+                                   const std::vector<std::string> & names)
+{
+  LOG_SCOPE("write_nodal_data(parallel)", "Nemesis_IO");
+
+  this->prepare_to_write_nodal_data(base_filename, names);
+
+  // Call the new version of write_nodal_solution() that takes a
+  // NumericVector directly without localizing.
+  nemhelper->write_nodal_solution(parallel_soln, names, _timestep);
+}
+
+#else
+
+void Nemesis_IO::write_nodal_data (const std::string &,
+                                   const NumericVector<Number> &,
+                                   const std::vector<std::string> &)
+{
+  libmesh_error_msg("ERROR, Nemesis API is not defined.");
+}
+
+#endif
+
+
+
+#if defined(LIBMESH_HAVE_EXODUS_API) && defined(LIBMESH_HAVE_NEMESIS_API)
+
+void Nemesis_IO::write_nodal_data (const std::string & base_filename,
+                                   const std::vector<Number> & soln,
+                                   const std::vector<std::string> & names)
+{
+  LOG_SCOPE("write_nodal_data(serialized)", "Nemesis_IO");
+
+  this->prepare_to_write_nodal_data(base_filename, names);
+
+  nemhelper->write_nodal_solution(soln, names, _timestep);
+}
+
+#else
+
+void Nemesis_IO::write_nodal_data (const std::string &,
+                                   const std::vector<Number> &,
+                                   const std::vector<std::string> &)
+{
+  libmesh_error_msg("ERROR, Nemesis API is not defined.");
+}
+
+#endif
 
 
 

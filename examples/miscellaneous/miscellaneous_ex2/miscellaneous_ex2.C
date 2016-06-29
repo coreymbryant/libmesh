@@ -329,7 +329,7 @@ void assemble_helmholtz(EquationSystems & es,
   //
   // Build a Finite Element object of the specified type.  Since the
   // FEBase::build() member dynamically creates memory we will
-  // store the object as an UniquePtr<FEBase>.  This can be thought
+  // store the object as a UniquePtr<FEBase>.  This can be thought
   // of as a pointer that will clean up after itself.
   UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
 
@@ -443,7 +443,7 @@ void assemble_helmholtz(EquationSystems & es,
       for (unsigned int side=0; side<elem->n_sides(); side++)
         if (elem->neighbor(side) == libmesh_nullptr)
           {
-            START_LOG("damping", "assemble_helmholtz");
+            LOG_SCOPE("damping", "assemble_helmholtz");
 
             // Declare a special finite element object for
             // boundary integration.
@@ -485,8 +485,6 @@ void assemble_helmholtz(EquationSystems & es,
                   for (unsigned int j=0; j<phi_face.size(); j++)
                     Ce(i,j) += rho*an_value*JxW_face[qp]*phi_face[i][qp]*phi_face[j][qp];
               }
-
-            STOP_LOG("damping", "assemble_helmholtz");
           }
 
       // If this assembly program were to be used on an adaptive mesh,
@@ -517,7 +515,7 @@ void assemble_helmholtz(EquationSystems & es,
   // get the normal velocities values on the boundary from the
   // mesh data.
   {
-    START_LOG("rhs", "assemble_helmholtz");
+    LOG_SCOPE("rhs", "assemble_helmholtz");
 
     // get a reference to the mesh data.
     const MeshData & mesh_data = es.get_mesh_data();
@@ -549,9 +547,6 @@ void assemble_helmholtz(EquationSystems & es,
               freq_indep_rhs.set(dn, mesh_data.get_data(node)[0]);
             }
       }
-
-
-    STOP_LOG("rhs", "assemble_helmholtz");
   }
 
   // All done!

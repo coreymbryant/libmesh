@@ -13,7 +13,7 @@ AC_DEFUN([CONFIGURE_METIS],
                 esac],
                 [enablemetis=$enableoptional])
 
- AC_ARG_WITH(metis,
+  AC_ARG_WITH(metis,
              AS_HELP_STRING([--with-metis=<internal,PETSc>],
                             [metis to use. interal: build from contrib, PETSc: rely on PETSc]),
              [case "${withval}" in
@@ -25,6 +25,28 @@ AC_DEFUN([CONFIGURE_METIS],
                  AC_MSG_ERROR(bad value ${withval} for --with-metis) ;;
               esac],
               [build_metis=yes])
+
+  # If PETSc has its own METIS, default to using that one regardless
+  # of what the user specified (if anything) in --with-metis.
+  if (test $petsc_have_metis -gt 0) ; then
+    build_metis=no
+  fi
+
+  # Conversely, if:
+  # .) METIS is enabled in libmesh,
+  # .) PETSc does not have a METIS or we aren't using PETSc, and
+  # .) build_metis=no because user said --with-metis=PETSc,
+  # then we need to make sure that libmesh builds its own METIS!
+  if (test $enablemetis = yes) ; then
+    if (test $build_metis = no) ; then
+      if (test $petsc_have_metis -eq 0) ; then
+        build_metis=yes
+      fi
+      if (test $enablepetsc = no) ; then
+        build_metis=yes
+      fi
+    fi
+  fi
 
   dnl The METIS API is distributed with libmesh, so we don't have to guess
   dnl where it might be installed...

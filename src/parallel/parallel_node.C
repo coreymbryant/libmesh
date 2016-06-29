@@ -32,7 +32,6 @@ namespace
 {
 using namespace libMesh;
 
-#ifdef LIBMESH_HAVE_MPI
 #ifdef LIBMESH_ENABLE_UNIQUE_ID
 static const unsigned int header_size = 3;
 #else
@@ -44,14 +43,11 @@ static const unsigned int idtypes_per_Real =
   (sizeof(Real) + sizeof(largest_id_type) - 1) / sizeof(largest_id_type);
 
 static const largest_id_type node_magic_header = 1234567890;
-#endif
 }
 
 
 namespace libMesh
 {
-
-#ifdef LIBMESH_HAVE_MPI
 
 namespace Parallel
 {
@@ -110,7 +106,18 @@ template <>
 template <>
 unsigned int
 Packing<const Node *>::packable_size (const Node * const & node,
-                                     const ParallelMesh * mesh)
+                                      const DistributedMesh * mesh)
+{
+  return packable_size(node, static_cast<const MeshBase *>(mesh));
+}
+
+
+
+template <>
+template <>
+unsigned int
+Packing<const Node *>::packable_size (const Node * const & node,
+                                      const ParallelMesh * mesh)
 {
   return packable_size(node, static_cast<const MeshBase *>(mesh));
 }
@@ -169,6 +176,18 @@ Packing<const Node *>::pack (const Node * const & node,
   for (std::vector<boundary_id_type>::iterator bc_it=bcs.begin();
        bc_it != bcs.end(); ++bc_it)
     *data_out++ =(*bc_it);
+}
+
+
+
+template <>
+template <>
+void
+Packing<const Node *>::pack (const Node* const & node,
+                             std::back_insert_iterator<std::vector<largest_id_type> > data_out,
+                             const DistributedMesh * mesh)
+{
+  pack(node, data_out, static_cast<const MeshBase*>(mesh));
 }
 
 
@@ -296,13 +315,22 @@ template <>
 template <>
 Node *
 Packing<Node *>::unpack (std::vector<largest_id_type>::const_iterator in,
+                         DistributedMesh * mesh)
+{
+  return unpack(in, static_cast<MeshBase*>(mesh));
+}
+
+
+
+template <>
+template <>
+Node *
+Packing<Node *>::unpack (std::vector<largest_id_type>::const_iterator in,
                          ParallelMesh * mesh)
 {
   return unpack(in, static_cast<MeshBase*>(mesh));
 }
 
 } // namespace Parallel
-
-#endif // #ifdef LIBMESH_HAVE_MPI
 
 } // namespace libMesh

@@ -47,7 +47,7 @@ const boundary_id_type BoundaryInfo::invalid_id = -123;
 
 //------------------------------------------------------
 // BoundaryInfo functions
-BoundaryInfo::BoundaryInfo(const MeshBase & m) :
+BoundaryInfo::BoundaryInfo(MeshBase & m) :
   ParallelObject(m.comm()),
   _mesh (m)
 {
@@ -82,8 +82,21 @@ BoundaryInfo & BoundaryInfo::operator=(const BoundaryInfo & other_boundary_info)
     for (; it != end; ++it)
       {
         const Elem * other_elem = it->first;
-        _boundary_edge_id.insert(std::make_pair(_mesh.elem(other_elem->id()),
+        _boundary_edge_id.insert(std::make_pair(_mesh.elem_ptr(other_elem->id()),
                                                 it->second));
+      }
+  }
+
+  // Copy shellface boundary info
+  {
+    boundary_shellface_iter it = other_boundary_info._boundary_shellface_id.begin();
+    const boundary_shellface_iter end = other_boundary_info._boundary_shellface_id.end();
+
+    for (; it != end; ++it)
+      {
+        const Elem * other_elem = it->first;
+        _boundary_shellface_id.insert(std::make_pair(_mesh.elem_ptr(other_elem->id()),
+                                                     it->second));
       }
   }
 
@@ -95,7 +108,7 @@ BoundaryInfo & BoundaryInfo::operator=(const BoundaryInfo & other_boundary_info)
     for (; it != end; ++it)
       {
         const Elem * other_elem = it->first;
-        _boundary_side_id.insert(std::make_pair(_mesh.elem(other_elem->id()),
+        _boundary_side_id.insert(std::make_pair(_mesh.elem_ptr(other_elem->id()),
                                                 it->second));
       }
   }
@@ -103,6 +116,8 @@ BoundaryInfo & BoundaryInfo::operator=(const BoundaryInfo & other_boundary_info)
   _boundary_ids = other_boundary_info._boundary_ids;
   _side_boundary_ids = other_boundary_info._side_boundary_ids;
   _node_boundary_ids = other_boundary_info._node_boundary_ids;
+  _edge_boundary_ids = other_boundary_info._edge_boundary_ids;
+  _shellface_boundary_ids = other_boundary_info._shellface_boundary_ids;
 
   return *this;
 }
@@ -119,9 +134,13 @@ void BoundaryInfo::clear()
 {
   _boundary_node_id.clear();
   _boundary_side_id.clear();
+  _boundary_edge_id.clear();
+  _boundary_shellface_id.clear();
   _boundary_ids.clear();
   _side_boundary_ids.clear();
   _node_boundary_ids.clear();
+  _edge_boundary_ids.clear();
+  _shellface_boundary_ids.clear();
 }
 
 
@@ -147,7 +166,7 @@ void BoundaryInfo::sync (const std::set<boundary_id_type> & requested_boundary_i
                          MeshData *     boundary_mesh_data,
                          MeshData *     this_mesh_data)
 {
-  START_LOG("sync()", "BoundaryInfo");
+  LOG_SCOPE("sync()", "BoundaryInfo");
 
   boundary_mesh.clear();
 
@@ -225,13 +244,13 @@ void BoundaryInfo::sync (const std::set<boundary_id_type> & requested_boundary_i
         {
           // Get the correct node pointer, based on the id()
           Node * new_node =
-            boundary_mesh.node_ptr(node_id_map[new_elem->node(nn)]);
+            boundary_mesh.node_ptr(node_id_map[new_elem->node_id(nn)]);
 
           // sanity check: be sure that the new Node exists and its
           // global id really matches
           libmesh_assert (new_node);
           libmesh_assert_equal_to (new_node->id(),
-                                   node_id_map[new_elem->node(nn)]);
+                                   node_id_map[new_elem->node_id(nn)]);
 
           // Assign the new node pointer
           new_elem->set_node(nn) = new_node;
@@ -252,8 +271,6 @@ void BoundaryInfo::sync (const std::set<boundary_id_type> & requested_boundary_i
 
   // and finally distribute element partitioning to the nodes
   Partitioner::set_node_processor_ids(boundary_mesh);
-
-  STOP_LOG("sync()", "BoundaryInfo");
 }
 
 
@@ -262,7 +279,7 @@ void BoundaryInfo::get_side_and_node_maps (UnstructuredMesh & boundary_mesh,
                                            std::map<dof_id_type, unsigned char> & side_id_map,
                                            Real tolerance)
 {
-  START_LOG("get_side_and_node_maps()", "BoundaryInfo");
+  LOG_SCOPE("get_side_and_node_maps()", "BoundaryInfo");
 
   node_id_map.clear();
   side_id_map.clear();
@@ -283,8 +300,8 @@ void BoundaryInfo::get_side_and_node_maps (UnstructuredMesh & boundary_mesh,
       bool found_matching_sides = false;
       for(unsigned char side=0; side<interior_parent->n_sides(); side++)
         {
-          UniquePtr<Elem> interior_parent_side = interior_parent->build_side(side);
-          Real centroid_distance = (boundary_elem->centroid() - interior_parent_side->centroid()).size();
+          UniquePtr<const Elem> interior_parent_side = interior_parent->build_side_ptr(side);
+          Real centroid_distance = (boundary_elem->centroid() - interior_parent_side->centroid()).norm();
 
           if( centroid_distance < (tolerance * boundary_elem->hmin()) )
             {
@@ -301,25 +318,23 @@ void BoundaryInfo::get_side_and_node_maps (UnstructuredMesh & boundary_mesh,
 
       side_id_map[boundary_elem->id()] = interior_parent_side_index;
 
-      UniquePtr<Elem> interior_parent_side = interior_parent->build_side(interior_parent_side_index);
+      UniquePtr<const Elem> interior_parent_side = interior_parent->build_side_ptr(interior_parent_side_index);
       for(unsigned char local_node_index=0; local_node_index<boundary_elem->n_nodes(); local_node_index++)
         {
-          dof_id_type boundary_node_id = boundary_elem->node(local_node_index);
-          dof_id_type interior_node_id = interior_parent_side->node(local_node_index);
+          dof_id_type boundary_node_id = boundary_elem->node_id(local_node_index);
+          dof_id_type interior_node_id = interior_parent_side->node_id(local_node_index);
 
           node_id_map[interior_node_id] = boundary_node_id;
         }
 
     }
-
-  STOP_LOG("get_side_and_node_maps()", "BoundaryInfo");
 }
 
 
 void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_boundary_ids,
                                 UnstructuredMesh & boundary_mesh)
 {
-  START_LOG("add_elements()", "BoundaryInfo");
+  LOG_SCOPE("add_elements()", "BoundaryInfo");
 
   // We're not prepared to mix serial and distributed meshes in this
   // method, so make sure they match from the start.
@@ -348,7 +363,7 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
       const Elem * elem = *el;
 
       for (unsigned int s=0; s<elem->n_sides(); s++)
-        if (elem->neighbor(s) == libmesh_nullptr) // on the boundary
+        if (elem->neighbor_ptr(s) == libmesh_nullptr) // on the boundary
           {
             // Get the top-level parent for this element
             const Elem * top_parent = elem->top_parent();
@@ -397,12 +412,12 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
     {
       const dof_id_type elem_id = it->first;
       const unsigned char s = it->second;
-      const Elem * elem = _mesh.elem(elem_id);
+      Elem * elem = _mesh.elem_ptr(elem_id);
 
       // Build the side - do not use a "proxy" element here:
       // This will be going into the boundary_mesh and needs to
       // stand on its own.
-      UniquePtr<Elem> side (elem->build_side(s, false));
+      UniquePtr<Elem> side (elem->build_side_ptr(s, false));
 
       side->processor_id() = elem->processor_id();
 
@@ -429,7 +444,7 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
 
           libmesh_assert(side_id_map.count(parent_side_pair));
 
-          Elem * side_parent = boundary_mesh.elem(side_id_map[parent_side_pair]);
+          Elem * side_parent = boundary_mesh.elem_ptr(side_id_map[parent_side_pair]);
 
           libmesh_assert(side_parent);
 
@@ -444,7 +459,7 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
           // the same local index.
           bool found_child = false;
           for (unsigned int v=0; v != new_elem->n_vertices(); ++v)
-            if (new_elem->get_node(v) == side_parent->get_node(v))
+            if (new_elem->node_ptr(v) == side_parent->node_ptr(v))
               {
                 side_parent->add_child(new_elem, v);
                 found_child = true;
@@ -463,7 +478,7 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
 
       new_elem->set_interior_parent (const_cast<Elem *>(elem));
 
-      // On non-local elements on ParallelMesh we might have
+      // On non-local elements on DistributedMesh we might have
       // RemoteElem neighbor links to construct
       if (!_mesh.is_serial() &&
           (elem->processor_id() != this->processor_id()))
@@ -475,7 +490,7 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
             {
               // Might this interior side have a RemoteElem that
               // needs a corresponding Remote on a boundary side?
-              if (elem->neighbor(interior_side) != remote_elem)
+              if (elem->neighbor_ptr(interior_side) != remote_elem)
                 continue;
 
               // Which boundary side?
@@ -537,13 +552,11 @@ void BoundaryInfo::add_elements(const std::set<boundary_id_type> & requested_bou
   // Make sure we didn't add ids inconsistently
 #ifdef DEBUG
 # ifdef LIBMESH_HAVE_RTTI
-  ParallelMesh * parmesh = dynamic_cast<ParallelMesh *>(&boundary_mesh);
+  DistributedMesh * parmesh = dynamic_cast<DistributedMesh *>(&boundary_mesh);
   if (parmesh)
     parmesh->libmesh_assert_valid_parallel_ids();
 # endif
 #endif
-
-  STOP_LOG("add_elements()", "BoundaryInfo");
 }
 
 
@@ -636,7 +649,7 @@ void BoundaryInfo::add_edge(const dof_id_type e,
                             const unsigned short int edge,
                             const boundary_id_type id)
 {
-  this->add_edge (_mesh.elem(e), edge, id);
+  this->add_edge (_mesh.elem_ptr(e), edge, id);
 }
 
 
@@ -724,11 +737,108 @@ void BoundaryInfo::add_edge(const Elem * elem,
 
 
 
+void BoundaryInfo::add_shellface(const dof_id_type e,
+                                 const unsigned short int shellface,
+                                 const boundary_id_type id)
+{
+  this->add_shellface (_mesh.elem_ptr(e), shellface, id);
+}
+
+
+
+void BoundaryInfo::add_shellface(const Elem * elem,
+                                 const unsigned short int shellface,
+                                 const boundary_id_type id)
+{
+  libmesh_assert(elem);
+
+  // Only add BCs for level-0 elements.
+  libmesh_assert_equal_to (elem->level(), 0);
+
+  // Shells only have 2 faces
+  libmesh_assert_less(shellface, 2);
+
+  if (id == invalid_id)
+    libmesh_error_msg("ERROR: You may not set a boundary ID of "        \
+                      << invalid_id                                     \
+                      << "\n That is reserved for internal use.");
+
+  // Don't add the same ID twice
+  std::pair<boundary_shellface_iter, boundary_shellface_iter> pos = _boundary_shellface_id.equal_range(elem);
+
+  for (; pos.first != pos.second; ++pos.first)
+    if (pos.first->second.first == shellface &&
+        pos.first->second.second == id)
+      return;
+
+  _boundary_shellface_id.insert(std::make_pair(elem, std::make_pair(shellface, id)));
+  _boundary_ids.insert(id);
+  _shellface_boundary_ids.insert(id); // Also add this ID to the set of shellface boundary IDs
+}
+
+
+
+void BoundaryInfo::add_shellface(const Elem * elem,
+                                 const unsigned short int shellface,
+                                 const std::vector<boundary_id_type> & ids)
+{
+  if (ids.empty())
+    return;
+
+  libmesh_assert(elem);
+
+  // Only add BCs for level-0 elements.
+  libmesh_assert_equal_to (elem->level(), 0);
+
+  // Shells only have 2 faces
+  libmesh_assert_less(shellface, 2);
+
+  // Don't add the same ID twice
+  std::pair<boundary_shellface_iter, boundary_shellface_iter> pos = _boundary_shellface_id.equal_range(elem);
+
+  // The entries in the ids vector may be non-unique.  If we expected
+  // *lots* of ids, it might be fastest to construct a std::set from
+  // the entries, but for a small number of entries, which is more
+  // typical, it is probably faster to copy the vector and do sort+unique.
+  // http://stackoverflow.com/questions/1041620/whats-the-most-efficient-way-to-erase-duplicates-and-sort-a-vector
+  std::vector<boundary_id_type> unique_ids(ids.begin(), ids.end());
+  std::sort(unique_ids.begin(), unique_ids.end());
+  std::vector<boundary_id_type>::iterator new_end =
+    std::unique(unique_ids.begin(), unique_ids.end());
+
+  std::vector<boundary_id_type>::iterator it = unique_ids.begin();
+  for (; it != new_end; ++it)
+    {
+      boundary_id_type id = *it;
+
+      if (id == invalid_id)
+        libmesh_error_msg("ERROR: You may not set a boundary ID of "   \
+                          << invalid_id                                \
+                          << "\n That is reserved for internal use.");
+
+      bool already_inserted = false;
+      for (boundary_shellface_iter p = pos.first; p != pos.second; ++p)
+        if (p->second.first == shellface &&
+            p->second.second == id)
+          {
+            already_inserted = true;
+            break;
+          }
+      if (already_inserted)
+        continue;
+
+      _boundary_shellface_id.insert(std::make_pair(elem, std::make_pair(shellface, id)));
+      _boundary_ids.insert(id);
+      _shellface_boundary_ids.insert(id); // Also add this ID to the set of shellface boundary IDs
+    }
+}
+
+
 void BoundaryInfo::add_side(const dof_id_type e,
                             const unsigned short int side,
                             const boundary_id_type id)
 {
-  this->add_side (_mesh.elem(e), side, id);
+  this->add_side (_mesh.elem_ptr(e), side, id);
 }
 
 
@@ -899,7 +1009,7 @@ void BoundaryInfo::edge_boundary_ids (const Elem * const elem,
         {
           if (elem->is_edge_on_side(edge,side))
             {
-              if (elem->neighbor(side) == libmesh_nullptr)
+              if (elem->neighbor_ptr(side) == libmesh_nullptr)
                 {
                   searched_elem = elem->top_parent ();
                   found_boundary_edge = true;
@@ -982,6 +1092,79 @@ void BoundaryInfo::raw_edge_boundary_ids (const Elem * const elem,
 
 
 
+void BoundaryInfo::shellface_boundary_ids (const Elem * const elem,
+                                           const unsigned short int shellface,
+                                           std::vector<boundary_id_type> & vec_to_fill) const
+{
+  libmesh_assert(elem);
+
+  // Shells only have 2 faces
+  libmesh_assert_less(shellface, 2);
+
+  // Clear out any previous contents
+  vec_to_fill.clear();
+
+  // Only level-0 elements store BCs.  If this is not a level-0
+  // element get its level-0 parent and infer the BCs.
+  const Elem * searched_elem = elem;
+#ifdef LIBMESH_ENABLE_AMR
+  if (elem->level() != 0)
+    {
+      while (searched_elem->parent() != libmesh_nullptr)
+        {
+          const Elem * parent = searched_elem->parent();
+          searched_elem = parent;
+        }
+    }
+#endif
+
+  std::pair<boundary_shellface_iter, boundary_shellface_iter>
+    e = _boundary_shellface_id.equal_range(searched_elem);
+
+  // Check each element in the range to see if its shellface matches the requested shellface.
+  for (; e.first != e.second; ++e.first)
+    if (e.first->second.first == shellface)
+      vec_to_fill.push_back(e.first->second.second);
+}
+
+
+
+unsigned int BoundaryInfo::n_shellface_boundary_ids (const Elem * const elem,
+                                                     const unsigned short int shellface) const
+{
+  std::vector<boundary_id_type> ids;
+  this->shellface_boundary_ids(elem, shellface, ids);
+  return ids.size();
+}
+
+
+
+void BoundaryInfo::raw_shellface_boundary_ids (const Elem * const elem,
+                                               const unsigned short int shellface,
+                                               std::vector<boundary_id_type> & vec_to_fill) const
+{
+  libmesh_assert(elem);
+
+  // Shells only have 2 faces
+  libmesh_assert_less(shellface, 2);
+
+  // Clear out any previous contents
+  vec_to_fill.clear();
+
+  // Only level-0 elements store BCs.
+  if (elem->parent())
+    return;
+
+  std::pair<boundary_shellface_iter, boundary_shellface_iter>
+    e = _boundary_shellface_id.equal_range(elem);
+
+  // Check each element in the range to see if its shellface matches the requested shellface.
+  for (; e.first != e.second; ++e.first)
+    if (e.first->second.first == shellface)
+      vec_to_fill.push_back(e.first->second.second);
+}
+
+
 boundary_id_type BoundaryInfo::boundary_id(const Elem * const elem,
                                            const unsigned short int side) const
 {
@@ -1042,7 +1225,7 @@ void BoundaryInfo::boundary_ids (const Elem * const elem,
   const Elem * searched_elem = elem;
   if (elem->level() != 0)
     {
-      if (elem->neighbor(side) == libmesh_nullptr)
+      if (elem->neighbor_ptr(side) == libmesh_nullptr)
         searched_elem = elem->top_parent ();
 #ifdef LIBMESH_ENABLE_AMR
       else
@@ -1114,6 +1297,36 @@ void BoundaryInfo::raw_boundary_ids (const Elem * const elem,
 
 
 
+void BoundaryInfo::copy_boundary_ids (const BoundaryInfo & old_boundary_info,
+                                      const Elem * const old_elem,
+                                      const Elem * const new_elem)
+{
+  libmesh_assert_equal_to (old_elem->n_sides(), new_elem->n_sides());
+  libmesh_assert_equal_to (old_elem->n_edges(), new_elem->n_edges());
+
+  std::vector<boundary_id_type> bndry_ids;
+
+  for (unsigned short s=0; s<old_elem->n_sides(); s++)
+    {
+      old_boundary_info.raw_boundary_ids (old_elem, s, bndry_ids);
+      this->add_side (new_elem, s, bndry_ids);
+    }
+
+  for (unsigned short e=0; e<old_elem->n_edges(); e++)
+    {
+      old_boundary_info.raw_edge_boundary_ids (old_elem, e, bndry_ids);
+      this->add_edge (new_elem, e, bndry_ids);
+    }
+
+  for (unsigned short sf=0; sf != 2; sf++)
+    {
+      old_boundary_info.raw_shellface_boundary_ids (old_elem, sf, bndry_ids);
+      this->add_shellface (new_elem, sf, bndry_ids);
+    }
+}
+
+
+
 void BoundaryInfo::remove (const Node * node)
 {
   libmesh_assert(node);
@@ -1131,6 +1344,7 @@ void BoundaryInfo::remove (const Elem * elem)
   // Erase everything associated with elem
   _boundary_edge_id.erase (elem);
   _boundary_side_id.erase (elem);
+  _boundary_shellface_id.erase (elem);
 }
 
 
@@ -1191,6 +1405,75 @@ void BoundaryInfo::remove_edge (const Elem * elem,
         {
           // (postfix++ - increment the iterator before it's invalid)
           _boundary_edge_id.erase(e.first++);
+        }
+      else
+        ++e.first;
+    }
+}
+
+
+void BoundaryInfo::remove_shellface (const Elem * elem,
+                                     const unsigned short int shellface)
+{
+  libmesh_assert(elem);
+
+  // The user shouldn't be trying to remove only one child's boundary
+  // id
+  libmesh_assert_equal_to (elem->level(), 0);
+
+  // Shells only have 2 faces
+  libmesh_assert_less(shellface, 2);
+
+  // Some older compilers don't support erasing from a map with
+  // const_iterators, so we explicitly use non-const iterators here.
+  std::pair<erase_iter, erase_iter>
+    e = _boundary_shellface_id.equal_range(elem);
+
+  // elem may be there, maybe multiple occurrences
+  while (e.first != e.second)
+    {
+      // if this is true we found the requested shellface
+      // of the element and want to erase the id
+      if (e.first->second.first == shellface)
+        {
+          // (postfix++ - increment the iterator before it's invalid)
+          _boundary_shellface_id.erase(e.first++);
+        }
+      else
+        ++e.first;
+    }
+}
+
+
+
+void BoundaryInfo::remove_shellface (const Elem * elem,
+                                     const unsigned short int shellface,
+                                     const boundary_id_type id)
+{
+  libmesh_assert(elem);
+
+  // The user shouldn't be trying to remove only one child's boundary
+  // id
+  libmesh_assert_equal_to (elem->level(), 0);
+
+  // Shells only have 2 faces
+  libmesh_assert_less(shellface, 2);
+
+  // Some older compilers don't support erasing from a map with
+  // const_iterators, so we explicitly use non-const iterators here.
+  std::pair<erase_iter, erase_iter>
+    e = _boundary_shellface_id.equal_range(elem);
+
+  // elem may be there, maybe multiple occurrences
+  while (e.first != e.second)
+    {
+      // if this is true we found the requested shellface
+      // of the element and want to erase the requested id
+      if (e.first->second.first == shellface &&
+          e.first->second.second == id)
+        {
+          // (postfix++ - increment the iterator before it's invalid)
+          _boundary_shellface_id.erase(e.first++);
         }
       else
         ++e.first;
@@ -1263,6 +1546,7 @@ void BoundaryInfo::remove_id (boundary_id_type id)
   _boundary_ids.erase(id);
   _side_boundary_ids.erase(id);
   _edge_boundary_ids.erase(id);
+  _shellface_boundary_ids.erase(id);
   _node_boundary_ids.erase(id);
   _ss_id_to_name.erase(id);
   _ns_id_to_name.erase(id);
@@ -1280,6 +1564,14 @@ void BoundaryInfo::remove_id (boundary_id_type id)
     {
       if (it->second.second == id)
         _boundary_edge_id.erase(it++);
+      else
+        ++it;
+    }
+
+  for (erase_iter it = _boundary_shellface_id.begin(); it != _boundary_shellface_id.end(); /*below*/)
+    {
+      if (it->second.second == id)
+        _boundary_shellface_id.erase(it++);
       else
         ++it;
     }
@@ -1316,7 +1608,7 @@ unsigned int BoundaryInfo::side_with_boundary_id(const Elem * const elem,
 
           // If we're on this external boundary then we share this
           // external boundary id
-          if (elem->neighbor(side) == libmesh_nullptr)
+          if (elem->neighbor_ptr(side) == libmesh_nullptr)
             return side;
 
           // If we're on an internal boundary then we need to be sure
@@ -1374,6 +1666,21 @@ BoundaryInfo::build_side_boundary_ids(std::vector<boundary_id_type> & b_ids) con
     }
 }
 
+void
+BoundaryInfo::build_shellface_boundary_ids(std::vector<boundary_id_type> & b_ids) const
+{
+  b_ids.clear();
+
+  boundary_side_iter pos = _boundary_shellface_id.begin();
+  for (; pos != _boundary_shellface_id.end(); ++pos)
+    {
+      boundary_id_type id = pos->second.second;
+
+      if (std::find(b_ids.begin(),b_ids.end(),id) == b_ids.end())
+        b_ids.push_back(id);
+    }
+}
+
 std::size_t BoundaryInfo::n_boundary_conds () const
 {
   // in serial we know the number of bcs from the
@@ -1416,6 +1723,29 @@ std::size_t BoundaryInfo::n_edge_conds () const
   this->comm().sum (n_edge_bcs);
 
   return n_edge_bcs;
+}
+
+
+std::size_t BoundaryInfo::n_shellface_conds () const
+{
+  // in serial we know the number of nodesets from the
+  // size of the container
+  if (_mesh.is_serial())
+    return _boundary_shellface_id.size();
+
+  // in parallel we need to sum the number of local nodesets
+  parallel_object_only();
+
+  std::size_t n_shellface_bcs=0;
+
+  boundary_shellface_iter pos = _boundary_shellface_id.begin();
+  for (; pos != _boundary_shellface_id.end(); ++pos)
+    if (pos->first->processor_id() == this->processor_id())
+      n_shellface_bcs++;
+
+  this->comm().sum (n_shellface_bcs);
+
+  return n_shellface_bcs;
 }
 
 
@@ -1487,11 +1817,11 @@ BoundaryInfo::build_node_list_from_side_list()
         {
           const Elem * cur_elem = family[elem_it];
 
-          UniquePtr<Elem> side = cur_elem->build_side(pos->second.first);
+          UniquePtr<const Elem> side = cur_elem->build_side_ptr(pos->second.first);
 
           // Add each node node on the side with the side's boundary id
           for (unsigned int i=0; i<side->n_nodes(); i++)
-            this->add_node(side->get_node(i), pos->second.second);
+            this->add_node(side->node_ptr(i), pos->second.second);
         }
     }
 }
@@ -1517,13 +1847,13 @@ void BoundaryInfo::build_side_list_from_node_list()
 
       for (unsigned short side=0; side<elem->n_sides(); ++side)
         {
-          UniquePtr<Elem> side_elem = elem->build_side(side);
+          UniquePtr<const Elem> side_elem = elem->build_side_ptr(side);
 
           // map from nodeset_id to count for that ID
           std::map<boundary_id_type, unsigned> nodesets_node_count;
           for (unsigned node_num=0; node_num < side_elem->n_nodes(); ++node_num)
             {
-              Node * node = side_elem->get_node(node_num);
+              const Node * node = side_elem->node_ptr(node_num);
               std::pair<boundary_node_iter, boundary_node_iter>
                 range = _boundary_node_id.equal_range(node);
 
@@ -1627,12 +1957,37 @@ void BoundaryInfo::build_edge_list (std::vector<dof_id_type> & el,
   il.clear();
 
   // Reserve the size, then use push_back
-  el.reserve (_boundary_side_id.size());
-  sl.reserve (_boundary_side_id.size());
-  il.reserve (_boundary_side_id.size());
+  el.reserve (_boundary_edge_id.size());
+  sl.reserve (_boundary_edge_id.size());
+  il.reserve (_boundary_edge_id.size());
 
   boundary_edge_iter pos = _boundary_edge_id.begin();
   for (; pos != _boundary_edge_id.end(); ++pos)
+    {
+      el.push_back (pos->first->id());
+      sl.push_back (pos->second.first);
+      il.push_back (pos->second.second);
+    }
+}
+
+
+void BoundaryInfo::build_shellface_list (std::vector<dof_id_type> & el,
+                                         std::vector<unsigned short int> & sl,
+                                         std::vector<boundary_id_type> & il) const
+{
+  // Clear the input vectors, just in case they were used for
+  // something else recently...
+  el.clear();
+  sl.clear();
+  il.clear();
+
+  // Reserve the size, then use push_back
+  el.reserve (_boundary_shellface_id.size());
+  sl.reserve (_boundary_shellface_id.size());
+  il.reserve (_boundary_shellface_id.size());
+
+  boundary_shellface_iter pos = _boundary_shellface_id.begin();
+  for (; pos != _boundary_shellface_id.end(); ++pos)
     {
       el.push_back (pos->first->id());
       sl.push_back (pos->second.first);
@@ -1669,6 +2024,24 @@ void BoundaryInfo::print_info(std::ostream & out_stream) const
 
       boundary_edge_iter it = _boundary_edge_id.begin();
       const boundary_edge_iter end = _boundary_edge_id.end();
+
+      for (; it != end; ++it)
+        out_stream << "  (" << (*it).first->id()
+                   << ", "  << (*it).second.first
+                   << ", "  << (*it).second.second
+                   << ")"   << std::endl;
+    }
+
+  // Print out the element shellface BCs
+  if (!_boundary_shellface_id.empty())
+    {
+      out_stream << std::endl
+                 << "Shell-face Boundary conditions:" << std::endl
+                 << "-------------------------" << std::endl
+                 << "  (Elem No., Shell-face No., ID)      " << std::endl;
+
+      boundary_shellface_iter it = _boundary_shellface_id.begin();
+      const boundary_shellface_iter end = _boundary_shellface_id.end();
 
       for (; it != end; ++it)
         out_stream << "  (" << (*it).first->id()
@@ -1736,6 +2109,32 @@ void BoundaryInfo::print_summary(std::ostream & out_stream) const
 
       boundary_edge_iter it = _boundary_edge_id.begin();
       const boundary_edge_iter end = _boundary_edge_id.end();
+
+      for (; it != end; ++it)
+        ID_counts[(*it).second.second]++;
+
+      std::map<boundary_id_type, std::size_t>::const_iterator ID_it        = ID_counts.begin();
+      const std::map<boundary_id_type, std::size_t>::const_iterator ID_end = ID_counts.end();
+
+      for (; ID_it != ID_end; ++ID_it)
+        out_stream << "  (" << (*ID_it).first
+                   << ", "  << (*ID_it).second
+                   << ")"  << std::endl;
+    }
+
+
+  // Print out the element edge BCs
+  if (!_boundary_shellface_id.empty())
+    {
+      out_stream << std::endl
+                 << "Shell-face Boundary conditions:" << std::endl
+                 << "-------------------------" << std::endl
+                 << "  (ID, number of shellfaces)   " << std::endl;
+
+      std::map<boundary_id_type, std::size_t> ID_counts;
+
+      boundary_shellface_iter it = _boundary_shellface_id.begin();
+      const boundary_shellface_iter end = _boundary_shellface_id.end();
 
       for (; it != end; ++it)
         ID_counts[(*it).second.second]++;
@@ -1840,7 +2239,7 @@ void BoundaryInfo::_find_id_maps(const std::set<boundary_id_type> & requested_bo
                                  dof_id_type first_free_elem_id,
                                  std::map<std::pair<dof_id_type, unsigned char>, dof_id_type> * side_id_map)
 {
-  // We'll do the same modulus trick that ParallelMesh uses to avoid
+  // We'll do the same modulus trick that DistributedMesh uses to avoid
   // id conflicts between different processors
   dof_id_type
     next_node_id = first_free_node_id + this->processor_id(),
@@ -1889,7 +2288,7 @@ void BoundaryInfo::_find_id_maps(const std::set<boundary_id_type> & requested_bo
       const Elem * elem = *el;
 
       for (unsigned char s=0; s<elem->n_sides(); s++)
-        if (elem->neighbor(s) == libmesh_nullptr) // on the boundary
+        if (elem->neighbor_ptr(s) == libmesh_nullptr) // on the boundary
           {
             // Get the top-level parent for this element
             const Elem * top_parent = elem->top_parent();
@@ -1939,19 +2338,18 @@ void BoundaryInfo::_find_id_maps(const std::set<boundary_id_type> & requested_bo
                   }
 
                 // Use a proxy element for the side to query nodes
-                UniquePtr<Elem> side (elem->build_side(s));
+                UniquePtr<const Elem> side (elem->build_side_ptr(s));
                 for (unsigned int n = 0; n != side->n_nodes(); ++n)
                   {
-                    Node * node = side->get_node(n);
-                    libmesh_assert(node);
+                    const Node & node = side->node_ref(n);
 
                     // In parallel we don't know enough to number
                     // others' nodes ourselves.
                     if (!hit_end_el &&
-                        (node->processor_id() != this->processor_id()))
+                        (node.processor_id() != this->processor_id()))
                       continue;
 
-                    dof_id_type node_id = node->id();
+                    dof_id_type node_id = node.id();
                     if (node_id_map && !node_id_map->count(node_id))
                       {
                         (*node_id_map)[node_id] = next_node_id;

@@ -117,8 +117,8 @@ bool Hex8::has_affine_map() const
 
 
 
-UniquePtr<Elem> Hex8::build_side (const unsigned int i,
-                                  bool proxy) const
+UniquePtr<Elem> Hex8::build_side_ptr (const unsigned int i,
+                                      bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -131,7 +131,7 @@ UniquePtr<Elem> Hex8::build_side (const unsigned int i,
       face->subdomain_id() = this->subdomain_id();
 
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(Hex8::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(Hex8::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -142,7 +142,7 @@ UniquePtr<Elem> Hex8::build_side (const unsigned int i,
 
 
 
-UniquePtr<Elem> Hex8::build_edge (const unsigned int i) const
+UniquePtr<Elem> Hex8::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_edges());
 
@@ -165,27 +165,27 @@ void Hex8::connectivity(const unsigned int libmesh_dbg_var(sc),
     {
     case TECPLOT:
       {
-        conn[0] = this->node(0)+1;
-        conn[1] = this->node(1)+1;
-        conn[2] = this->node(2)+1;
-        conn[3] = this->node(3)+1;
-        conn[4] = this->node(4)+1;
-        conn[5] = this->node(5)+1;
-        conn[6] = this->node(6)+1;
-        conn[7] = this->node(7)+1;
+        conn[0] = this->node_id(0)+1;
+        conn[1] = this->node_id(1)+1;
+        conn[2] = this->node_id(2)+1;
+        conn[3] = this->node_id(3)+1;
+        conn[4] = this->node_id(4)+1;
+        conn[5] = this->node_id(5)+1;
+        conn[6] = this->node_id(6)+1;
+        conn[7] = this->node_id(7)+1;
         return;
       }
 
     case VTK:
       {
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
-        conn[4] = this->node(4);
-        conn[5] = this->node(5);
-        conn[6] = this->node(6);
-        conn[7] = this->node(7);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
+        conn[4] = this->node_id(4);
+        conn[5] = this->node_id(5);
+        conn[6] = this->node_id(6);
+        conn[7] = this->node_id(7);
         return;
       }
 
@@ -320,51 +320,36 @@ const float Hex8::_embedding_matrix[8][8][8] =
 
 Real Hex8::volume () const
 {
-  // Compute the volume of the tri-linear hex by splitting it
-  // into 6 sub-pyramids and applying the formula in:
-  // "Calculation of the Volume of a General Hexahedron
-  // for Flow Predictions", AIAA Journal v.23, no.6, 1984, p.954-
+  // Make copies of our points.  It makes the subsequent calculations a bit
+  // shorter and avoids dereferencing the same pointer multiple times.
+  Point
+    x0 = point(0), x1 = point(1), x2 = point(2), x3 = point(3),
+    x4 = point(4), x5 = point(5), x6 = point(6), x7 = point(7);
 
-  static const unsigned char sub_pyr[6][4] =
+  // Construct constant data vectors.  The notation is:
+  // \vec{x}_{\xi}   = \vec{a1}*eta*zeta + \vec{b1}*eta + \vec{c1}*zeta + \vec{d1}
+  // \vec{x}_{\eta}  = \vec{a2}*xi*zeta  + \vec{b2}*xi  + \vec{c2}*zeta + \vec{d2}
+  // \vec{x}_{\zeta} = \vec{a3}*xi*eta   + \vec{b3}*xi  + \vec{c3}*eta  + \vec{d3}
+  // but it turns out that a1, a2, and a3 are not needed for the volume calculation.
+
+  // Build up the 6 unique vectors which make up dx/dxi, dx/deta, and dx/dzeta.
+  Point q[6] =
     {
-      {0, 3, 2, 1},
-      {6, 7, 4, 5},
-      {0, 1, 5, 4},
-      {3, 7, 6, 2},
-      {0, 4, 7, 3},
-      {1, 2, 6, 5}
+      /*b1*/  x0 - x1 + x2 - x3 + x4 - x5 + x6 - x7, /*=b2*/
+      /*c1*/  x0 - x1 - x2 + x3 - x4 + x5 + x6 - x7, /*=b3*/
+      /*d1*/ -x0 + x1 + x2 - x3 - x4 + x5 + x6 - x7,
+      /*c2*/  x0 + x1 - x2 - x3 - x4 - x5 + x6 + x7, /*=c3*/
+      /*d2*/ -x0 - x1 + x2 + x3 - x4 - x5 + x6 + x7,
+      /*d3*/ -x0 - x1 - x2 - x3 + x4 + x5 + x6 + x7
     };
 
-  // The centroid is a convenient point to use
-  // for the apex of all the pyramids.
-  const Point R = this->centroid();
-  Node * pyr_base[4];
-
-  Real vol=0.;
-
-  // Compute the volume using 6 sub-pyramids
-  for (unsigned int n=0; n<6; ++n)
-    {
-      // Set the nodes of the pyramid base
-      for (unsigned int i=0; i<4; ++i)
-        pyr_base[i] = this->_nodes[sub_pyr[n][i]];
-
-      // Compute diff vectors
-      Point a ( *pyr_base[0] - R );
-      Point b ( *pyr_base[1] - *pyr_base[3] );
-      Point c ( *pyr_base[2] - *pyr_base[0] );
-      Point d ( *pyr_base[3] - *pyr_base[0] );
-      Point e ( *pyr_base[1] - *pyr_base[0] );
-
-      // Compute pyramid volume
-      Real sub_vol = (1./6.)*(a*(b.cross(c))) + (1./12.)*(c*(d.cross(e)));
-
-      libmesh_assert (sub_vol>0.);
-
-      vol += sub_vol;
-    }
-
-  return vol;
+  // We could check for a linear element, but it's probably faster to
+  // just compute the result...
+  return
+    (triple_product(q[0], q[4], q[3]) +
+     triple_product(q[2], q[0], q[1]) +
+     triple_product(q[1], q[3], q[5])) / 192. +
+    triple_product(q[2], q[4], q[5]) / 64.;
 }
 
 } // namespace libMesh

@@ -138,6 +138,12 @@ public:
   void write_element_data (const EquationSystems & es);
 
   /**
+   * Bring in base class functionality for name resolution and to
+   * avoid warnings about hidden overloaded virtual functions.
+   */
+  using MeshOutput<MeshBase>::write_nodal_data;
+
+  /**
    * Write out a nodal solution.
    */
   virtual void write_nodal_data (const std::string &,
@@ -164,7 +170,10 @@ public:
 
   /**
    * Writes out the solution at a specific timestep.
+   * @param fname Name of the file to write to
+   * @param es EquationSystems object which contains the solution vector.
    * @param timestep The timestep to write out, should be _1_ indexed.
+   * @param time The current simulation time.
    */
   void write_timestep (const std::string & fname,
                        const EquationSystems & es,

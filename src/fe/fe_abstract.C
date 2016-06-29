@@ -276,6 +276,7 @@ void FEAbstract::get_refspace_nodes(const ElemType itemType, std::vector<Point> 
         return;
       }
     case TRI3:
+    case TRISHELL3:
       {
         nodes.resize(3);
         nodes[0] = Point (0.,0.,0.);
@@ -295,6 +296,7 @@ void FEAbstract::get_refspace_nodes(const ElemType itemType, std::vector<Point> 
         return;
       }
     case QUAD4:
+    case QUADSHELL4:
       {
         nodes.resize(4);
         nodes[0] = Point (-1.,-1.,0.);
@@ -587,6 +589,7 @@ bool FEAbstract::on_reference_element(const Point & p, const ElemType t, const R
 
 
     case TRI3:
+    case TRISHELL3:
     case TRI6:
       {
         // The reference triangle is isocoles
@@ -601,6 +604,7 @@ bool FEAbstract::on_reference_element(const Point & p, const ElemType t, const R
 
 
     case QUAD4:
+    case QUADSHELL4:
     case QUAD8:
     case QUAD9:
       {
@@ -744,7 +748,6 @@ bool FEAbstract::on_reference_element(const Point & p, const ElemType t, const R
 
 
 
-
 void FEAbstract::print_JxW(std::ostream & os) const
 {
   this->_fe_map->print_JxW(os);
@@ -808,10 +811,10 @@ void FEAbstract::compute_node_constraints (NodeConstraints & constraints,
   // Look at the element faces.  Check to see if we need to
   // build constraints.
   for (unsigned int s=0; s<elem->n_sides(); s++)
-    if (elem->neighbor(s) != libmesh_nullptr &&
-        elem->neighbor(s) != remote_elem)
-      if (elem->neighbor(s)->level() < elem->level()) // constrain dofs shared between
-        {                                                     // this element and ones coarser
+    if (elem->neighbor_ptr(s) != libmesh_nullptr &&
+        elem->neighbor_ptr(s) != remote_elem)
+      if (elem->neighbor_ptr(s)->level() < elem->level()) // constrain dofs shared between
+        {                                                 // this element and ones coarser
           // than this element.
           // Get pointers to the elements of interest and its parent.
           const Elem * parent = elem->parent();
@@ -821,8 +824,8 @@ void FEAbstract::compute_node_constraints (NodeConstraints & constraints,
           // level than their neighbors!
           libmesh_assert(parent);
 
-          const UniquePtr<Elem> my_side     (elem->build_side(s));
-          const UniquePtr<Elem> parent_side (parent->build_side(s));
+          const UniquePtr<const Elem> my_side     (elem->build_side_ptr(s));
+          const UniquePtr<const Elem> parent_side (parent->build_side_ptr(s));
 
           const unsigned int n_side_nodes = my_side->n_nodes();
 
@@ -832,10 +835,10 @@ void FEAbstract::compute_node_constraints (NodeConstraints & constraints,
           parent_nodes.reserve (n_side_nodes);
 
           for (unsigned int n=0; n != n_side_nodes; ++n)
-            my_nodes.push_back(my_side->get_node(n));
+            my_nodes.push_back(my_side->node_ptr(n));
 
           for (unsigned int n=0; n != n_side_nodes; ++n)
-            parent_nodes.push_back(parent_side->get_node(n));
+            parent_nodes.push_back(parent_side->node_ptr(n));
 
           for (unsigned int my_side_n=0;
                my_side_n < n_side_nodes;
@@ -956,7 +959,7 @@ void FEAbstract::compute_periodic_node_constraints (NodeConstraints & constraint
   std::vector<boundary_id_type> bc_ids;
   for (unsigned short int s=0; s<elem->n_sides(); s++)
     {
-      if (elem->neighbor(s))
+      if (elem->neighbor_ptr(s))
         continue;
 
       mesh.get_boundary_info().boundary_ids (elem, s, bc_ids);
@@ -985,8 +988,8 @@ void FEAbstract::compute_periodic_node_constraints (NodeConstraints & constraint
                   libmesh_assert(neigh->active());
 #endif // #ifdef LIBMESH_ENABLE_AMR
 
-                  const UniquePtr<Elem> my_side    (elem->build_side(s));
-                  const UniquePtr<Elem> neigh_side (neigh->build_side(s_neigh));
+                  const UniquePtr<const Elem> my_side    (elem->build_side_ptr(s));
+                  const UniquePtr<const Elem> neigh_side (neigh->build_side_ptr(s_neigh));
 
                   const unsigned int n_side_nodes = my_side->n_nodes();
 
@@ -996,10 +999,10 @@ void FEAbstract::compute_periodic_node_constraints (NodeConstraints & constraint
                   neigh_nodes.reserve (n_side_nodes);
 
                   for (unsigned int n=0; n != n_side_nodes; ++n)
-                    my_nodes.push_back(my_side->get_node(n));
+                    my_nodes.push_back(my_side->node_ptr(n));
 
                   for (unsigned int n=0; n != n_side_nodes; ++n)
-                    neigh_nodes.push_back(neigh_side->get_node(n));
+                    neigh_nodes.push_back(neigh_side->node_ptr(n));
 
                   // Make sure we're not adding recursive constraints
                   // due to the redundancy in the way we add periodic

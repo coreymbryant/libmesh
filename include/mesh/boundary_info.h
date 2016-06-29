@@ -62,7 +62,7 @@ protected:
    * by the Mesh class.  A user should never instantiate
    * this class.  Therefore the constructor is protected.
    */
-  BoundaryInfo (const MeshBase & m);
+  BoundaryInfo (MeshBase & m);
 
 public:
   /**
@@ -203,6 +203,33 @@ public:
                  const std::vector<boundary_id_type> & ids);
 
   /**
+   * Add shell face \p shellface of element number \p elem with boundary id \p id
+   * to the boundary information data structure. This is only relevant for shell
+   * elements.
+   */
+  void add_shellface (const dof_id_type elem,
+                      const unsigned short int shellface,
+                      const boundary_id_type id);
+
+  /**
+   * Add shell face \p shellface of element \p elem with boundary id \p id
+   * to the boundary information data structure. This is only relevant for shell
+   * elements.
+   */
+  void add_shellface (const Elem * elem,
+                      const unsigned short int shellface,
+                      const boundary_id_type id);
+
+  /**
+   * Add shell face \p shellface of element \p elem with boundary ids \p ids
+   * to the boundary information data structure. This is only relevant for shell
+   * elements.
+   */
+  void add_shellface (const Elem * elem,
+                      const unsigned short int shellface,
+                      const std::vector<boundary_id_type> & ids);
+
+  /**
    * Add side \p side of element number \p elem with boundary id \p id
    * to the boundary information data structure.
    */
@@ -254,6 +281,21 @@ public:
                     const boundary_id_type id);
 
   /**
+   * Removes all boundary conditions associated with shell face
+   * \p shellface of element \p elem, if any exist.
+   */
+  void remove_shellface (const Elem * elem,
+                         const unsigned short int shellface);
+
+  /**
+   * Removes all boundary conditions associated with shell face
+   * \p shellface of element \p elem, if any exist.
+   */
+  void remove_shellface (const Elem * elem,
+                         const unsigned short int shellface,
+                         const boundary_id_type id);
+
+  /**
    * Removes all boundary conditions associated with side \p side of
    * element \p elem, if any exist.
    */
@@ -269,10 +311,10 @@ public:
                     const boundary_id_type id);
 
   /**
-   * Removes all entities (nodes, sides, edges) with boundary id \p id
-   * from their respective containers and erases any record of \p id's
-   * existence from the BoundaryInfo object.  That is, after calling
-   * remove_id(), \p id will no longer be in the sets returned by
+   * Removes all entities (nodes, sides, edges, shellfaces) with boundary
+   * id \p id from their respective containers and erases any record of
+   * \p id's existence from the BoundaryInfo object.  That is, after
+   * calling remove_id(), \p id will no longer be in the sets returned by
    * get_boundary_ids(), get_side_boundary_ids(), etc., and will not
    * be in the bc_id_list vector returned by build_side_list(), etc.
    */
@@ -343,7 +385,7 @@ public:
 
   /**
    * Returns the list of raw boundary ids associated with the \p edge
-   * edge of element \p elem.  These ids are ``raw'' because they
+   * edge of element \p elem.  These ids are "raw" because they
    * exclude ids which are implicit, such as a child's inheritance of
    * its ancestors' boundary id.
    * Edge-based boundary IDs should only be used in 3D.
@@ -356,7 +398,7 @@ public:
 
   /**
    * Returns the list of raw boundary ids associated with the \p edge
-   * edge of element \p elem.  These ids are ``raw'' because they
+   * edge of element \p elem.  These ids are "raw" because they
    * exclude ids which are implicit, such as a child's inheritance of
    * its ancestors' boundary id.
    * Edge-based boundary IDs should only be used in 3D.
@@ -366,6 +408,32 @@ public:
   void raw_edge_boundary_ids (const Elem * const elem,
                               const unsigned short int edge,
                               std::vector<boundary_id_type> & vec_to_fill) const;
+
+  /**
+   * Returns the number of boundary ids associated with the specified shell face
+   * of element \p elem. This is only relevant for shell elements.
+   */
+  unsigned int n_shellface_boundary_ids (const Elem * const elem,
+                                         const unsigned short int shellface) const;
+
+  /**
+   * Returns the list of boundary ids associated with the specified shell face
+   * of element \p elem. This is only relevant for shell elements.
+   */
+  void shellface_boundary_ids (const Elem * const elem,
+                               const unsigned short int shellface,
+                               std::vector<boundary_id_type> & vec_to_fill) const;
+
+  /**
+   * Returns the list of raw boundary ids associated with the specified shell face
+   * of element \p elem.  These ids are "raw" because they
+   * exclude ids which are implicit, such as a child's inheritance of
+   * its ancestors' boundary id.
+   * This is only relevant for shell elements.
+   */
+  void raw_shellface_boundary_ids (const Elem * const elem,
+                                   const unsigned short int shellface,
+                                   std::vector<boundary_id_type> & vec_to_fill) const;
 
   /**
    * Returns true iff the given side of the given element is
@@ -414,7 +482,7 @@ public:
 
   /**
    * Returns the list of raw boundary ids associated with the \p side
-   * side of element \p elem.  These ids are ``raw'' because they
+   * side of element \p elem.  These ids are "raw" because they
    * exclude ids which are implicit, such as a child's inheritance of
    * its ancestors' boundary id.
    *
@@ -426,7 +494,7 @@ public:
 
   /**
    * Returns the list of raw boundary ids associated with the \p side
-   * side of element \p elem.  These ids are ``raw'' because they
+   * side of element \p elem.  These ids are "raw" because they
    * exclude ids which are implicit, such as a child's inheritance of
    * its ancestors' boundary id.
    *
@@ -435,6 +503,15 @@ public:
   void raw_boundary_ids (const Elem * const elem,
                          const unsigned short int side,
                          std::vector<boundary_id_type> & vec_to_fill) const;
+
+  /*
+   * Copy boundary ids associated with old_elem (but not its nodes)
+   * from old_boundary_info (which may be this) into this boundary
+   * info, associating them with new_elem.
+   */
+  void copy_boundary_ids (const BoundaryInfo & old_boundary_info,
+                          const Elem * const old_elem,
+                          const Elem * const new_elem);
 
   /**
    * Returns a side of element \p elem whose associated boundary id is
@@ -458,6 +535,11 @@ public:
   void build_side_boundary_ids(std::vector<boundary_id_type> & b_ids) const;
 
   /**
+   * Builds the list of unique side boundary ids.
+   */
+  void build_shellface_boundary_ids(std::vector<boundary_id_type> & b_ids) const;
+
+  /**
    * @returns the number of element-side-based boundary conditions.
    */
   std::size_t n_boundary_conds () const;
@@ -467,6 +549,12 @@ public:
    * Edge-based boundary IDs should only be used in 3D.
    */
   std::size_t n_edge_conds () const;
+
+  /**
+   * @returns the number of shellface-based boundary conditions.
+   * This is only relevant on shell elements.
+   */
+  std::size_t n_shellface_conds () const;
 
   /**
    * @returns the number of node-based boundary conditions.
@@ -512,21 +600,33 @@ public:
                         std::vector<boundary_id_type> &   bc_id_list) const;
 
   /**
-   * @returns the user-specified boundary ids.
+   * Creates a list of element numbers, shellfaces, and boundary ids for those shellfaces.
+   */
+  void build_shellface_list (std::vector<dof_id_type> &        element_id_list,
+                             std::vector<unsigned short int> & shellface_list,
+                             std::vector<boundary_id_type> &   bc_id_list) const;
+
+  /**
+   * @returns a set of the boundary ids which exist on semilocal parts
+   * of the mesh.
+   *
+   * DistributedMesh-compatible code may need a set_union or other
+   * manipulations to work with sets of boundary ids which include ids
+   * on remote parts of the mesh.
    */
   const std::set<boundary_id_type> & get_boundary_ids () const
   { return _boundary_ids; }
 
   /**
-   * Returns a reference to the set of all boundary IDs
-   * specified on sides.
+   * Returns a reference to the set of the boundary IDs specified on
+   * sides of semilocal mesh elements.
    */
   const std::set<boundary_id_type> & get_side_boundary_ids () const
   { return _side_boundary_ids; }
 
   /**
-   * Returns a reference to the set of all boundary IDs
-   * specified on edges.
+   * Returns a reference to the set of all boundary IDs specified on
+   * edges of semilocal mesh elements.
    * Edge-based boundary IDs should only be used in 3D.
    */
   const std::set<boundary_id_type> & get_edge_boundary_ids () const
@@ -534,7 +634,14 @@ public:
 
   /**
    * Returns a reference to the set of all boundary IDs
-   * specified on nodes.
+   * specified on shell faces. This is only relevant on shell elements.
+   */
+  const std::set<boundary_id_type> & get_shellface_boundary_ids () const
+  { return _shellface_boundary_ids; }
+
+  /**
+   * Returns a reference to the set of all boundary IDs specified on
+   * semilocal mesh nodes.
    */
   const std::set<boundary_id_type> & get_node_boundary_ids () const
   { return _node_boundary_ids; }
@@ -617,7 +724,7 @@ private:
   /**
    * The Mesh this boundary info pertains to.
    */
-  const MeshBase & _mesh;
+  MeshBase & _mesh;
 
   /**
    * Data structure that maps nodes in the mesh
@@ -653,6 +760,21 @@ private:
                         std::pair<unsigned short int, boundary_id_type> >::const_iterator boundary_edge_iter;
 
   /**
+   * Data structure that maps faces of shell elements
+   * to boundary ids. This is only relevant for shell elements.
+   */
+  std::multimap<const Elem *,
+                std::pair<unsigned short int, boundary_id_type> >
+  _boundary_shellface_id;
+
+  /**
+   * Typdef for iterators into the _boundary_shellface_id container.
+   */
+  typedef std::multimap<const Elem *,
+                        std::pair<unsigned short int, boundary_id_type> >::const_iterator boundary_shellface_iter;
+
+
+  /**
    * Data structure that maps sides of elements
    * to boundary ids.
    */
@@ -674,31 +796,43 @@ private:
   typedef std::multimap<const Elem *,
                         std::pair<unsigned short int, boundary_id_type> >::iterator erase_iter;
   /**
-   * A collection of user-specified boundary ids for sides, edges and nodes.
-   * See _side_boundary_ids, _edge_boundary_ids and _node_boundary_ids
-   * for sets containing IDs for only sides and only nodes, respectively.
+   * A collection of user-specified boundary ids for sides, edges, nodes,
+   * and shell faces.
+   * See _side_boundary_ids, _edge_boundary_ids, _node_boundary_ids, and
+   * _shellface_boundary_ids for sets containing IDs for only sides, edges,
+   * nodes, and shell faces, respectively.
    */
   std::set<boundary_id_type> _boundary_ids;
 
   /**
    * Set of user-specified boundary IDs for sides *only*.  Note: _boundary_ids
-   * is the union of this set, _edge_boundary_ids and _node_boundary_ids.
+   * is the union of this set, _edge_boundary_ids, _node_boundary_ids, and
+   * _shellface_boundary_ids.
    */
   std::set<boundary_id_type> _side_boundary_ids;
 
   /**
    * Set of user-specified boundary IDs for edges *only*.
    * This is only relevant in 3D. Note: _boundary_ids
-   * is the union of this set, _side_boundary_ids
-   * and _node_boundary_ids.
+   * is the union of this set, _side_boundary_ids, _node_boundary_ids,
+   * and _shellface_boundary_ids.
    */
   std::set<boundary_id_type> _edge_boundary_ids;
 
   /**
    * Set of user-specified boundary IDs for nodes *only*.  Note: _boundary_ids
-   * is the union of this set, _edge_boundary_ids and _side_boundary_ids.
+   * is the union of this set, _edge_boundary_ids, _side_boundary_ids, and
+   * _shellface_boundary_ids.
    */
   std::set<boundary_id_type> _node_boundary_ids;
+
+  /**
+   * Set of user-specified boundary IDs for shellfaces *only*.
+   * This is only relevant for shell elements. Note: _boundary_ids
+   * is the union of this set, _side_boundary_ids, _edge_boundary_ids,
+   * and _node_boundary_ids.
+   */
+  std::set<boundary_id_type> _shellface_boundary_ids;
 
   /**
    * This structure maintains the mapping of named side sets

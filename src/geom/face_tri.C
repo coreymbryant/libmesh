@@ -53,29 +53,29 @@ dof_id_type Tri::key (const unsigned int s) const
 {
   libmesh_assert_less (s, this->n_sides());
 
-  return this->compute_key(this->node(Tri3::side_nodes_map[s][0]),
-                           this->node(Tri3::side_nodes_map[s][1]));
+  return this->compute_key(this->node_id(Tri3::side_nodes_map[s][0]),
+                           this->node_id(Tri3::side_nodes_map[s][1]));
 }
 
 
 
 dof_id_type Tri::key () const
 {
-  return this->compute_key(this->node(0),
-                           this->node(1),
-                           this->node(2));
+  return this->compute_key(this->node_id(0),
+                           this->node_id(1),
+                           this->node_id(2));
 }
 
 
 
-UniquePtr<Elem> Tri::side (const unsigned int i) const
+UniquePtr<Elem> Tri::side_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_sides());
 
   Elem * edge = new Edge2;
 
   for (unsigned n=0; n<edge->n_nodes(); ++n)
-    edge->set_node(n) = this->get_node(Tri3::side_nodes_map[i][n]);
+    edge->set_node(n) = this->node_ptr(Tri3::side_nodes_map[i][n]);
 
   return UniquePtr<Elem>(edge);
 }
@@ -104,16 +104,16 @@ Real Tri::quality (const ElemQuality q) const
     case DISTORTION:
     case STRETCH:
       {
-        const Node * p1 = this->get_node(0);
-        const Node * p2 = this->get_node(1);
-        const Node * p3 = this->get_node(2);
+        const Point & p1 = this->point(0);
+        const Point & p2 = this->point(1);
+        const Point & p3 = this->point(2);
 
-        Point v1 = (*p2) - (*p1);
-        Point v2 = (*p3) - (*p1);
-        Point v3 = (*p3) - (*p2);
-        const Real l1 = v1.size();
-        const Real l2 = v2.size();
-        const Real l3 = v3.size();
+        Point v1 = p2 - p1;
+        Point v2 = p3 - p1;
+        Point v3 = p3 - p2;
+        const Real l1 = v1.norm();
+        const Real l2 = v2.norm();
+        const Real l3 = v3.norm();
 
         // if one length is 0, quality is quite bad!
         if ((l1 <=0.) || (l2 <= 0.) || (l3 <= 0.))

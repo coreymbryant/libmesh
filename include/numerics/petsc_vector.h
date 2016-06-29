@@ -33,17 +33,18 @@
 #include "libmesh/petsc_solver_exception.h"
 #include LIBMESH_INCLUDE_UNORDERED_MAP
 
-/**
- * Petsc include files.
- */
-EXTERN_C_FOR_PETSC_BEGIN
-# include <petscvec.h>
-EXTERN_C_FOR_PETSC_END
+// Petsc include files.
+#include <petscvec.h>
 
 // C++ includes
 #include <cstddef>
 #include <cstring>
 #include <vector>
+
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+#include <atomic>
+#include <mutex>
+#endif
 
 namespace libMesh
 {
@@ -447,6 +448,13 @@ public:
                          const std::vector<numeric_index_type> & send_list) const libmesh_override;
 
   /**
+   * Fill in the local std::vector "v_local" with the global indices
+   * given in "indices".  See numeric_vector.h for more details.
+   */
+  virtual void localize (std::vector<T> & v_local,
+                         const std::vector<numeric_index_type> & indices) const libmesh_override;
+
+  /**
    * Updates a local vector with selected values from neighboring
    * processors, as defined by \p send_list.
    */
@@ -511,7 +519,12 @@ private:
    * currently accessible.  That means that the members \p _local_form
    * and \p _values are valid.
    */
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+  // Note: we can't use std::atomic_flag here because we need load and store operations
+  mutable std::atomic<bool> _array_is_present;
+#else
   mutable bool _array_is_present;
+#endif
 
   /**
    * First local index.
@@ -552,6 +565,17 @@ private:
    * (otherwise it is a "const PetscScalar * const" in that context).
    */
   mutable const PetscScalar * _values;
+
+  /**
+   * Mutex for _get_array and _restore_array.  This is part of the
+   * object to keep down thread contention when reading frmo multiple
+   * PetscVectors simultaneously
+   */
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+  mutable std::mutex _petsc_vector_mutex;
+#else
+  mutable Threads::spin_mutex _petsc_vector_mutex;
+#endif
 
   /**
    * Queries the array (and the local form if the vector is ghosted)
@@ -1002,15 +1026,8 @@ void PetscVector<T>::zero ()
 
   if(this->type() != GHOSTED)
     {
-#if PETSC_VERSION_LESS_THAN(2,3,0)
-      // 2.2.x & earlier style
-      ierr = VecSet (&z, _vec);
-      LIBMESH_CHKERR(ierr);
-#else
-      // 2.3.x & newer
       ierr = VecSet (_vec, z);
       LIBMESH_CHKERR(ierr);
-#endif
     }
   else
     {
@@ -1019,15 +1036,10 @@ void PetscVector<T>::zero ()
       Vec loc_vec;
       ierr = VecGhostGetLocalForm (_vec,&loc_vec);
       LIBMESH_CHKERR(ierr);
-#if PETSC_VERSION_LESS_THAN(2,3,0)
-      // 2.2.x & earlier style
-      ierr = VecSet (&z, loc_vec);
-      LIBMESH_CHKERR(ierr);
-#else
-      // 2.3.x & newer
+
       ierr = VecSet (loc_vec, z);
       LIBMESH_CHKERR(ierr);
-#endif
+
       ierr = VecGhostRestoreLocalForm (_vec,&loc_vec);
       LIBMESH_CHKERR(ierr);
     }
@@ -1302,7 +1314,14 @@ void PetscVector<T>::swap (NumericVector<T> & other)
   std::swap(_vec, v._vec);
   std::swap(_destroy_vec_on_exit, v._destroy_vec_on_exit);
   std::swap(_global_to_local_map, v._global_to_local_map);
+
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+  // Only truly atomic for v... but swap() doesn't really need to be thread safe!
+  _array_is_present = v._array_is_present.exchange(_array_is_present);
+#else
   std::swap(_array_is_present, v._array_is_present);
+#endif
+
   std::swap(_local_form, v._local_form);
   std::swap(_values, v._values);
 }

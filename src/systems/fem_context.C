@@ -73,16 +73,25 @@ FEMContext::FEMContext (const System & sys)
     {
       FEType fe_type = sys.variable_type(i);
 
+      // Make sure we find a non-SCALAR FE family, even in the case
+      // where the first variable(s) weren't
+      if (hardest_fe_type.family == SCALAR)
+        {
+          hardest_fe_type.family = fe_type.family;
+          hardest_fe_type.order = fe_type.order;
+        }
+
       // FIXME - we don't yet handle mixed finite elements from
       // different families which require different quadrature rules
       // libmesh_assert_equal_to (fe_type.family, hardest_fe_type.family);
 
-      if (fe_type.order > hardest_fe_type.order)
-        hardest_fe_type = fe_type;
-
-      // We need to detect SCALAR's so we can prepare FE objects for them.
+      // We need to detect SCALAR's so we can prepare FE objects for
+      // them, and so we don't mistake high order scalars as a reason
+      // to crank up the quadrature order on other types.
       if( fe_type.family == SCALAR )
         have_scalar = true;
+      else if (fe_type.order > hardest_fe_type.order)
+        hardest_fe_type = fe_type;
     }
 
   if(have_scalar)
@@ -200,7 +209,6 @@ template<typename OutputType,
 void FEMContext::some_value(unsigned int var, unsigned int qp, OutputType & u) const
 {
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -230,7 +238,6 @@ template<typename OutputType,
 void FEMContext::some_gradient(unsigned int var, unsigned int qp, OutputType & du) const
 {
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -264,7 +271,6 @@ template<typename OutputType,
 void FEMContext::some_hessian(unsigned int var, unsigned int qp, OutputType & d2u) const
 {
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -319,7 +325,6 @@ void FEMContext::interior_values (unsigned int var,
   typedef typename TensorTools::MakeReal<OutputType>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -384,7 +389,6 @@ void FEMContext::interior_gradients(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -449,7 +453,6 @@ void FEMContext::interior_hessians(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -489,7 +492,6 @@ void FEMContext::interior_curl(unsigned int var, unsigned int qp,
   typedef typename TensorTools::MakeReal<OutputType>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -523,7 +525,6 @@ void FEMContext::interior_div(unsigned int var, unsigned int qp,
     <typename TensorTools::MakeReal<OutputType>::type>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -578,7 +579,6 @@ void FEMContext::side_values(unsigned int var,
   typedef typename TensorTools::MakeReal<OutputType>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -626,7 +626,6 @@ void FEMContext::side_gradient(unsigned int var, unsigned int qp,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -662,7 +661,6 @@ void FEMContext::side_gradients(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -732,7 +730,6 @@ void FEMContext::side_hessians(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -785,7 +782,6 @@ void FEMContext::point_value(unsigned int var,
   typedef typename TensorTools::MakeReal<OutputType>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -836,7 +832,6 @@ void FEMContext::point_gradient(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -890,7 +885,6 @@ void FEMContext::point_hessian(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -929,7 +923,6 @@ void FEMContext::point_curl(unsigned int var,
   typedef typename TensorTools::MakeReal<OutputType>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -1126,7 +1119,6 @@ void FEMContext::fixed_point_value(unsigned int var,
   typedef typename TensorTools::MakeReal<OutputType>::type OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -1177,7 +1169,6 @@ void FEMContext::fixed_point_gradient(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -1231,7 +1222,6 @@ void FEMContext::fixed_point_hessian(unsigned int var,
     OutputShape;
 
   // Get local-to-global dof index lookup
-  libmesh_assert_greater (this->get_dof_indices().size(), var);
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices(var).size());
 
@@ -1451,17 +1441,17 @@ void FEMContext::elem_position_get()
   libmesh_assert(this->get_mesh_x_var() == libMesh::invalid_uint ||
                  (this->get_element_fe(this->get_mesh_x_var(), dim)->get_fe_type().family
                   == LAGRANGE &&
-                  this->get_element_fe(this->get_mesh_x_var(), dim)->get_fe_type().order
+                  this->get_element_fe(this->get_mesh_x_var(), dim)->get_fe_type().order.get_order()
                   == this->get_elem().default_order()));
   libmesh_assert(this->get_mesh_y_var() == libMesh::invalid_uint ||
                  (this->get_element_fe(this->get_mesh_y_var(), dim)->get_fe_type().family
                   == LAGRANGE &&
-                  this->get_element_fe(this->get_mesh_y_var(), dim)->get_fe_type().order
+                  this->get_element_fe(this->get_mesh_y_var(), dim)->get_fe_type().order.get_order()
                   == this->get_elem().default_order()));
   libmesh_assert(this->get_mesh_z_var() == libMesh::invalid_uint ||
                  (this->get_element_fe(this->get_mesh_z_var(), dim)->get_fe_type().family
                   == LAGRANGE &&
-                  this->get_element_fe(this->get_mesh_z_var(), dim)->get_fe_type().order
+                  this->get_element_fe(this->get_mesh_z_var(), dim)->get_fe_type().order.get_order()
                   == this->get_elem().default_order()));
 
   // Get degree of freedom coefficients from point coordinates
@@ -1579,6 +1569,7 @@ void FEMContext::pre_fe_reinit(const System & sys, const Elem * e)
         // If !this->has_elem(), then we assume we are dealing with a SCALAR variable
         sys.get_dof_map().dof_indices (libmesh_nullptr, this->get_dof_indices());
     }
+#ifdef LIBMESH_ENABLE_AMR
   else if (algebraic_type() == OLD)
     {
       // Initialize the per-element data for elem.
@@ -1588,6 +1579,7 @@ void FEMContext::pre_fe_reinit(const System & sys, const Elem * e)
         // If !this->has_elem(), then we assume we are dealing with a SCALAR variable
         sys.get_dof_map().old_dof_indices (libmesh_nullptr, this->get_dof_indices());
     }
+#endif // LIBMESH_ENABLE_AMR
 
   const unsigned int n_dofs = cast_int<unsigned int>
     (this->get_dof_indices().size());
@@ -1623,14 +1615,17 @@ void FEMContext::pre_fe_reinit(const System & sys, const Elem * e)
             }
         }
 
-      // These resize calls also zero out the residual and jacobian
-      this->get_elem_residual().resize(n_dofs);
-      this->get_elem_jacobian().resize(n_dofs, n_dofs);
+      if (algebraic_type() != OLD)
+        {
+          // These resize calls also zero out the residual and jacobian
+          this->get_elem_residual().resize(n_dofs);
+          this->get_elem_jacobian().resize(n_dofs, n_dofs);
 
-      this->get_qoi_derivatives().resize(n_qoi);
-      this->_elem_qoi_subderivatives.resize(n_qoi);
-      for (std::size_t q=0; q != n_qoi; ++q)
-        (this->get_qoi_derivatives())[q].resize(n_dofs);
+          this->get_qoi_derivatives().resize(n_qoi);
+          this->_elem_qoi_subderivatives.resize(n_qoi);
+          for (std::size_t q=0; q != n_qoi; ++q)
+            (this->get_qoi_derivatives())[q].resize(n_dofs);
+        }
     }
 
   // Initialize the per-variable data for elem.
@@ -1647,6 +1642,7 @@ void FEMContext::pre_fe_reinit(const System & sys, const Elem * e)
               // If !this->has_elem(), then we assume we are dealing with a SCALAR variable
               sys.get_dof_map().dof_indices (libmesh_nullptr, this->get_dof_indices(i), i);
           }
+#ifdef LIBMESH_ENABLE_AMR
         else if (algebraic_type() == OLD)
           {
             if(this->has_elem())
@@ -1655,6 +1651,7 @@ void FEMContext::pre_fe_reinit(const System & sys, const Elem * e)
               // If !this->has_elem(), then we assume we are dealing with a SCALAR variable
               sys.get_dof_map().old_dof_indices (libmesh_nullptr, this->get_dof_indices(i), i);
           }
+#endif // LIBMESH_ENABLE_AMR
 
         if (this->algebraic_type() != NONE &&
             this->algebraic_type() != DOFS_ONLY)
@@ -1689,36 +1686,41 @@ void FEMContext::pre_fe_reinit(const System & sys, const Elem * e)
               this->get_elem_fixed_solution(i).reposition
                 (sub_dofs, n_dofs_var);
 
-            this->get_elem_residual(i).reposition
-              (sub_dofs, n_dofs_var);
-
-            for (std::size_t q=0; q != n_qoi; ++q)
-              this->get_qoi_derivatives(q,i).reposition
-                (sub_dofs, n_dofs_var);
-
-            for (unsigned int j=0; j != i; ++j)
+            if (algebraic_type() != OLD)
               {
-                const unsigned int n_dofs_var_j =
-                  cast_int<unsigned int>
-                  (this->get_dof_indices(j).size());
+                this->get_elem_residual(i).reposition
+                  (sub_dofs, n_dofs_var);
 
-                this->get_elem_jacobian(i,j).reposition
-                  (sub_dofs, this->get_elem_residual(j).i_off(),
-                   n_dofs_var, n_dofs_var_j);
-                this->get_elem_jacobian(j,i).reposition
-                  (this->get_elem_residual(j).i_off(), sub_dofs,
-                   n_dofs_var_j, n_dofs_var);
+                for (std::size_t q=0; q != n_qoi; ++q)
+                  this->get_qoi_derivatives(q,i).reposition
+                    (sub_dofs, n_dofs_var);
+
+                for (unsigned int j=0; j != i; ++j)
+                  {
+                    const unsigned int n_dofs_var_j =
+                      cast_int<unsigned int>
+                      (this->get_dof_indices(j).size());
+
+                    this->get_elem_jacobian(i,j).reposition
+                      (sub_dofs, this->get_elem_residual(j).i_off(),
+                       n_dofs_var, n_dofs_var_j);
+                    this->get_elem_jacobian(j,i).reposition
+                      (this->get_elem_residual(j).i_off(), sub_dofs,
+                       n_dofs_var_j, n_dofs_var);
+                  }
+                this->get_elem_jacobian(i,i).reposition
+                  (sub_dofs, sub_dofs,
+                   n_dofs_var,
+                   n_dofs_var);
               }
-            this->get_elem_jacobian(i,i).reposition
-              (sub_dofs, sub_dofs,
-               n_dofs_var,
-               n_dofs_var);
+
             sub_dofs += n_dofs_var;
           }
       }
 
     if (this->algebraic_type() != NONE &&
-        this->algebraic_type() != DOFS_ONLY)
+        this->algebraic_type() != DOFS_ONLY &&
+        this->algebraic_type() != OLD)
       libmesh_assert_equal_to (sub_dofs, n_dofs);
   }
 
@@ -1788,6 +1790,17 @@ FEMContext::build_new_fe( const FEGenericBase<OutputShape>* fe,
   // we can sensibly evaluate are the scalar dofs which are the same
   // everywhere.
   libmesh_assert(this->has_elem() || fe_type.family == SCALAR);
+
+#ifdef LIBMESH_ENABLE_AMR
+  if ((algebraic_type() == OLD) &&
+      this->has_elem())
+    {
+      if (this->get_elem().p_refinement_flag() == Elem::JUST_REFINED)
+        fe_type.order = static_cast<Order>(fe_type.order - 1);
+      else if (this->get_elem().p_refinement_flag() == Elem::JUST_COARSENED)
+        fe_type.order = static_cast<Order>(fe_type.order + 1);
+    }
+#endif // LIBMESH_ENABLE_AMR
 
   unsigned int elem_dim = this->has_elem() ? this->get_elem().dim() : 0;
 

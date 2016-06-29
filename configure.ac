@@ -1,10 +1,8 @@
 # --------------------------------------------------------------
-# $Id$
+# configure.ac file for libmesh.  Used by Automake to generate
+# aclocal.m4 and Makefile.in. See also: http://tinyurl.com/hatuyfn
 # --------------------------------------------------------------
-
-
-
-AC_INIT([libmesh], [1.0.0-pre], [libmesh-users@lists.sourceforge.net], [libmesh], [http://libmesh.github.io])
+AC_INIT([libmesh], [1.1.0-pre], [libmesh-users@lists.sourceforge.net], [libmesh], [http://libmesh.github.io])
 AC_PREREQ([2.69])
 
 # by default CFLAGS and CXXFLAGS are set to '-g -O2' on systems that support them.
@@ -71,10 +69,33 @@ AM_INIT_AUTOMAKE([dist-xz dist-bzip2 tar-ustar color-tests serial-tests 1.12])
 # use silent rules - automake 1.11
 AM_SILENT_RULES(yes)
 
-# by default we want 'maintainer mode', which means automake will generate rules to recreate e.g. Makefile.in from
-# Makefile.am. But this adds support for --disable-maintainer-mode, which may be useful for forcing configure to
-# work on systems with no autotools
-AM_MAINTAINER_MODE([enable])
+# We originally passed [enable] to AM_MAINTAINER_MODE, but this caused
+# ordinary users to have to configure with --disable-maintainer-mode,
+# which is easy to forget unless you are closely following the
+# instructions, or are aware of the issue and have run the provided
+# ./bootstrap script.
+#
+# We've now switched this to simply AM_MAINTAINER_MODE with no
+# arguments, which is equivalent to AM_MAINTAINER_MODE([disable]).  In
+# this configuration, developers who modify Makefile.am files (or
+# other build system files) *must* configure with
+# --enable-maintainer-mode in order for dependent files (Makefile.in,
+# etc) to be properly rebuilt whenever changes to the build system are
+# made.
+#
+# Note that this approach is not without its drawbacks and detractors:
+# https://blogs.gnome.org/desrt/2011/09/08/am_maintainer_mode-is-not-cool
+# https://www.gnu.org/software/automake/manual/html_node/maintainer_002dmode.html
+# but the benefit is that casual and first-time users are not
+# surprised by the default behavior of simply running ./configure.
+#
+# Note that we also do things a bit differently than most other
+# projects regarding the number of auto-generated build files
+# (Makefile.in) that are checked in, and it seems like the new
+# approach makes more sense for the way our project works --
+# rebuilding the build files are not part of a normal build for most
+# users.
+AM_MAINTAINER_MODE
 
 
 # --------------------------------------------------------------
@@ -122,12 +143,33 @@ AC_ARG_ENABLE(cxx11,
                    esac],
                    [enablecxx11=yes])
 
-if (test "x$enablecxx11" = "xyes"); then
-  # --------------------------------------------------------------
-  # Standard autoconf macro for determining the proper -std=c++11
-  # flag for the current compiler.  Adds the result to CXXFLAGS if
-  # one is found.  See ax_cxx_compile_stdcxx_11.m4 for details.
-  # --------------------------------------------------------------
+
+# --------------------------------------------------------------
+# Setting --enable-cxx11-required causes an error to be emitted during
+# configure if the compiler does not support a specific subset of
+# C++11 features.  This is useful for app codes which require C++11,
+# since it prevents situations where libmesh is built without C++11
+# support (which may take a very long time), and then the app fails to
+# compile, requiring you to redo everything.
+# --------------------------------------------------------------
+AC_ARG_ENABLE(cxx11-required,
+              AC_HELP_STRING([--enable-cxx11-required],
+                             [Error if compiler does not support C++11]),
+                             [case "${enableval}" in
+                   yes) cxx11required=yes ;;
+                   no)  cxx11required=no ;;
+                   *)   AC_MSG_ERROR(bad value ${enableval} for --enable-cxx11-required) ;;
+                   esac],
+                   [cxx11required=no])
+
+# --------------------------------------------------------------
+# Standard autoconf macro for determining the proper -std=c++11
+# flag for the current compiler.  Adds the result to CXXFLAGS if
+# one is found.  See ax_cxx_compile_stdcxx_11.m4 for details.
+# --------------------------------------------------------------
+if (test $cxx11required = yes); then
+  AX_CXX_COMPILE_STDCXX_11([],[mandatory])
+else
   AX_CXX_COMPILE_STDCXX_11([],[optional])
 fi
 
@@ -158,18 +200,30 @@ LIBMESH_SET_METHODS
 # we know they will fail, since they contain AM_CONDITIONALs.
 # --------------------------------------------------------------
 LIBMESH_TEST_CXX11_MOVE
+LIBMESH_TEST_CXX11_RANGEFOR
+LIBMESH_TEST_CXX11_DECLTYPE
+LIBMESH_TEST_CXX11_RVALUE_REFERENCES
+LIBMESH_TEST_CXX11_AUTO
+LIBMESH_TEST_CXX11_LAMBDA
+LIBMESH_TEST_CXX11_CONSTEXPR
+LIBMESH_TEST_CXX11_ALIAS_DECLARATIONS
 LIBMESH_TEST_CXX11_SHARED_PTR
 LIBMESH_TEST_CXX11_UNIQUE_PTR
+LIBMESH_TEST_CXX14_MAKE_UNIQUE
+LIBMESH_TEST_CXX11_MAKE_UNIQUE_WORKAROUND
 LIBMESH_TEST_CXX11_REGEX
 LIBMESH_TEST_CXX11_OVERRIDE
 LIBMESH_TEST_CXX11_INITIALIZER_LIST
 LIBMESH_TEST_CXX11_VARIADIC_TEMPLATES
 LIBMESH_TEST_CXX11_THREAD
+LIBMESH_TEST_CXX11_CONDITION_VARIABLE
 LIBMESH_TEST_CXX11_TYPE_TRAITS
 LIBMESH_TEST_CXX11_INVERSE_HYPERBOLIC_FUNCS
 LIBMESH_TEST_CXX11_DELETED_FUNCTIONS
 LIBMESH_TEST_CXX11_FINAL
 LIBMESH_TEST_CXX11_NULLPTR
+LIBMESH_TEST_CXX11_TO_STRING
+LIBMESH_TEST_CXX11_NOEXCEPT
 
 #-----------------------------------------------------
 # Initialize libtool.  By default, we will build
@@ -354,6 +408,7 @@ if (test "x$enableexamples" = "xyes"); then
                 examples/miscellaneous/miscellaneous_ex9/Makefile
                 examples/miscellaneous/miscellaneous_ex10/Makefile
                 examples/miscellaneous/miscellaneous_ex11/Makefile
+                examples/miscellaneous/miscellaneous_ex12/Makefile
                 examples/optimization/optimization_ex1/Makefile
                 examples/optimization/optimization_ex2/Makefile
                 examples/subdomains/subdomains_ex1/Makefile

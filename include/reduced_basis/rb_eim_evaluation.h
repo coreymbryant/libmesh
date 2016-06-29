@@ -96,7 +96,7 @@ public:
   /**
    * Get a writable reference to the interpolation points mesh.
    */
-  SerialMesh & get_interpolation_points_mesh();
+  ReplicatedMesh & get_interpolation_points_mesh();
 
   /**
    * @return the value of the parametrized function that is being
@@ -123,6 +123,12 @@ public:
    * solution coefficients in the member RB_solution.
    */
   void rb_solve(DenseVector<Number> & EIM_rhs);
+
+  /**
+   * @return a scaling factor that we can use to provide a consistent
+   * scaling of the RB error bound across different parameter values.
+   */
+  virtual Real get_error_bound_normalization() libmesh_override;
 
   /**
    * Build a vector of RBTheta objects that accesses the components
@@ -254,7 +260,7 @@ private:
    * Mesh object that we use to store copies of the elements associated with
    * interpolation points.
    */
-  SerialMesh _interpolation_points_mesh;
+  ReplicatedMesh _interpolation_points_mesh;
 
 };
 

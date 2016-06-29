@@ -100,8 +100,8 @@ bool InfPrism6::is_node_on_edge(const unsigned int n,
 }
 
 
-UniquePtr<Elem> InfPrism6::build_side (const unsigned int i,
-                                       bool proxy) const
+UniquePtr<Elem> InfPrism6::build_side_ptr (const unsigned int i,
+                                           bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -153,7 +153,7 @@ UniquePtr<Elem> InfPrism6::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(InfPrism6::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(InfPrism6::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -163,7 +163,7 @@ UniquePtr<Elem> InfPrism6::build_side (const unsigned int i,
 }
 
 
-UniquePtr<Elem> InfPrism6::build_edge (const unsigned int i) const
+UniquePtr<Elem> InfPrism6::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, n_edges());
 
@@ -249,14 +249,14 @@ void InfPrism6::connectivity(const unsigned int libmesh_dbg_var(sc),
     case TECPLOT:
       {
         conn.resize(8);
-        conn[0] = this->node(0)+1;
-        conn[1] = this->node(1)+1;
-        conn[2] = this->node(2)+1;
-        conn[3] = this->node(2)+1;
-        conn[4] = this->node(3)+1;
-        conn[5] = this->node(4)+1;
-        conn[6] = this->node(5)+1;
-        conn[7] = this->node(5)+1;
+        conn[0] = this->node_id(0)+1;
+        conn[1] = this->node_id(1)+1;
+        conn[2] = this->node_id(2)+1;
+        conn[3] = this->node_id(2)+1;
+        conn[4] = this->node_id(3)+1;
+        conn[5] = this->node_id(4)+1;
+        conn[6] = this->node_id(5)+1;
+        conn[7] = this->node_id(5)+1;
         return;
       }
 

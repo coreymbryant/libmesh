@@ -349,11 +349,13 @@ unsigned int lagrange_n_dofs(const ElemType t, const Order o)
             return 2;
 
           case TRI3:
+          case TRISHELL3:
           case TRI3SUBDIVISION:
           case TRI6:
             return 3;
 
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             return 4;
@@ -495,6 +497,7 @@ unsigned int lagrange_n_dofs_at_node(const ElemType t,
             }
 
           case TRI3:
+          case TRISHELL3:
           case TRI3SUBDIVISION:
           case TRI6:
             {
@@ -511,6 +514,7 @@ unsigned int lagrange_n_dofs_at_node(const ElemType t,
             }
 
           case QUAD4:
+          case QUADSHELL4:
           case QUAD8:
           case QUAD9:
             {
@@ -690,9 +694,9 @@ void lagrange_compute_constraints (DofConstraints & constraints,
   // Look at the element faces.  Check to see if we need to
   // build constraints.
   for (unsigned int s=0; s<elem->n_sides(); s++)
-    if (elem->neighbor(s) != libmesh_nullptr)
-      if (elem->neighbor(s)->level() < elem->level()) // constrain dofs shared between
-        {                                                     // this element and ones coarser
+    if (elem->neighbor_ptr(s) != libmesh_nullptr)
+      if (elem->neighbor_ptr(s)->level() < elem->level()) // constrain dofs shared between
+        {                                                 // this element and ones coarser
           // than this element.
           // Get pointers to the elements of interest and its parent.
           const Elem * parent = elem->parent();
@@ -702,8 +706,8 @@ void lagrange_compute_constraints (DofConstraints & constraints,
           // level than their neighbors!
           libmesh_assert(parent);
 
-          const UniquePtr<Elem> my_side     (elem->build_side(s));
-          const UniquePtr<Elem> parent_side (parent->build_side(s));
+          const UniquePtr<const Elem> my_side     (elem->build_side_ptr(s));
+          const UniquePtr<const Elem> parent_side (parent->build_side_ptr(s));
 
           // This function gets called element-by-element, so there
           // will be a lot of memory allocation going on.  We can

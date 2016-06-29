@@ -197,18 +197,14 @@ void ExactErrorEstimator::attach_reference_solution (EquationSystems * es_fine)
   this->clear_functors();
 }
 
-#ifdef LIBMESH_ENABLE_AMR
 void ExactErrorEstimator::estimate_error (const System & system,
                                           ErrorVector & error_per_cell,
                                           const NumericVector<Number> * solution_vector,
                                           bool estimate_parent_error)
-#else
-  void ExactErrorEstimator::estimate_error (const System & system,
-                                            ErrorVector & error_per_cell,
-                                            const NumericVector<Number> * solution_vector,
-                                            bool /* estimate_parent_error */ )
-#endif
 {
+  // Ignore the fact that this variable is unused when !LIBMESH_ENABLE_AMR
+  libmesh_ignore(estimate_parent_error);
+
   // The current mesh
   const MeshBase & mesh = system.get_mesh();
 
@@ -343,7 +339,7 @@ void ExactErrorEstimator::estimate_error (const System & system,
             compute_on_parent = false;
           else
             for (unsigned int c=0; c != parent->n_children(); ++c)
-              if (!parent->child(c)->active())
+              if (!parent->child_ptr(c)->active())
                 compute_on_parent = false;
 
           if (compute_on_parent &&
@@ -398,19 +394,15 @@ void ExactErrorEstimator::estimate_error (const System & system,
   this->reduce_error(error_per_cell, system.comm());
 
   // Compute the square-root of each component.
-  START_LOG("std::sqrt()", "ExactErrorEstimator");
-  for (dof_id_type i=0; i<error_per_cell.size(); i++)
-    {
-
+  {
+    LOG_SCOPE("std::sqrt()", "ExactErrorEstimator");
+    for (dof_id_type i=0; i<error_per_cell.size(); i++)
       if (error_per_cell[i] != 0.)
         {
           libmesh_assert_greater (error_per_cell[i], 0.);
           error_per_cell[i] = std::sqrt(error_per_cell[i]);
         }
-
-
-    }
-  STOP_LOG("std::sqrt()", "ExactErrorEstimator");
+  }
 
   // If we used a non-standard solution before, now is the time to fix
   // the current_local_solution
@@ -527,7 +519,7 @@ Real ExactErrorEstimator::find_squared_element_error(const System & system,
           else if(_equation_systems_fine)
             grad_error -= fine_values->gradient(q_point[qp]);
 
-          error_val += JxW[qp]*grad_error.size_sq();
+          error_val += JxW[qp]*grad_error.norm_sq();
         }
 
 
@@ -546,7 +538,7 @@ Real ExactErrorEstimator::find_squared_element_error(const System & system,
           else if (_equation_systems_fine)
             grad2_error -= fine_values->hessian(q_point[qp]);
 
-          error_val += JxW[qp]*grad2_error.size_sq();
+          error_val += JxW[qp]*grad2_error.norm_sq();
         }
 #endif
 

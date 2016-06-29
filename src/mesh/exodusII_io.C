@@ -125,7 +125,7 @@ void ExodusII_IO::read (const std::string & fname)
 #endif
 
   // Instantiate the ElementMaps interface
-  ExodusII_IO_Helper::ElementMaps em(*exio_helper);
+  ExodusII_IO_Helper::ElementMaps em;
 
   // Open the exodus file in EX_READ mode
   exio_helper->open(fname.c_str(), /*read_only=*/true);
@@ -306,24 +306,48 @@ void ExodusII_IO::read (const std::string & fname)
           cast_int<dof_id_type>(exio_helper->elem_num_map[exio_helper->elem_list[e] - 1] - 1);
 
         // Set any relevant node/edge maps for this element
-        Elem * elem = mesh.elem(libmesh_elem_id);
+        Elem & elem = mesh.elem_ref(libmesh_elem_id);
 
-        const ExodusII_IO_Helper::Conversion conv = em.assign_conversion(elem->type());
+        const ExodusII_IO_Helper::Conversion conv = em.assign_conversion(elem.type());
 
         // Map the zero-based Exodus side numbering to the libmesh side numbering
-        int mapped_side = conv.get_side_map(exio_helper->side_list[e]-1);
+        unsigned int raw_side_index = exio_helper->side_list[e]-1;
+        unsigned int side_index_offset = conv.get_shellface_index_offset();
 
-        // Check for errors
-        if (mapped_side == ExodusII_IO_Helper::Conversion::invalid_id)
-          libmesh_error_msg("Invalid 1-based side id: "                 \
-                            << exio_helper->side_list[e]                \
-                            << " detected for "                         \
-                            << Utility::enum_to_string(elem->type()));
+        if(raw_side_index < side_index_offset)
+        {
+          // We assume this is a "shell face"
+          int mapped_shellface = raw_side_index;
 
-        // Add this (elem,side,id) triplet to the BoundaryInfo object.
-        mesh.get_boundary_info().add_side (libmesh_elem_id,
-                                           cast_int<unsigned short>(mapped_side),
-                                           cast_int<boundary_id_type>(exio_helper->id_list[e]));
+          // Check for errors
+          if (mapped_shellface == ExodusII_IO_Helper::Conversion::invalid_id)
+            libmesh_error_msg("Invalid 1-based side id: "                 \
+                              << mapped_shellface                         \
+                              << " detected for "                         \
+                              << Utility::enum_to_string(elem.type()));
+
+          // Add this (elem,shellface,id) triplet to the BoundaryInfo object.
+          mesh.get_boundary_info().add_shellface (libmesh_elem_id,
+                                                  cast_int<unsigned short>(mapped_shellface),
+                                                  cast_int<boundary_id_type>(exio_helper->id_list[e]));
+        }
+        else
+        {
+          unsigned int side_index = static_cast<unsigned int>(raw_side_index - side_index_offset);
+          int mapped_side = conv.get_side_map(side_index);
+
+          // Check for errors
+          if (mapped_side == ExodusII_IO_Helper::Conversion::invalid_id)
+            libmesh_error_msg("Invalid 1-based side id: "                 \
+                              << side_index                               \
+                              << " detected for "                         \
+                              << Utility::enum_to_string(elem.type()));
+
+          // Add this (elem,side,id) triplet to the BoundaryInfo object.
+          mesh.get_boundary_info().add_side (libmesh_elem_id,
+                                            cast_int<unsigned short>(mapped_side),
+                                            cast_int<boundary_id_type>(exio_helper->id_list[e]));
+        }
       }
   }
 
@@ -441,14 +465,11 @@ void ExodusII_IO::copy_nodal_solution(System & system,
 
   for (unsigned int i=0; i<exio_helper->nodal_var_values.size(); ++i)
     {
-      const Node * node = MeshInput<MeshBase>::mesh().query_node_ptr(i);
+      const Node & node = MeshInput<MeshBase>::mesh().node_ref(i);
 
-      if (!node)
-        libmesh_error_msg("Error! Mesh returned NULL pointer for node " << i);
-
-      if (node->n_comp(system.number(), var_num) > 0)
+      if (node.n_comp(system.number(), var_num) > 0)
         {
-          dof_id_type dof_index = node->dof_number(system.number(), var_num, 0);
+          dof_id_type dof_index = node.dof_number(system.number(), var_num, 0);
 
           // If the dof_index is local to this processor, set the value
           if ((dof_index >= system.solution->first_local_index()) && (dof_index < system.solution->last_local_index()))
@@ -488,7 +509,7 @@ void ExodusII_IO::copy_elemental_solution(System & system,
 
   for (; it!=end; ++it)
     {
-      const Elem * elem = MeshInput<MeshBase>::mesh().query_elem(it->first);
+      const Elem * elem = MeshInput<MeshBase>::mesh().query_elem_ptr(it->first);
 
       if (!elem)
         libmesh_error_msg("Error! Mesh returned NULL pointer for elem " << it->first);
@@ -515,13 +536,13 @@ void ExodusII_IO::write_element_data (const EquationSystems & es)
   if (MeshOutput<MeshBase>::mesh().processor_id() == 0 && !exio_helper->opened_for_writing)
     libmesh_error_msg("ERROR, ExodusII file must be initialized before outputting element variables.");
 
-  // This function currently only works on SerialMeshes. We rely on
-  // having a reference to a non-const MeshBase object from our
+  // This function currently only works on serialized meshes. We rely
+  // on having a reference to a non-const MeshBase object from our
   // MeshInput parent class to construct a MeshSerializer object,
   // similar to what is done in ExodusII_IO::write().  Note that
   // calling ExodusII_IO::write_timestep() followed by
   // ExodusII_IO::write_element_data() when the underlying Mesh is a
-  // ParallelMesh will result in an unnecessary additional
+  // DistributedMesh will result in an unnecessary additional
   // serialization/re-parallelization step.
   MeshSerializer serialize(MeshInput<MeshBase>::mesh(), !MeshOutput<MeshBase>::_is_parallel_format);
 
@@ -608,7 +629,7 @@ void ExodusII_IO::write_nodal_data (const std::string & fname,
                                     const std::vector<Number> & soln,
                                     const std::vector<std::string> & names)
 {
-  START_LOG("write_nodal_data()", "ExodusII_IO");
+  LOG_SCOPE("write_nodal_data()", "ExodusII_IO");
 
   const MeshBase & mesh = MeshOutput<MeshBase>::mesh();
 
@@ -635,11 +656,8 @@ void ExodusII_IO::write_nodal_data (const std::string & fname,
   this->write_nodal_data_common(fname, output_names, /*continuous=*/true);
 #endif
 
-  if(mesh.processor_id())
-    {
-      STOP_LOG("write_nodal_data()", "ExodusII_IO");
-      return;
-    }
+  if (mesh.processor_id())
+    return;
 
   // This will count the number of variables actually output
   for (int c=0; c<num_vars; c++)
@@ -678,8 +696,6 @@ void ExodusII_IO::write_nodal_data (const std::string & fname,
 #endif
 
     }
-
-  STOP_LOG("write_nodal_data()", "ExodusII_IO");
 }
 
 
@@ -771,7 +787,7 @@ void ExodusII_IO::write (const std::string & fname)
 {
   const MeshBase & mesh = MeshOutput<MeshBase>::mesh();
 
-  // We may need to gather a ParallelMesh to output it, making that
+  // We may need to gather a DistributedMesh to output it, making that
   // const qualifier in our constructor a dirty lie
   MeshSerializer serialize(const_cast<MeshBase &>(mesh), !MeshOutput<MeshBase>::_is_parallel_format);
 
@@ -811,8 +827,7 @@ void ExodusII_IO::write_nodal_data_discontinuous (const std::string & fname,
                                                   const std::vector<Number> & soln,
                                                   const std::vector<std::string> & names)
 {
-
-  START_LOG("write_nodal_data_discontinuous()", "ExodusII_IO");
+  LOG_SCOPE("write_nodal_data_discontinuous()", "ExodusII_IO");
 
   const MeshBase & mesh = MeshOutput<MeshBase>::mesh();
 
@@ -836,10 +851,7 @@ void ExodusII_IO::write_nodal_data_discontinuous (const std::string & fname,
 #endif
 
   if (mesh.processor_id())
-    {
-      STOP_LOG("write_nodal_data_discontinuous()", "ExodusII_IO");
-      return;
-    }
+    return;
 
   for (int c=0; c<num_vars; c++)
     {
@@ -867,8 +879,6 @@ void ExodusII_IO::write_nodal_data_discontinuous (const std::string & fname,
       exio_helper->write_nodal_values(c+1,cur_soln,_timestep);
 #endif
     }
-
-  STOP_LOG("write_nodal_data_discontinuous()", "ExodusII_IO");
 }
 
 

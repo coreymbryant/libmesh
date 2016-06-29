@@ -49,7 +49,7 @@ public:
    * Constructor.  Initializes the number of blocks in the mesh to 1
    * and the number of levels to zero.
    */
-  XdrMHEAD() : _n_blocks(1) {}
+  XdrMHEAD() : _n_blocks(1) { libmesh_deprecated(); }
 
   /**
    * Destructor.
@@ -77,8 +77,6 @@ public:
 
   /**
    * Get the mesh weighting.
-   *
-   * @sect2{DEAL mesh specific get/set functions}
    */
   int  getSumWghts() const             { return m_sumWghts; }
 

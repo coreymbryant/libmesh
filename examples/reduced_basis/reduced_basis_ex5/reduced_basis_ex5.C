@@ -95,6 +95,14 @@ int main(int argc, char ** argv)
   libmesh_example_requires(false, "double precision");
 #endif
 
+  // Eigen can take forever to solve the offline mode portion of this
+  // example
+  libmesh_example_requires(libMesh::default_solver_package() != EIGEN_SOLVERS, "--enable-petsc or --enable-laspack");
+
+  // Trilinos reports "true residual is too large" in the offline mode
+  // portion of this example
+  libmesh_example_requires(libMesh::default_solver_package() != TRILINOS_SOLVERS, "--enable-petsc or --enable-laspack");
+
   // This example only works if libMesh was compiled for 3D
   const unsigned int dim = 3;
   libmesh_example_requires(dim == LIBMESH_DIM, "3D support");
@@ -128,9 +136,12 @@ int main(int argc, char ** argv)
                                      0., z_size,
                                      HEX8);
 
-  // Let's add a some node boundary condition so that we can impose a point load
-  MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
-  const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+  // Let's add a node boundary condition so that we can impose a point
+  // load.
+  // Each processor should know about each boundary condition it can
+  // see, so we loop over all elements, not just local elements.
+  MeshBase::const_element_iterator       el     = mesh.elements_begin();
+  const MeshBase::const_element_iterator end_el = mesh.elements_end();
   for ( ; el != end_el; ++el)
     {
       const Elem * elem = *el;
@@ -169,7 +180,7 @@ int main(int argc, char ** argv)
                   elem->is_node_on_side(n, side_max_y) &&
                   elem->is_node_on_side(n, side_max_z))
                 {
-                  mesh.get_boundary_info().add_node(elem->get_node(n), NODE_BOUNDARY_ID);
+                  mesh.get_boundary_info().add_node(elem->node_ptr(n), NODE_BOUNDARY_ID);
                 }
             }
         }
@@ -334,7 +345,7 @@ void scale_mesh_and_plot(EquationSystems & es,
 
 void compute_stresses(EquationSystems & es)
 {
-  START_LOG("compute_stresses()", "main");
+  LOG_SCOPE("compute_stresses()", "main");
 
   const MeshBase & mesh = es.get_mesh();
 
@@ -449,6 +460,4 @@ void compute_stresses(EquationSystems & es)
   // Should call close and update when we set vector entries directly
   stress_system.solution->close();
   stress_system.update();
-
-  STOP_LOG("compute_stresses()", "main");
 }

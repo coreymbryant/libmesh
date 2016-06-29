@@ -267,15 +267,29 @@ public:
 
   /**
    * Returns the magnitude of the vector, i.e. the square-root of the
-   * sum of the elements squared.
+   * sum of the elements squared.  This function is deprecated, instead
+   * call norm().
    */
   Real size() const;
 
   /**
-   * Returns the magnitude of the vector squared, i.e. the sum of the element
-   * magnitudes squared.
+   * Returns the magnitude of the vector, i.e. the square-root of the
+   * sum of the elements squared.
+   */
+  Real norm() const;
+
+  /**
+   * Returns the magnitude of the vector squared, i.e. the sum of the
+   * element magnitudes squared.  This function is deprecated, instead
+   * call norm_sq().
    */
   Real size_sq() const;
+
+  /**
+   * Returns the magnitude of the vector squared, i.e. the sum of the
+   * element magnitudes squared.
+   */
+  Real norm_sq() const;
 
   /**
    * Zero the vector in any dimension.
@@ -297,8 +311,9 @@ public:
                              Real tol = TOLERANCE) const;
 
   /**
-   * @returns \p true iff two vectors occupy approximately the same
-   * physical location in space, to within an absolute tolerance of \p TOLERANCE.
+   * @returns \p true iff this(i)==rhs(i) for each component of the
+   * vector. For floating point types T, the function
+   * absolute_fuzzy_equals may be a more appropriate choice.
    */
   bool operator == (const TypeVector<T> & rhs) const;
 
@@ -861,7 +876,17 @@ template <typename T>
 inline
 Real TypeVector<T>::size() const
 {
-  return std::sqrt(this->size_sq());
+  libmesh_deprecated();
+  return this->norm();
+}
+
+
+
+template <typename T>
+inline
+Real TypeVector<T>::norm() const
+{
+  return std::sqrt(this->norm_sq());
 }
 
 
@@ -879,6 +904,16 @@ void TypeVector<T>::zero()
 template <typename T>
 inline
 Real TypeVector<T>::size_sq() const
+{
+  libmesh_deprecated();
+  return this->norm_sq();
+}
+
+
+
+template <typename T>
+inline
+Real TypeVector<T>::norm_sq() const
 {
 #if LIBMESH_DIM == 1
   return (TensorTools::norm_sq(_coords[0]));
@@ -975,6 +1010,68 @@ inline
 bool TypeVector<T>::operator != (const TypeVector<T> & rhs) const
 {
   return (!(*this == rhs));
+}
+
+
+//------------------------------------------------------
+// Non-member functions on TypeVectors
+
+// Compute a * (b.cross(c)) without creating a temporary
+// for the cross product.  Equivalent to the determinant
+// of the 3x3 tensor:
+// [a0, a1, a2]
+// [b0, b1, b2]
+// [c0, c1, c2]
+template <typename T>
+inline
+T triple_product(const TypeVector<T> & a,
+                 const TypeVector<T> & b,
+                 const TypeVector<T> & c)
+{
+  // We only support cross products when LIBMESH_DIM==3, same goes for this.
+  libmesh_assert_equal_to (LIBMESH_DIM, 3);
+
+  return
+    a(0)*(b(1)*c(2) - b(2)*c(1)) -
+    a(1)*(b(0)*c(2) - b(2)*c(0)) +
+    a(2)*(b(0)*c(1) - b(1)*c(0));
+}
+
+
+
+/**
+ * Compute |b x c|^2 without creating the extra temporary produced by
+ * calling b.cross(c).norm_sq().
+ */
+template <typename T>
+inline
+T cross_norm_sq(const TypeVector<T> & b,
+                const TypeVector<T> & c)
+{
+  // We only support cross products when LIBMESH_DIM==3, same goes for this.
+  libmesh_assert_equal_to (LIBMESH_DIM, 3);
+
+  T x = b(1)*c(2) - b(2)*c(1),
+    y = b(0)*c(2) - b(2)*c(0),
+    z = b(0)*c(1) - b(1)*c(0);
+
+  return x*x + y*y + z*z;
+}
+
+
+
+/**
+ * Calls cross_norm_sq() and takes the square root of the result.
+ */
+template <typename T>
+inline
+T cross_norm(const TypeVector<T> & b,
+             const TypeVector<T> & c)
+{
+  // We only support cross products when LIBMESH_DIM==3, same goes for this.
+  libmesh_assert_equal_to (LIBMESH_DIM, 3);
+
+  return std::sqrt(cross_norm_sq(b,c));
 }
 
 } // namespace libMesh

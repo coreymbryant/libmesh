@@ -160,7 +160,7 @@ int main (int argc, char ** argv)
   // rotational or other auxiliary variables are needed.
   // Loop Subdivision Elements are always interpolated
   // by quartic box splines, hence the order must always
-  // be \p FOURTH.
+  // be FOURTH.
   system.add_variable ("u", FOURTH, SUBDIVISION);
   system.add_variable ("v", FOURTH, SUBDIVISION);
   system.add_variable ("w", FOURTH, SUBDIVISION);
@@ -269,8 +269,8 @@ void assemble_shell (EquationSystems & es,
   const Real nu = es.parameters.get<Real> ("poisson ratio");
   const Real q  = es.parameters.get<Real> ("uniform load");
 
-  // Compute the membrane stiffness \p K and the bending
-  // rigidity \p D from these parameters.
+  // Compute the membrane stiffness K and the bending
+  // rigidity D from these parameters.
   const Real K = E * h     /     (1-nu*nu);
   const Real D = E * h*h*h / (12*(1-nu*nu));
 
@@ -313,7 +313,7 @@ void assemble_shell (EquationSystems & es,
   const std::vector<std::vector<RealGradient> > & dphi = fe->get_dphi();
   const std::vector<std::vector<RealTensor> > &  d2phi = fe->get_d2phi();
 
-  // A reference to the \p DofMap object for this system.  The \p DofMap
+  // A reference to the DofMap object for this system.  The DofMap
   // object handles the index translation from node and element numbers
   // to degree of freedom numbers.
   const DofMap & dof_map = system.get_dof_map();
@@ -397,10 +397,10 @@ void assemble_shell (EquationSystems & es,
       //        | Kwu Kwv Kww |        | Fw |
       //         -           -          -  -
       //
-      // The \p DenseSubMatrix.repostition () member takes the
+      // The DenseSubMatrix.repostition () member takes the
       // (row_offset, column_offset, row_size, column_size).
       //
-      // Similarly, the \p DenseSubVector.reposition () member
+      // Similarly, the DenseSubVector.reposition () member
       // takes the (row_offset, row_size)
       Kuu.reposition (u_var*n_u_dofs, u_var*n_u_dofs, n_u_dofs, n_u_dofs);
       Kuv.reposition (u_var*n_u_dofs, v_var*n_u_dofs, n_u_dofs, n_v_dofs);
@@ -537,7 +537,7 @@ void assemble_shell (EquationSystems & es,
                     + JxW[qp] * D * BI.transpose() * H * BJ;
 
                   // Insert the components of the coupling stiffness
-                  // matrix \p KIJ into the corresponding directional
+                  // matrix KIJ into the corresponding directional
                   // submatrices.
                   Kuu(i,j) += KIJ(0,0);
                   Kuv(i,j) += KIJ(0,1);
@@ -557,8 +557,8 @@ void assemble_shell (EquationSystems & es,
 
       // The element matrix and right-hand-side are now built
       // for this element.  Add them to the global matrix and
-      // right-hand-side vector.  The \p NumericMatrix::add_matrix()
-      // and \p NumericVector::add_vector() members do this for us.
+      // right-hand-side vector.  The NumericMatrix::add_matrix()
+      // and NumericVector::add_vector() members do this for us.
       system.matrix->add_matrix (Ke, dof_indices);
       system.rhs->add_vector    (Fe, dof_indices);
     } // end of non-ghost element loop
@@ -589,14 +589,14 @@ void assemble_shell (EquationSystems & es,
       // that is, the boundary of the original mesh without ghosts.
       for (unsigned int s=0; s<elem->n_sides(); ++s)
         {
-          const Tri3Subdivision * nb_elem = static_cast<const Tri3Subdivision *> (elem->neighbor(s));
+          const Tri3Subdivision * nb_elem = static_cast<const Tri3Subdivision *> (elem->neighbor_ptr(s));
           if (nb_elem == libmesh_nullptr || nb_elem->is_ghost())
             continue;
 
           /*
            * Determine the four nodes involved in the boundary
-           * condition treatment of this side.  The \p MeshTools::Subdiv
-           * namespace provides lookup tables \p next and \p prev
+           * condition treatment of this side.  The MeshTools::Subdiv
+           * namespace provides lookup tables next and prev
            * for an efficient determination of the next and previous
            * nodes of an element, respectively.
            *
@@ -608,18 +608,18 @@ void assemble_shell (EquationSystems & es,
            *     \  /
            *      n1
            */
-          Node * nodes [4]; // n1, n2, n3, n4
-          nodes[1] = gh_elem->get_node(s); // n2
-          nodes[2] = gh_elem->get_node(MeshTools::Subdivision::next[s]); // n3
-          nodes[3] = gh_elem->get_node(MeshTools::Subdivision::prev[s]); // n4
+          const Node * nodes [4]; // n1, n2, n3, n4
+          nodes[1] = gh_elem->node_ptr(s); // n2
+          nodes[2] = gh_elem->node_ptr(MeshTools::Subdivision::next[s]); // n3
+          nodes[3] = gh_elem->node_ptr(MeshTools::Subdivision::prev[s]); // n4
 
-          // The node in the interior of the domain, \p n1, is the
-          // hardest to find.  Walk along the edges of element \p nb until
+          // The node in the interior of the domain, n1, is the
+          // hardest to find.  Walk along the edges of element nb until
           // we have identified it.
           unsigned int n_int = 0;
-          nodes[0] = nb_elem->get_node(0);
+          nodes[0] = nb_elem->node_ptr(0);
           while (nodes[0]->id() == nodes[1]->id() || nodes[0]->id() == nodes[2]->id())
-            nodes[0] = nb_elem->get_node(++n_int);
+            nodes[0] = nb_elem->node_ptr(++n_int);
 
           // The penalty value.  \f$ \frac{1}{\epsilon} \f$
           const Real penalty = 1.e10;
@@ -627,7 +627,7 @@ void assemble_shell (EquationSystems & es,
           // With this simple method, clamped boundary conditions are
           // obtained by penalizing the displacements of all four nodes.
           // This ensures that the displacement field vanishes on the
-          // boundary side \p s.
+          // boundary side s.
           for (unsigned int n=0; n<4; ++n)
             {
               const dof_id_type u_dof = nodes[n]->dof_number (system.number(), u_var, 0);

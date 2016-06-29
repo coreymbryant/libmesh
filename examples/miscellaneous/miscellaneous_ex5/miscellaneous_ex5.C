@@ -159,9 +159,9 @@ void assemble_ellipticdg(EquationSystems & es,
   const Real penalty = es.parameters.get<Real> ("penalty");
   std::string refinement_type = es.parameters.get<std::string> ("refinement");
 
-  // A reference to the \p DofMap object for this system.  The \p DofMap
+  // A reference to the DofMap object for this system.  The DofMap
   // object handles the index translation from node and element numbers
-  // to degree of freedom numbers.  We will talk more about the \p DofMap
+  // to degree of freedom numbers.  We will talk more about the DofMap
   const DofMap & dof_map = ellipticdg_system.get_dof_map();
 
   // Get a constant reference to the Finite Element type
@@ -169,8 +169,8 @@ void assemble_ellipticdg(EquationSystems & es,
   FEType fe_type = ellipticdg_system.variable_type(0);
 
   // Build a Finite Element object of the specified type.  Since the
-  // \p FEBase::build() member dynamically creates memory we will
-  // store the object as an \p UniquePtr<FEBase>.  This can be thought
+  // FEBase::build() member dynamically creates memory we will
+  // store the object as a UniquePtr<FEBase>.  This can be thought
   // of as a pointer that will clean up after itself.
   UniquePtr<FEBase> fe  (FEBase::build(dim, fe_type));
   UniquePtr<FEBase> fe_elem_face(FEBase::build(dim, fe_type));
@@ -279,12 +279,12 @@ void assemble_ellipticdg(EquationSystems & es,
       // side MUST live on a boundary of the domain.
       for (unsigned int side=0; side<elem->n_sides(); side++)
         {
-          if (elem->neighbor(side) == libmesh_nullptr)
+          if (elem->neighbor_ptr(side) == libmesh_nullptr)
             {
               // Pointer to the element face
               fe_elem_face->reinit(elem, side);
 
-              UniquePtr<Elem> elem_side (elem->build_side(side));
+              UniquePtr<const Elem> elem_side (elem->build_side_ptr(side));
               // h elemet dimension to compute the interior penalty penalty parameter
               const unsigned int elem_b_order = static_cast<unsigned int> (fe_elem_face->get_order());
               const double h_elem = elem->volume()/elem_side->volume() * 1./pow(elem_b_order, 2.);
@@ -325,7 +325,7 @@ void assemble_ellipticdg(EquationSystems & es,
             {
               // Store a pointer to the neighbor we are currently
               // working on.
-              const Elem * neighbor = elem->neighbor(side);
+              const Elem * neighbor = elem->neighbor_ptr(side);
 
               // Get the global id of the element and the neighbor
               const unsigned int elem_id = elem->id();
@@ -342,7 +342,7 @@ void assemble_ellipticdg(EquationSystems & es,
                   (neighbor->level() < elem->level()))
                 {
                   // Pointer to the element side
-                  UniquePtr<Elem> elem_side (elem->build_side(side));
+                  UniquePtr<const Elem> elem_side (elem->build_side_ptr(side));
 
                   // h dimension to compute the interior penalty penalty parameter
                   const unsigned int elem_b_order = static_cast<unsigned int>(fe_elem_face->get_order());
@@ -476,7 +476,7 @@ void assemble_ellipticdg(EquationSystems & es,
 
                   // The element and neighbor boundary matrix are now built
                   // for this side.  Add them to the global matrix
-                  // The \p SparseMatrix::add_matrix() members do this for us.
+                  // The SparseMatrix::add_matrix() members do this for us.
                   ellipticdg_system.matrix->add_matrix(Kne, neighbor_dof_indices, dof_indices);
                   ellipticdg_system.matrix->add_matrix(Ken, dof_indices, neighbor_dof_indices);
                   ellipticdg_system.matrix->add_matrix(Kee, dof_indices);
@@ -486,8 +486,8 @@ void assemble_ellipticdg(EquationSystems & es,
         }
       // The element interior matrix and right-hand-side are now built
       // for this element.  Add them to the global matrix and
-      // right-hand-side vector.  The \p SparseMatrix::add_matrix()
-      // and \p NumericVector::add_vector() members do this for us.
+      // right-hand-side vector.  The SparseMatrix::add_matrix()
+      // and NumericVector::add_vector() members do this for us.
       ellipticdg_system.matrix->add_matrix(Ke, dof_indices);
       ellipticdg_system.rhs->add_vector(Fe, dof_indices);
     }

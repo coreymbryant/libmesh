@@ -417,18 +417,9 @@ void FESubdivision::init_shape_functions(const std::vector<Point> & qp,
   libmesh_assert_equal_to(elem->type(), TRI3SUBDIVISION);
   const Tri3Subdivision * sd_elem = static_cast<const Tri3Subdivision *>(elem);
 
-  START_LOG("init_shape_functions()", "FESubdivision");
+  LOG_SCOPE("init_shape_functions()", "FESubdivision");
 
   calculations_started = true;
-
-  // If the user forgot to request anything, we'll be safe and calculate everything:
-#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
-  if (!calculate_phi && !calculate_dphi && !calculate_d2phi)
-    calculate_phi = calculate_dphi = calculate_d2phi = true;
-#else
-  if (!calculate_phi && !calculate_dphi)
-    calculate_phi = calculate_dphi = true;
-#endif
 
   const unsigned int valence = sd_elem->get_ordered_valence(0);
   const unsigned int n_qp = cast_int<unsigned int>(qp.size());
@@ -659,8 +650,6 @@ void FESubdivision::init_shape_functions(const std::vector<Point> & qp,
   this->_fe_map->get_d2phideta2_map()   = d2phideta2;
   this->_fe_map->get_d2phidxideta_map() = d2phidxideta;
 #endif
-
-  STOP_LOG("init_shape_functions()", "FESubdivision");
 }
 
 
@@ -687,7 +676,7 @@ void FESubdivision::reinit(const Elem * elem,
   const Tri3Subdivision * sd_elem = static_cast<const Tri3Subdivision *>(elem);
 #endif
 
-  START_LOG("reinit()", "FESubdivision");
+  LOG_SCOPE("reinit()", "FESubdivision");
 
   libmesh_assert(!sd_elem->is_ghost());
   libmesh_assert(sd_elem->is_subdivision_updated());
@@ -695,6 +684,9 @@ void FESubdivision::reinit(const Elem * elem,
   // check if vertices 1 and 2 are regular
   libmesh_assert_equal_to(sd_elem->get_ordered_valence(1), 6);
   libmesh_assert_equal_to(sd_elem->get_ordered_valence(2), 6);
+
+  // We're calculating now!  Time to determine what.
+  this->determine_calculations();
 
   // no custom quadrature support
   libmesh_assert(pts == libmesh_nullptr);
@@ -709,8 +701,6 @@ void FESubdivision::reinit(const Elem * elem,
 
   // Compute the map for this element.
   this->_fe_map->compute_map (this->dim, this->qrule->get_weights(), elem, this->calculate_d2phi);
-
-  STOP_LOG("reinit()", "FESubdivision");
 }
 
 

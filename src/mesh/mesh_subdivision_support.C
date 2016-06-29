@@ -28,7 +28,8 @@ namespace libMesh
 {
 
 
-void MeshTools::Subdivision::find_one_ring(const Tri3Subdivision * elem, std::vector<Node *> & nodes)
+void MeshTools::Subdivision::find_one_ring(const Tri3Subdivision * elem,
+                                           std::vector<const Node *> & nodes)
 {
   libmesh_assert(elem->is_subdivision_updated());
   libmesh_assert(elem->get_ordered_node(0));
@@ -43,7 +44,7 @@ void MeshTools::Subdivision::find_one_ring(const Tri3Subdivision * elem, std::ve
 
   const unsigned int nn0 = elem->local_node_number(nodes[0]->id());
 
-  Tri3Subdivision * nb = dynamic_cast<Tri3Subdivision *>(elem->neighbor(nn0));
+  const Tri3Subdivision * nb = dynamic_cast<const Tri3Subdivision *>(elem->neighbor_ptr(nn0));
   libmesh_assert(nb);
 
   unsigned int j, i = 1;
@@ -52,35 +53,35 @@ void MeshTools::Subdivision::find_one_ring(const Tri3Subdivision * elem, std::ve
     {
       ++i;
       j = nb->local_node_number(nodes[0]->id());
-      nodes[i] = nb->get_node(next[j]);
-      nb = static_cast<Tri3Subdivision *>(nb->neighbor(j));
+      nodes[i] = nb->node_ptr(next[j]);
+      nb = static_cast<const Tri3Subdivision *>(nb->neighbor_ptr(j));
     } while (nb != elem);
 
   /* for nodes connected with N (= valence[0]) */
-  nb = static_cast<Tri3Subdivision *>(elem->neighbor(next[nn0]));
+  nb = static_cast<const Tri3Subdivision *>(elem->neighbor_ptr(next[nn0]));
   j = nb->local_node_number(nodes[1]->id());
-  nodes[valence+1] = nb->get_node(next[j]);
+  nodes[valence+1] = nb->node_ptr(next[j]);
 
-  nb = static_cast<Tri3Subdivision *>(nb->neighbor(next[j]));
+  nb = static_cast<const Tri3Subdivision *>(nb->neighbor_ptr(next[j]));
   j = nb->local_node_number(nodes[valence+1]->id());
-  nodes[valence+4] = nb->get_node(next[j]);
+  nodes[valence+4] = nb->node_ptr(next[j]);
 
-  nb = static_cast<Tri3Subdivision *>(nb->neighbor(next[j]));
+  nb = static_cast<const Tri3Subdivision *>(nb->neighbor_ptr(next[j]));
   j = nb->local_node_number(nodes[valence+4]->id());
-  nodes[valence+5] = nb->get_node(next[j]);
+  nodes[valence+5] = nb->node_ptr(next[j]);
 
   /* for nodes connected with 1 */
-  nb = static_cast<Tri3Subdivision *>(elem->neighbor(next[nn0]));
+  nb = static_cast<const Tri3Subdivision *>(elem->neighbor_ptr(next[nn0]));
   j = nb->local_node_number(nodes[1]->id());
   // nodes[valence+1] has been determined already
 
-  nb = static_cast<Tri3Subdivision *>(nb->neighbor(j));
+  nb = static_cast<const Tri3Subdivision *>(nb->neighbor_ptr(j));
   j = nb->local_node_number(nodes[1]->id());
-  nodes[valence+2] = nb->get_node(next[j]);
+  nodes[valence+2] = nb->node_ptr(next[j]);
 
-  nb = static_cast<Tri3Subdivision *>(nb->neighbor(j));
+  nb = static_cast<const Tri3Subdivision *>(nb->neighbor_ptr(j));
   j = nb->local_node_number(nodes[1]->id());
-  nodes[valence+3] = nb->get_node(next[j]);
+  nodes[valence+3] = nb->node_ptr(next[j]);
 
   return;
 }
@@ -107,9 +108,9 @@ void MeshTools::Subdivision::all_subdivision(MeshBase & mesh)
       Elem * tri = new Tri3Subdivision;
       tri->set_id(elem->id());
       tri->subdomain_id() = elem->subdomain_id();
-      tri->set_node(0) = (*el)->get_node(0);
-      tri->set_node(1) = (*el)->get_node(1);
-      tri->set_node(2) = (*el)->get_node(2);
+      tri->set_node(0) = (*el)->node_ptr(0);
+      tri->set_node(1) = (*el)->node_ptr(1);
+      tri->set_node(2) = (*el)->node_ptr(2);
 
       if (mesh_has_boundary_data)
         {
@@ -217,18 +218,18 @@ void MeshTools::Subdivision::tag_boundary_ghosts(MeshBase & mesh)
       Tri3Subdivision * sd_elem = static_cast<Tri3Subdivision *>(elem);
       for (unsigned int i = 0; i < elem->n_sides(); ++i)
         {
-          if (elem->neighbor(i) == libmesh_nullptr)
+          if (elem->neighbor_ptr(i) == libmesh_nullptr)
             {
               sd_elem->set_ghost(true);
               // set all other neighbors to ghosts as well
-              if (elem->neighbor(next[i]))
+              if (elem->neighbor_ptr(next[i]))
                 {
-                  Tri3Subdivision * nb = static_cast<Tri3Subdivision *>(elem->neighbor(next[i]));
+                  Tri3Subdivision * nb = static_cast<Tri3Subdivision *>(elem->neighbor_ptr(next[i]));
                   nb->set_ghost(true);
                 }
-              if (elem->neighbor(prev[i]))
+              if (elem->neighbor_ptr(prev[i]))
                 {
-                  Tri3Subdivision * nb = static_cast<Tri3Subdivision *>(elem->neighbor(prev[i]));
+                  Tri3Subdivision * nb = static_cast<Tri3Subdivision *>(elem->neighbor_ptr(prev[i]));
                   nb->set_ghost(true);
                 }
             }
@@ -247,7 +248,7 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
   const unsigned int n_elem = mesh.n_elem();
   for (unsigned int eid = 0; eid < n_elem; ++eid)
     {
-      Elem * elem = mesh.elem(eid);
+      Elem * elem = mesh.elem_ptr(eid);
       libmesh_assert_equal_to(elem->type(), TRI3SUBDIVISION);
 
       // If the triangle happens to be in a corner (two boundary
@@ -258,10 +259,10 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
       // loop is of valence=6.
       for (unsigned int i = 0; i < elem->n_sides(); ++i)
         {
-          libmesh_assert_not_equal_to(elem->neighbor(i), elem);
+          libmesh_assert_not_equal_to(elem->neighbor_ptr(i), elem);
 
-          if (elem->neighbor(i) == libmesh_nullptr &&
-              elem->neighbor(next[i]) == libmesh_nullptr)
+          if (elem->neighbor_ptr(i) == libmesh_nullptr &&
+              elem->neighbor_ptr(next[i]) == libmesh_nullptr)
             {
               Elem * nelem = elem;
               unsigned int k = i;
@@ -279,7 +280,7 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
                   Node * node = libmesh_nullptr;
                   for (unsigned int j = 0; j < ghost_nodes.size(); ++j)
                     {
-                      if ((*ghost_nodes[j] - point).size() < tol * (elem->point(k) - point).size())
+                      if ((*ghost_nodes[j] - point).norm() < tol * (elem->point(k) - point).norm())
                         {
                           node = ghost_nodes[j];
                           break;
@@ -299,8 +300,8 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
                   if (l == 0)
                     ghost_elems.push_back(newelem);
 
-                  newelem->set_node(0) = nelem->get_node(next[k]);
-                  newelem->set_node(1) = nelem->get_node(k);
+                  newelem->set_node(0) = nelem->node_ptr(next[k]);
+                  newelem->set_node(1) = nelem->node_ptr(k);
                   newelem->set_node(2) = node;
                   newelem->set_neighbor(0, nelem);
                   newelem->set_ghost(true);
@@ -309,9 +310,9 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
                   nelem->set_neighbor(k, newelem);
 
                   mesh.add_elem(newelem);
-                  mesh.get_boundary_info().add_node(nelem->get_node(k), 1);
-                  mesh.get_boundary_info().add_node(nelem->get_node(next[k]), 1);
-                  mesh.get_boundary_info().add_node(nelem->get_node(prev[k]), 1);
+                  mesh.get_boundary_info().add_node(nelem->node_ptr(k), 1);
+                  mesh.get_boundary_info().add_node(nelem->node_ptr(next[k]), 1);
+                  mesh.get_boundary_info().add_node(nelem->node_ptr(prev[k]), 1);
                   mesh.get_boundary_info().add_node(node, 1);
 
                   nelem = newelem;
@@ -320,9 +321,9 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
 
               Tri3Subdivision * newelem = new Tri3Subdivision();
 
-              newelem->set_node(0) = elem->get_node(next[i]);
-              newelem->set_node(1) = nelem->get_node(2);
-              newelem->set_node(2) = elem->get_node(prev[i]);
+              newelem->set_node(0) = elem->node_ptr(next[i]);
+              newelem->set_node(1) = nelem->node_ptr(2);
+              newelem->set_node(2) = elem->node_ptr(prev[i]);
               newelem->set_neighbor(0, nelem);
               nelem->set_neighbor(2, newelem);
               newelem->set_ghost(true);
@@ -337,8 +338,8 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
 
       for (unsigned int i = 0; i < elem->n_sides(); ++i)
         {
-          libmesh_assert_not_equal_to(elem->neighbor(i), elem);
-          if (elem->neighbor(i) == libmesh_nullptr)
+          libmesh_assert_not_equal_to(elem->neighbor_ptr(i), elem);
+          if (elem->neighbor_ptr(i) == libmesh_nullptr)
             {
               // this is the vertex to be mirrored
               Point point = elem->point(i) + elem->point(next[i]) - elem->point(prev[i]);
@@ -351,7 +352,7 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
               Node * node = libmesh_nullptr;
               for (unsigned int j = 0; j < ghost_nodes.size(); ++j)
                 {
-                  if ((*ghost_nodes[j] - point).size() < tol * (elem->point(i) - point).size())
+                  if ((*ghost_nodes[j] - point).norm() < tol * (elem->point(i) - point).norm())
                     {
                       node = ghost_nodes[j];
                       break;
@@ -368,17 +369,17 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
               Tri3Subdivision * newelem = new Tri3Subdivision();
               ghost_elems.push_back(newelem);
 
-              newelem->set_node(0) = elem->get_node(next[i]);
-              newelem->set_node(1) = elem->get_node(i);
+              newelem->set_node(0) = elem->node_ptr(next[i]);
+              newelem->set_node(1) = elem->node_ptr(i);
               newelem->set_node(2) = node;
               newelem->set_neighbor(0, elem);
               newelem->set_ghost(true);
               elem->set_neighbor(i, newelem);
 
               mesh.add_elem(newelem);
-              mesh.get_boundary_info().add_node(elem->get_node(i), 1);
-              mesh.get_boundary_info().add_node(elem->get_node(next[i]), 1);
-              mesh.get_boundary_info().add_node(elem->get_node(prev[i]), 1);
+              mesh.get_boundary_info().add_node(elem->node_ptr(i), 1);
+              mesh.get_boundary_info().add_node(elem->node_ptr(next[i]), 1);
+              mesh.get_boundary_info().add_node(elem->node_ptr(prev[i]), 1);
               mesh.get_boundary_info().add_node(node, 1);
             }
         }
@@ -395,19 +396,19 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
 
       for (unsigned int i = 0; i < elem->n_sides(); ++i)
         {
-          if (elem->neighbor(i) == libmesh_nullptr &&
-              elem->neighbor(prev[i]) != libmesh_nullptr)
+          if (elem->neighbor_ptr(i) == libmesh_nullptr &&
+              elem->neighbor_ptr(prev[i]) != libmesh_nullptr)
             {
               // go around counter-clockwise
-              Tri3Subdivision * nb1 = static_cast<Tri3Subdivision *>(elem->neighbor(prev[i]));
+              Tri3Subdivision * nb1 = static_cast<Tri3Subdivision *>(elem->neighbor_ptr(prev[i]));
               Tri3Subdivision * nb2 = nb1;
               unsigned int j = i;
               unsigned int n_nb = 0;
               while (nb1 != libmesh_nullptr && nb1->id() != elem->id())
                 {
-                  j = nb1->local_node_number(elem->node(i));
+                  j = nb1->local_node_number(elem->node_id(i));
                   nb2 = nb1;
-                  nb1 = static_cast<Tri3Subdivision *>(nb1->neighbor(prev[j]));
+                  nb1 = static_cast<Tri3Subdivision *>(nb1->neighbor_ptr(prev[j]));
                   libmesh_assert(nb1 == libmesh_nullptr || nb1->id() != nb2->id());
                   n_nb++;
                 }
@@ -417,7 +418,7 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
               // Above, we merged coinciding ghost vertices. Therefore, we need
               // to exclude the case where there is no ghost element to add between
               // these two (identical) ghost nodes.
-              if (elem->get_node(next[i])->id() == nb2->get_node(prev[j])->id())
+              if (elem->node_ptr(next[i])->id() == nb2->node_ptr(prev[j])->id())
                 break;
 
               // If the number of already present neighbors is less than 4, we add another extra element
@@ -435,7 +436,7 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
                   Node * node = libmesh_nullptr;
                   for (unsigned int k = 0; k < ghost_nodes.size(); ++k)
                     {
-                      if ((*ghost_nodes[k] - point).size() < tol * (nb2->point(j) - point).size())
+                      if ((*ghost_nodes[k] - point).norm() < tol * (nb2->point(j) - point).norm())
                         {
                           node = ghost_nodes[k];
                           break;
@@ -451,8 +452,8 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
 
                   Tri3Subdivision * newelem = new Tri3Subdivision();
 
-                  newelem->set_node(0) = nb2->get_node(j);
-                  newelem->set_node(1) = nb2->get_node(prev[j]);
+                  newelem->set_node(0) = nb2->node_ptr(j);
+                  newelem->set_node(1) = nb2->node_ptr(prev[j]);
                   newelem->set_node(2) = node;
                   newelem->set_neighbor(0, nb2);
                   newelem->set_neighbor(1, libmesh_nullptr);
@@ -460,18 +461,18 @@ void MeshTools::Subdivision::add_boundary_ghosts(MeshBase & mesh)
                   nb2->set_neighbor(prev[j], newelem);
 
                   mesh.add_elem(newelem);
-                  mesh.get_boundary_info().add_node(nb2->get_node(j), 1);
-                  mesh.get_boundary_info().add_node(nb2->get_node(prev[j]), 1);
+                  mesh.get_boundary_info().add_node(nb2->node_ptr(j), 1);
+                  mesh.get_boundary_info().add_node(nb2->node_ptr(prev[j]), 1);
                   mesh.get_boundary_info().add_node(node, 1);
 
                   nb2 = newelem;
-                  j = nb2->local_node_number(elem->node(i));
+                  j = nb2->local_node_number(elem->node_id(i));
                 }
 
               Tri3Subdivision * newelem = new Tri3Subdivision();
-              newelem->set_node(0) = elem->get_node(next[i]);
-              newelem->set_node(1) = elem->get_node(i);
-              newelem->set_node(2) = nb2->get_node(prev[j]);
+              newelem->set_node(0) = elem->node_ptr(next[i]);
+              newelem->set_node(1) = elem->node_ptr(i);
+              newelem->set_node(2) = nb2->node_ptr(prev[j]);
               newelem->set_neighbor(0, elem);
               newelem->set_neighbor(1, nb2);
               newelem->set_neighbor(2, libmesh_nullptr);

@@ -31,9 +31,17 @@ namespace libMesh
 
 // ------------------------------------------------------------
 // DivaIO class members
+DivaIO::DivaIO (const MeshBase & mesh_in) :
+  MeshOutput<MeshBase>  (mesh_in)
+{
+  libmesh_deprecated();
+}
+
+
+
 void DivaIO::write (const std::string & fname)
 {
-  // We may need to gather a ParallelMesh to output it, making that
+  // We may need to gather a DistributedMesh to output it, making that
   // const qualifier in our constructor a dirty lie
   MeshSerializer serialize(const_cast<MeshBase &>(this->mesh()), !_is_parallel_format);
 
@@ -146,80 +154,86 @@ void DivaIO::write_stream (std::ostream & out_file)
      * Write the triangles
      */
     for(unsigned int e=0; e<the_mesh.n_elem(); e++)
-      if (the_mesh.elem(e)->active())
-        for (unsigned int s=0; s<the_mesh.elem(e)->n_sides(); s++)
-          if (the_mesh.elem(e)->neighbor(s) == libmesh_nullptr)
-            {
-              const UniquePtr<Elem> side(the_mesh.elem(e)->build_side(s));
+      {
+        const Elem & elem = the_mesh.elem_ref(e);
+        if (elem.active())
+          for (unsigned int s=0; s<elem.n_sides(); s++)
+            if (elem.neighbor_ptr(s) == libmesh_nullptr)
+              {
+                const UniquePtr<const Elem> side(elem.build_side_ptr(s));
 
-              if (side->type() == TRI3)
-                {
-                  out_file << side->node(0)+1 << " "
-                           << side->node(1)+1 << " "
-                           << side->node(2)+1 << '\n';
-                }
-              else if (side->type() == TRI6)
-                {
-                  out_file << side->node(0)+1 << " "
-                           << side->node(3)+1 << " "
-                           << side->node(5)+1 << '\n'
+                if (side->type() == TRI3)
+                  {
+                    out_file << side->node_id(0)+1 << " "
+                             << side->node_id(1)+1 << " "
+                             << side->node_id(2)+1 << '\n';
+                  }
+                else if (side->type() == TRI6)
+                  {
+                    out_file << side->node_id(0)+1 << " "
+                             << side->node_id(3)+1 << " "
+                             << side->node_id(5)+1 << '\n'
 
-                           << side->node(3)+1 << " "
-                           << side->node(1)+1 << " "
-                           << side->node(4)+1 << '\n'
+                             << side->node_id(3)+1 << " "
+                             << side->node_id(1)+1 << " "
+                             << side->node_id(4)+1 << '\n'
 
-                           << side->node(5)+1 << " "
-                           << side->node(4)+1 << " "
-                           << side->node(2)+1 << '\n'
+                             << side->node_id(5)+1 << " "
+                             << side->node_id(4)+1 << " "
+                             << side->node_id(2)+1 << '\n'
 
-                           << side->node(3)+1 << " "
-                           << side->node(4)+1 << " "
-                           << side->node(5)+1 << '\n';
-                }
-            }
+                             << side->node_id(3)+1 << " "
+                             << side->node_id(4)+1 << " "
+                             << side->node_id(5)+1 << '\n';
+                  }
+              }
+      }
 
 
     /**
      * Write the quadrilaterals
      */
     for(unsigned int e=0; e<the_mesh.n_elem(); e++)
-      if (the_mesh.elem(e)->active())
-        for (unsigned int s=0; s<the_mesh.elem(e)->n_sides(); s++)
-          if (the_mesh.elem(e)->neighbor(s) == libmesh_nullptr)
-            {
-              const UniquePtr<Elem> side(the_mesh.elem(e)->build_side(s));
+      {
+        const Elem & elem = the_mesh.elem_ref(e);
+        if (elem.active())
+          for (unsigned int s=0; s<elem.n_sides(); s++)
+            if (elem.neighbor_ptr(s) == libmesh_nullptr)
+              {
+                const UniquePtr<const Elem> side(elem.build_side_ptr(s));
 
-              if ((side->type() == QUAD4) ||
-                  (side->type() == QUAD8)  )
-                {
-                  out_file << side->node(0)+1 << " "
-                           << side->node(1)+1 << " "
-                           << side->node(2)+1 << " "
-                           << side->node(3)+1 << '\n';
-                }
-              else if (side->type() == QUAD9)
-                {
-                  out_file << side->node(0)+1 << " "
-                           << side->node(4)+1 << " "
-                           << side->node(8)+1 << " "
-                           << side->node(7)+1 << '\n'
+                if ((side->type() == QUAD4) ||
+                    (side->type() == QUAD8)  )
+                  {
+                    out_file << side->node_id(0)+1 << " "
+                             << side->node_id(1)+1 << " "
+                             << side->node_id(2)+1 << " "
+                             << side->node_id(3)+1 << '\n';
+                  }
+                else if (side->type() == QUAD9)
+                  {
+                    out_file << side->node_id(0)+1 << " "
+                             << side->node_id(4)+1 << " "
+                             << side->node_id(8)+1 << " "
+                             << side->node_id(7)+1 << '\n'
 
-                           << side->node(4)+1 << " "
-                           << side->node(1)+1 << " "
-                           << side->node(5)+1 << " "
-                           << side->node(8)+1 << '\n'
+                             << side->node_id(4)+1 << " "
+                             << side->node_id(1)+1 << " "
+                             << side->node_id(5)+1 << " "
+                             << side->node_id(8)+1 << '\n'
 
-                           << side->node(7)+1 << " "
-                           << side->node(8)+1 << " "
-                           << side->node(6)+1 << " "
-                           << side->node(3)+1 << '\n'
+                             << side->node_id(7)+1 << " "
+                             << side->node_id(8)+1 << " "
+                             << side->node_id(6)+1 << " "
+                             << side->node_id(3)+1 << '\n'
 
-                           << side->node(8)+1 << " "
-                           << side->node(5)+1 << " "
-                           << side->node(2)+1 << " "
-                           << side->node(6)+1 << '\n';
-                }
-            }
+                             << side->node_id(8)+1 << " "
+                             << side->node_id(5)+1 << " "
+                             << side->node_id(2)+1 << " "
+                             << side->node_id(6)+1 << '\n';
+                  }
+              }
+      }
   }
 
 
@@ -232,36 +246,42 @@ void DivaIO::write_stream (std::ostream & out_file)
      * Write the triangles
      */
     for(unsigned int e=0; e<the_mesh.n_elem(); e++)
-      if (the_mesh.elem(e)->active())
-        for (unsigned short s=0; s<the_mesh.elem(e)->n_sides(); s++)
-          if (the_mesh.elem(e)->neighbor(s) == libmesh_nullptr)
-            {
-              const UniquePtr<Elem> side(the_mesh.elem(e)->build_side(s));
+      {
+        const Elem & elem = the_mesh.elem_ref(e);
+        if (elem.active())
+          for (unsigned short s=0; s<elem.n_sides(); s++)
+            if (elem.neighbor_ptr(s) == libmesh_nullptr)
+              {
+                const UniquePtr<const Elem> side(elem.build_side_ptr(s));
 
-              if ((side->type() == TRI3) ||
-                  (side->type() == TRI6)  )
+                if ((side->type() == TRI3) ||
+                    (side->type() == TRI6)  )
 
-                out_file << the_mesh.get_boundary_info().boundary_id(the_mesh.elem(e), s)
-                         << '\n';
-            }
+                  out_file << the_mesh.get_boundary_info().boundary_id(&elem, s)
+                           << '\n';
+              }
+      }
 
 
     /**
      * Write the quadrilaterals
      */
     for(unsigned int e=0; e<the_mesh.n_elem(); e++)
-      if (the_mesh.elem(e)->active())
-        for (unsigned short s=0; s<the_mesh.elem(e)->n_sides(); s++)
-          if (the_mesh.elem(e)->neighbor(s) == libmesh_nullptr)
-            {
-              const UniquePtr<Elem> side(the_mesh.elem(e)->build_side(s));
+      {
+        const Elem & elem = the_mesh.elem_ref(e);
+        if (elem.active())
+          for (unsigned short s=0; s<elem.n_sides(); s++)
+            if (elem.neighbor_ptr(s) == libmesh_nullptr)
+              {
+                const UniquePtr<const Elem> side(elem.build_side_ptr(s));
 
-              if ((side->type() == QUAD4) ||
-                  (side->type() == QUAD8) ||
-                  (side->type() == QUAD9))
+                if ((side->type() == QUAD4) ||
+                    (side->type() == QUAD8) ||
+                    (side->type() == QUAD9))
 
-                out_file << the_mesh.get_boundary_info().boundary_id(the_mesh.elem(e), s);
-            }
+                  out_file << the_mesh.get_boundary_info().boundary_id(&elem, s);
+              }
+      }
   }
 
 
@@ -270,73 +290,79 @@ void DivaIO::write_stream (std::ostream & out_file)
    * Write all the Tets
    */
   for (unsigned int e=0; e<the_mesh.n_elem(); e++)
-    if (the_mesh.elem(e)->active())
-      {
-        if (the_mesh.elem(e)->type() == TET4)
-          {
-            out_file << the_mesh.elem(e)->node(0)+1 << " "
-                     << the_mesh.elem(e)->node(1)+1 << " "
-                     << the_mesh.elem(e)->node(2)+1 << " "
-                     << the_mesh.elem(e)->node(3)+1 << '\n';
-          }
-        else if (the_mesh.elem(e)->type() == TET10)
-          {
-            out_file << the_mesh.elem(e)->node(0)+1 << " "
-                     << the_mesh.elem(e)->node(4)+1 << " "
-                     << the_mesh.elem(e)->node(6)+1 << " "
-                     << the_mesh.elem(e)->node(7)+1 << '\n';
+    {
+      const Elem & elem = the_mesh.elem_ref(e);
+      if (elem.active())
+        {
+          if (elem.type() == TET4)
+            {
+              out_file << elem.node_id(0)+1 << " "
+                       << elem.node_id(1)+1 << " "
+                       << elem.node_id(2)+1 << " "
+                       << elem.node_id(3)+1 << '\n';
+            }
+          else if (elem.type() == TET10)
+            {
+              out_file << elem.node_id(0)+1 << " "
+                       << elem.node_id(4)+1 << " "
+                       << elem.node_id(6)+1 << " "
+                       << elem.node_id(7)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(4)+1 << " "
-                     << the_mesh.elem(e)->node(1)+1 << " "
-                     << the_mesh.elem(e)->node(5)+1 << " "
-                     << the_mesh.elem(e)->node(8)+1 << '\n';
+              out_file << elem.node_id(4)+1 << " "
+                       << elem.node_id(1)+1 << " "
+                       << elem.node_id(5)+1 << " "
+                       << elem.node_id(8)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(6)+1 << " "
-                     << the_mesh.elem(e)->node(5)+1 << " "
-                     << the_mesh.elem(e)->node(2)+1 << " "
-                     << the_mesh.elem(e)->node(9)+1 << '\n';
+              out_file << elem.node_id(6)+1 << " "
+                       << elem.node_id(5)+1 << " "
+                       << elem.node_id(2)+1 << " "
+                       << elem.node_id(9)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(7)+1 << " "
-                     << the_mesh.elem(e)->node(8)+1 << " "
-                     << the_mesh.elem(e)->node(9)+1 << " "
-                     << the_mesh.elem(e)->node(3)+1 << '\n';
+              out_file << elem.node_id(7)+1 << " "
+                       << elem.node_id(8)+1 << " "
+                       << elem.node_id(9)+1 << " "
+                       << elem.node_id(3)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(4)+1 << " "
-                     << the_mesh.elem(e)->node(8)+1 << " "
-                     << the_mesh.elem(e)->node(6)+1 << " "
-                     << the_mesh.elem(e)->node(7)+1 << '\n';
+              out_file << elem.node_id(4)+1 << " "
+                       << elem.node_id(8)+1 << " "
+                       << elem.node_id(6)+1 << " "
+                       << elem.node_id(7)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(4)+1 << " "
-                     << the_mesh.elem(e)->node(5)+1 << " "
-                     << the_mesh.elem(e)->node(6)+1 << " "
-                     << the_mesh.elem(e)->node(8)+1 << '\n';
+              out_file << elem.node_id(4)+1 << " "
+                       << elem.node_id(5)+1 << " "
+                       << elem.node_id(6)+1 << " "
+                       << elem.node_id(8)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(6)+1 << " "
-                     << the_mesh.elem(e)->node(5)+1 << " "
-                     << the_mesh.elem(e)->node(9)+1 << " "
-                     << the_mesh.elem(e)->node(8)+1 << '\n';
+              out_file << elem.node_id(6)+1 << " "
+                       << elem.node_id(5)+1 << " "
+                       << elem.node_id(9)+1 << " "
+                       << elem.node_id(8)+1 << '\n';
 
-            out_file << the_mesh.elem(e)->node(6)+1 << " "
-                     << the_mesh.elem(e)->node(8)+1 << " "
-                     << the_mesh.elem(e)->node(9)+1 << " "
-                     << the_mesh.elem(e)->node(7)+1 << '\n';
-          }
-      }
+              out_file << elem.node_id(6)+1 << " "
+                       << elem.node_id(8)+1 << " "
+                       << elem.node_id(9)+1 << " "
+                       << elem.node_id(7)+1 << '\n';
+            }
+        }
+    }
 
 
   /**
    * Write all the Pyramids
    */
   for (unsigned int e=0; e<the_mesh.n_elem(); e++)
-    if (the_mesh.elem(e)->active())
-      if (the_mesh.elem(e)->type() == PYRAMID5)
-        {
-          out_file << the_mesh.elem(e)->node(0)+1 << " "
-                   << the_mesh.elem(e)->node(1)+1 << " "
-                   << the_mesh.elem(e)->node(2)+1 << " "
-                   << the_mesh.elem(e)->node(3)+1 << " "
-                   << the_mesh.elem(e)->node(4)+1 << '\n';
-        }
+    {
+      const Elem & elem = the_mesh.elem_ref(e);
+      if (elem.active())
+        if (elem.type() == PYRAMID5)
+          {
+            out_file << elem.node_id(0)+1 << " "
+                     << elem.node_id(1)+1 << " "
+                     << elem.node_id(2)+1 << " "
+                     << elem.node_id(3)+1 << " "
+                     << elem.node_id(4)+1 << '\n';
+          }
+    }
 
 
 
@@ -344,46 +370,52 @@ void DivaIO::write_stream (std::ostream & out_file)
    * Write all the Prisms
    */
   for (unsigned int e=0; e<the_mesh.n_elem(); e++)
-    if (the_mesh.elem(e)->active())
-      {
-        if (the_mesh.elem(e)->type() == PRISM6)
-          {
-            out_file << the_mesh.elem(e)->node(0)+1 << " "
-                     << the_mesh.elem(e)->node(1)+1 << " "
-                     << the_mesh.elem(e)->node(2)+1 << " "
-                     << the_mesh.elem(e)->node(3)+1 << " "
-                     << the_mesh.elem(e)->node(4)+1 << " "
-                     << the_mesh.elem(e)->node(5)+1 << '\n';
-          }
-        else if (the_mesh.elem(e)->type() == PRISM18)
-          libmesh_error_msg("PRISM18 element type not supported.");
-      }
+    {
+      const Elem & elem = the_mesh.elem_ref(e);
+      if (elem.active())
+        {
+          if (elem.type() == PRISM6)
+            {
+              out_file << elem.node_id(0)+1 << " "
+                       << elem.node_id(1)+1 << " "
+                       << elem.node_id(2)+1 << " "
+                       << elem.node_id(3)+1 << " "
+                       << elem.node_id(4)+1 << " "
+                       << elem.node_id(5)+1 << '\n';
+            }
+          else if (elem.type() == PRISM18)
+            libmesh_error_msg("PRISM18 element type not supported.");
+        }
+    }
 
 
   /**
    * Write all the Hexes
    */
   for (unsigned int e=0; e<the_mesh.n_elem(); e++)
-    if (the_mesh.elem(e)->active())
-      if ((the_mesh.elem(e)->type() == HEX8)   ||
-          (the_mesh.elem(e)->type() == HEX20) ||
-          (the_mesh.elem(e)->type() == HEX27)   )
-        {
-          std::vector<dof_id_type> conn;
-          for (unsigned int se=0; se<the_mesh.elem(e)->n_sub_elem(); se++)
-            {
-              the_mesh.elem(e)->connectivity(se, TECPLOT, conn);
+    {
+      const Elem & elem = the_mesh.elem_ref(e);
+      if (elem.active())
+        if ((elem.type() == HEX8)   ||
+            (elem.type() == HEX20) ||
+            (elem.type() == HEX27)   )
+          {
+            std::vector<dof_id_type> conn;
+            for (unsigned int se=0; se<elem.n_sub_elem(); se++)
+              {
+                elem.connectivity(se, TECPLOT, conn);
 
-              out_file << conn[0] << ' '
-                       << conn[1] << ' '
-                       << conn[2] << ' '
-                       << conn[3] << ' '
-                       << conn[4] << ' '
-                       << conn[5] << ' '
-                       << conn[6] << ' '
-                       << conn[7] << '\n';
-            }
-        }
+                out_file << conn[0] << ' '
+                         << conn[1] << ' '
+                         << conn[2] << ' '
+                         << conn[3] << ' '
+                         << conn[4] << ' '
+                         << conn[5] << ' '
+                         << conn[6] << ' '
+                         << conn[7] << '\n';
+              }
+          }
+    }
 }
 
 } // namespace libMesh

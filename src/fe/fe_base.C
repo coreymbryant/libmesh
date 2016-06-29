@@ -92,7 +92,7 @@ const Elem * primary_boundary_point_neighbor(const Elem * elem,
           if (!on_relevant_boundary)
             continue;
 
-          if (!pt_neighbor->build_side(ns)->contains_point(p))
+          if (!pt_neighbor->build_side_ptr(ns)->contains_point(p))
             continue;
 
           vertex_on_periodic_side = true;
@@ -156,7 +156,7 @@ const Elem * primary_boundary_edge_neighbor(const Elem * elem,
           if (!on_relevant_boundary)
             continue;
 
-          UniquePtr<Elem> periodic_side = e_neighbor->build_side(ns);
+          UniquePtr<const Elem> periodic_side = e_neighbor->build_side_ptr(ns);
           if (!(periodic_side->contains_point(p1) &&
                 periodic_side->contains_point(p2)))
             continue;
@@ -679,8 +679,8 @@ FEGenericBase<RealGradient>::build_InfFE (const unsigned int,
 
 
 template <typename OutputType>
-void FEGenericBase<OutputType> ::compute_shape_functions (const Elem * elem,
-                                                          const std::vector<Point> & qp)
+void FEGenericBase<OutputType>::compute_shape_functions (const Elem * elem,
+                                                         const std::vector<Point> & qp)
 {
   //-------------------------------------------------------------------------
   // Compute the shape function values (and derivatives)
@@ -688,36 +688,9 @@ void FEGenericBase<OutputType> ::compute_shape_functions (const Elem * elem,
   // have already been computed via init_shape_functions
 
   // Start logging the shape function computation
-  START_LOG("compute_shape_functions()", "FE");
+  LOG_SCOPE("compute_shape_functions()", "FE");
 
-  calculations_started = true;
-
-  // If the user forgot to request anything, we'll be safe and
-  // calculate everything:
-#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
-  if (!calculate_phi && !calculate_dphi && !calculate_d2phi && !calculate_curl_phi && !calculate_div_phi)
-    {
-      calculate_phi = calculate_dphi = calculate_d2phi = true;
-      // Only compute curl, div for vector-valued elements
-      if( TypesEqual<OutputType,RealGradient>::value )
-        {
-          calculate_curl_phi = true;
-          calculate_div_phi  = true;
-        }
-    }
-#else
-  if (!calculate_phi && !calculate_dphi && !calculate_curl_phi && !calculate_div_phi)
-    {
-      calculate_phi = calculate_dphi = true;
-      // Only compute curl for vector-valued elements
-      if( TypesEqual<OutputType,RealGradient>::value )
-        {
-          calculate_curl_phi = true;
-          calculate_div_phi  = true;
-        }
-    }
-#endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
-
+  this->determine_calculations();
 
   if( calculate_phi )
     this->_fe_trans->map_phi( this->dim, elem, qp, (*this), this->phi );
@@ -740,9 +713,6 @@ void FEGenericBase<OutputType> ::compute_shape_functions (const Elem * elem,
   // Only compute div for vector-valued elements
   if( calculate_div_phi && TypesEqual<OutputType,RealGradient>::value )
     this->_fe_trans->map_div( this->dim, elem, qp, (*this), this->div_phi );
-
-  // Stop logging the shape function computation
-  STOP_LOG("compute_shape_functions()", "FE");
 }
 
 
@@ -763,6 +733,51 @@ void FEGenericBase<OutputType>::print_dphi(std::ostream & os) const
   for (unsigned int i=0; i<dphi.size(); ++i)
     for (unsigned int j=0; j<dphi[i].size(); ++j)
       os << " dphi[" << i << "][" << j << "]=" << dphi[i][j];
+}
+
+
+
+template <typename OutputType>
+void FEGenericBase<OutputType>::determine_calculations()
+{
+  this->calculations_started = true;
+
+  // If the user forgot to request anything, we'll be safe and
+  // calculate everything:
+#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
+  if (!this->calculate_phi && !this->calculate_dphi && !this->calculate_d2phi
+      && !this->calculate_curl_phi && !this->calculate_div_phi)
+    {
+      this->calculate_phi = this->calculate_dphi = this->calculate_d2phi = this->calculate_dphiref = true;
+      if( FEInterface::field_type(fe_type.family) == TYPE_VECTOR )
+        {
+          this->calculate_curl_phi = true;
+          this->calculate_div_phi  = true;
+        }
+    }
+#else
+  if (!this->calculate_phi && !this->calculate_dphi && !this->calculate_curl_phi && !this->calculate_div_phi)
+    {
+      this->calculate_phi = this->calculate_dphi = this->calculate_dphiref = true;
+      if( FEInterface::field_type(fe_type.family) == TYPE_VECTOR )
+        {
+          this->calculate_curl_phi = true;
+          this->calculate_div_phi  = true;
+        }
+    }
+#endif // LIBMESH_ENABLE_SECOND_DERIVATIVES
+
+  // Request whichever terms are necessary from the FEMap
+  if( this->calculate_phi )
+    this->_fe_trans->init_map_phi(*this);
+
+  if( this->calculate_dphiref )
+    this->_fe_trans->init_map_dphi(*this);
+
+#ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
+  if( this->calculate_d2phi )
+    this->_fe_trans->init_map_d2phi(*this);
+#endif //LIBMESH_ENABLE_SECOND_DERIVATIVES
 }
 
 
@@ -906,11 +921,11 @@ FEGenericBase<OutputType>::coarsened_dof_values(const NumericVector<Number> & ol
         // where p refinement creates more vertex dofs; we have
         // no such elements yet.
         /*
-          if (elem->child(n)->p_level() < elem->p_level())
+          if (elem->child_ptr(n)->p_level() < elem->p_level())
           {
           temp_fe_type.order =
           static_cast<Order>(temp_fe_type.order +
-          elem->child(n)->p_level());
+          elem->child_ptr(n)->p_level());
           }
         */
         const unsigned int nc =
@@ -952,7 +967,7 @@ FEGenericBase<OutputType>::coarsened_dof_values(const NumericVector<Number> & ol
           {
             if (!elem->is_child_on_edge(c,e))
               continue;
-            Elem * child = elem->child(c);
+            const Elem * child = elem->child_ptr(c);
 
             std::vector<dof_id_type> child_dof_indices;
             if (use_old_dof_indices)
@@ -1095,7 +1110,7 @@ FEGenericBase<OutputType>::coarsened_dof_values(const NumericVector<Number> & ol
           {
             if (!elem->is_child_on_side(c,s))
               continue;
-            Elem * child = elem->child(c);
+            const Elem * child = elem->child_ptr(c);
 
             std::vector<dof_id_type> child_dof_indices;
             if (use_old_dof_indices)
@@ -1227,7 +1242,7 @@ FEGenericBase<OutputType>::coarsened_dof_values(const NumericVector<Number> & ol
   // Add projection terms from each child
   for (unsigned int c=0; c != elem->n_children(); ++c)
     {
-      Elem * child = elem->child(c);
+      const Elem * child = elem->child_ptr(c);
 
       std::vector<dof_id_type> child_dof_indices;
       if (use_old_dof_indices)
@@ -1434,10 +1449,10 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
   // Look at the element faces.  Check to see if we need to
   // build constraints.
   for (unsigned int s=0; s<elem->n_sides(); s++)
-    if (elem->neighbor(s) != libmesh_nullptr)
+    if (elem->neighbor_ptr(s) != libmesh_nullptr)
       {
         // Get pointers to the element's neighbor.
-        const Elem * neigh = elem->neighbor(s);
+        const Elem * neigh = elem->neighbor_ptr(s);
 
         // h refinement constraints:
         // constrain dofs shared between
@@ -1457,15 +1472,12 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
 
             // we may need to make the FE objects reinit with the
             // minimum shared p_level
-            // FIXME - I hate using const_cast<> and avoiding
-            // accessor functions; there's got to be a
-            // better way to do this!
             const unsigned int old_elem_level = elem->p_level();
-            if (old_elem_level != min_p_level)
-              (const_cast<Elem *>(elem))->hack_p_level(min_p_level);
+            if (elem->p_level() != min_p_level)
+              my_fe->set_fe_order(my_fe->get_fe_type().order.get_order() - old_elem_level + min_p_level);
             const unsigned int old_neigh_level = neigh->p_level();
             if (old_neigh_level != min_p_level)
-              (const_cast<Elem *>(neigh))->hack_p_level(min_p_level);
+              neigh_fe->set_fe_order(neigh_fe->get_fe_type().order.get_order() - old_neigh_level + min_p_level);
 
             my_fe->reinit(elem, s);
 
@@ -1479,9 +1491,11 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
             neigh_dof_indices.reserve (neigh->n_nodes());
 
             dof_map.dof_indices (elem, my_dof_indices,
-                                 variable_number);
+                                 variable_number,
+                                 min_p_level);
             dof_map.dof_indices (neigh, neigh_dof_indices,
-                                 variable_number);
+                                 variable_number,
+                                 min_p_level);
 
             const unsigned int n_qp = my_qface.n_points();
 
@@ -1492,15 +1506,14 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
 
             // We're only concerned with DOFs whose values (and/or first
             // derivatives for C1 elements) are supported on side nodes
-            FEInterface::dofs_on_side(elem,  Dim, base_fe_type, s,       my_side_dofs);
-            FEInterface::dofs_on_side(neigh, Dim, base_fe_type, s_neigh, neigh_side_dofs);
-
-            // We're done with functions that examine Elem::p_level(),
-            // so let's unhack those levels
-            if (elem->p_level() != old_elem_level)
-              (const_cast<Elem *>(elem))->hack_p_level(old_elem_level);
-            if (neigh->p_level() != old_neigh_level)
-              (const_cast<Elem *>(neigh))->hack_p_level(old_neigh_level);
+            FEType elem_fe_type = base_fe_type;
+            if (old_elem_level != min_p_level)
+              elem_fe_type.order = base_fe_type.order.get_order() - old_elem_level + min_p_level;
+            FEType neigh_fe_type = base_fe_type;
+            if (old_neigh_level != min_p_level)
+              neigh_fe_type.order = base_fe_type.order.get_order() - old_neigh_level + min_p_level;
+            FEInterface::dofs_on_side(elem,  Dim, elem_fe_type,  s,       my_side_dofs);
+            FEInterface::dofs_on_side(neigh, Dim, neigh_fe_type, s_neigh, neigh_side_dofs);
 
             const unsigned int n_side_dofs =
               cast_int<unsigned int>(my_side_dofs.size());
@@ -1622,7 +1635,11 @@ FEGenericBase<OutputType>::compute_proj_constraints (DofConstraints & constraint
                                                           their_dof_value));
                   }
               }
+
+            my_fe->set_fe_order(my_fe->get_fe_type().order.get_order() + old_elem_level - min_p_level);
+            neigh_fe->set_fe_order(neigh_fe->get_fe_type().order.get_order() + old_neigh_level - min_p_level);
           }
+
         // p refinement constraints:
         // constrain dofs shared between
         // active elements and neighbors with
@@ -1729,7 +1746,7 @@ compute_periodic_constraints (DofConstraints & constraints,
   // build constraints.
   for (unsigned short int s=0; s<elem->n_sides(); s++)
     {
-      if (elem->neighbor(s))
+      if (elem->neighbor_ptr(s))
         continue;
 
       mesh.get_boundary_info().boundary_ids (elem, s, bc_ids);
@@ -1933,7 +1950,7 @@ compute_periodic_constraints (DofConstraints & constraints,
                       if (!elem->is_node_on_side(n,s))
                         continue;
 
-                      const Node * my_node = elem->get_node(n);
+                      const Node & my_node = elem->node_ref(n);
 
                       if (elem->is_vertex(n))
                         {
@@ -1965,7 +1982,7 @@ compute_periodic_constraints (DofConstraints & constraints,
                           // See if this vertex has point neighbors to
                           // defer to
                           if (primary_boundary_point_neighbor
-                              (elem, *my_node, mesh.get_boundary_info(), point_bcids)
+                              (elem, my_node, mesh.get_boundary_info(), point_bcids)
                               != elem)
                             continue;
 
@@ -1982,8 +1999,8 @@ compute_periodic_constraints (DofConstraints & constraints,
                           // What do we want to constrain against?
                           const Elem * primary_elem = libmesh_nullptr;
                           const Elem * main_neigh = libmesh_nullptr;
-                          Point main_pt = *my_node,
-                            primary_pt = *my_node;
+                          Point main_pt = my_node,
+                            primary_pt = my_node;
 
                           for (std::set<boundary_id_type>::const_iterator i =
                                  point_bcids.begin(); i != point_bcids.end(); ++i)
@@ -1994,13 +2011,13 @@ compute_periodic_constraints (DofConstraints & constraints,
                               const PeriodicBoundaryBase * new_periodic = boundaries.boundary(new_boundary_id);
 
                               const Point neigh_pt =
-                                new_periodic->get_corresponding_pos(*my_node);
+                                new_periodic->get_corresponding_pos(my_node);
 
                               // If the point is getting constrained
                               // to itself by this PBC then we don't
                               // generate any constraints
                               if (neigh_pt.absolute_fuzzy_equals
-                                  (*my_node, primary_hmin*TOLERANCE))
+                                  (my_node, primary_hmin*TOLERANCE))
                                 continue;
 
                               // Otherwise we'll have a constraint in
@@ -2059,7 +2076,7 @@ compute_periodic_constraints (DofConstraints & constraints,
                           libmesh_assert_less (e, elem->n_edges());
 
                           // Find the edge end nodes
-                          Node
+                          const Node
                             * e1 = libmesh_nullptr,
                             * e2 = libmesh_nullptr;
                           for (unsigned int nn = 0; nn != elem->n_nodes(); ++nn)
@@ -2071,11 +2088,11 @@ compute_periodic_constraints (DofConstraints & constraints,
                                 {
                                   if (e1 == libmesh_nullptr)
                                     {
-                                      e1 = elem->get_node(nn);
+                                      e1 = elem->node_ptr(nn);
                                     }
                                   else
                                     {
-                                      e2 = elem->get_node(nn);
+                                      e2 = elem->node_ptr(nn);
                                       break;
                                     }
                                 }
@@ -2222,8 +2239,8 @@ compute_periodic_constraints (DofConstraints & constraints,
                           if (neigh == elem)
                             {
                               const Point neigh_pt =
-                                periodic->get_corresponding_pos(*my_node);
-                              if (neigh_pt > *my_node)
+                                periodic->get_corresponding_pos(my_node);
+                              if (neigh_pt > my_node)
                                 continue;
                             }
 
@@ -2246,11 +2263,11 @@ compute_periodic_constraints (DofConstraints & constraints,
                       // should be constrained by this element's
                       // calculations.
                       const unsigned int n_comp =
-                        my_node->n_comp(sys_number, variable_number);
+                        my_node.n_comp(sys_number, variable_number);
 
                       for (unsigned int i=0; i != n_comp; ++i)
                         my_constrained_dofs.insert
-                          (my_node->dof_number
+                          (my_node.dof_number
                            (sys_number, variable_number, i));
                     }
 

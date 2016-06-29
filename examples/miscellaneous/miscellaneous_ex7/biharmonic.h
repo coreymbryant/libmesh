@@ -10,10 +10,14 @@
 // Just the bits we're using, since this is a header.
 using libMesh::EquationSystems;
 using libMesh::ExodusII_IO;
-using libMesh::MeshRefinement;
 using libMesh::Point;
 using libMesh::Real;
-using libMesh::UnstructuredMesh;
+using libMesh::ReplicatedMesh;
+using libMesh::UniquePtr;
+
+#ifdef LIBMESH_ENABLE_AMR
+using libMesh::MeshRefinement;
+#endif
 
 /**
  * The Biharmonic class encapsulates most of the data structures
@@ -54,21 +58,13 @@ public:
                        LOG_DOUBLE_OBSTACLE = 4};
 
   /**
-   * Static creation/destruction routines.  FIXME - this looks like
-   * object-oriented C, can we get rid of it?
-   */
-  static void Create(Biharmonic ** b, const libMesh::Parallel::Communicator & comm);
-  static void Destroy(Biharmonic ** b);
-
-
-  /**
    * Constructor retrieves command-line options, setting  defaults, if necessary.
    * It then builds the mesh using these options, then the equations systems around it,
    * and, finally, sets up the output.
    * We recommend that this be used through the factory Create function, which allocates
    * the mesh. In that case don't forget to call Destroy at the end, to free the mesh up.
    */
-  Biharmonic(UnstructuredMesh * m);
+  Biharmonic(ReplicatedMesh & mesh);
 
 
   /**
@@ -108,21 +104,17 @@ private:
   Real _cnWeight;
   //
   std::string  _ofile_base, _ofile;
-  ExodusII_IO * _exio;
+  UniquePtr<ExodusII_IO> _exio;
   Real    _o_dt;
   int     _o_count;
   //
   friend class JR;
   class JR;       // forward
-  UnstructuredMesh * _mesh;
-  MeshRefinement * _meshRefinement;
+  ReplicatedMesh & _mesh;
+// #ifdef LIBMESH_ENABLE_AMR
+//   MeshRefinement * _meshRefinement;
+// #endif
   JR * _jr;
 };
-
-
-
-
-
-
 
 #endif // BIHARMONIC_H

@@ -64,6 +64,7 @@
 // Necessary for programmatically setting petsc options
 #ifdef LIBMESH_HAVE_PETSC
 #include <petsc.h>
+#include "libmesh/petsc_macro.h"
 #endif
 
 // Bring in everything from the libMesh namespace
@@ -198,7 +199,11 @@ int main (int argc, char ** argv)
     {
 #ifdef LIBMESH_HAVE_PETSC
       //Use the jacobian for preconditioning.
+#  if PETSC_VERSION_LESS_THAN(3,7,0)
       PetscOptionsSetValue("-snes_mf_operator", PETSC_NULL);
+#  else
+      PetscOptionsSetValue(PETSC_NULL, "-snes_mf_operator", PETSC_NULL);
+#  endif
 #else
       libMesh::err << "Must be using PETSc to use jacobian based preconditioning" << std::endl;
 
@@ -302,9 +307,9 @@ void LaplaceYoung::residual (const NumericVector<Number> & soln,
   NonlinearImplicitSystem & system =
     es.get_system<NonlinearImplicitSystem>("Laplace-Young");
 
-  // A reference to the \p DofMap object for this system.  The \p DofMap
+  // A reference to the DofMap object for this system.  The DofMap
   // object handles the index translation from node and element numbers
-  // to degree of freedom numbers.  We will talk more about the \p DofMap
+  // to degree of freedom numbers.  We will talk more about the DofMap
   // in future examples.
   const DofMap & dof_map = system.get_dof_map();
 
@@ -313,8 +318,8 @@ void LaplaceYoung::residual (const NumericVector<Number> & soln,
   FEType fe_type = dof_map.variable_type(0);
 
   // Build a Finite Element object of the specified type.  Since the
-  // \p FEBase::build() member dynamically creates memory we will
-  // store the object as an \p UniquePtr<FEBase>.  This can be thought
+  // FEBase::build() member dynamically creates memory we will
+  // store the object as a UniquePtr<FEBase>.  This can be thought
   // of as a pointer that will clean up after itself.
   UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
 
@@ -427,7 +432,7 @@ void LaplaceYoung::residual (const NumericVector<Number> & soln,
       // If the element has no neighbor on a side then that
       // side MUST live on a boundary of the domain.
       for (unsigned int side=0; side<elem->n_sides(); side++)
-        if (elem->neighbor(side) == libmesh_nullptr)
+        if (elem->neighbor_ptr(side) == libmesh_nullptr)
           {
             // The value of the shape functions at the quadrature
             // points.
@@ -477,9 +482,9 @@ void LaplaceYoung::jacobian (const NumericVector<Number> & soln,
   NonlinearImplicitSystem & system =
     es.get_system<NonlinearImplicitSystem>("Laplace-Young");
 
-  // A reference to the \p DofMap object for this system.  The \p DofMap
+  // A reference to the DofMap object for this system.  The DofMap
   // object handles the index translation from node and element numbers
-  // to degree of freedom numbers.  We will talk more about the \p DofMap
+  // to degree of freedom numbers.  We will talk more about the DofMap
   // in future examples.
   const DofMap & dof_map = system.get_dof_map();
 
@@ -488,8 +493,8 @@ void LaplaceYoung::jacobian (const NumericVector<Number> & soln,
   FEType fe_type = dof_map.variable_type(0);
 
   // Build a Finite Element object of the specified type.  Since the
-  // \p FEBase::build() member dynamically creates memory we will
-  // store the object as an \p UniquePtr<FEBase>.  This can be thought
+  // FEBase::build() member dynamically creates memory we will
+  // store the object as a UniquePtr<FEBase>.  This can be thought
   // of as a pointer that will clean up after itself.
   UniquePtr<FEBase> fe (FEBase::build(dim, fe_type));
 

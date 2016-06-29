@@ -111,11 +111,13 @@ void init_elem_type_to_enum ()
 
       elem_type_to_enum["TRI"            ]=TRI3;
       elem_type_to_enum["TRI3"           ]=TRI3;
+      elem_type_to_enum["TRISHELL3"      ]=TRISHELL3;
       elem_type_to_enum["TRI3SUBDIVISION"]=TRI3SUBDIVISION;
       elem_type_to_enum["TRI6"           ]=TRI6;
 
       elem_type_to_enum["QUAD"           ]=QUAD4;
       elem_type_to_enum["QUAD4"          ]=QUAD4;
+      elem_type_to_enum["QUADSHELL4"     ]=QUADSHELL4;
       elem_type_to_enum["QUAD8"          ]=QUAD8;
       elem_type_to_enum["QUAD9"          ]=QUAD9;
 
@@ -585,6 +587,7 @@ void init_linear_convergence_reason_to_enum ()
       linear_convergence_reason_to_enum["DIVERGED_INDEFINITE_PC"]    = DIVERGED_INDEFINITE_PC;
       linear_convergence_reason_to_enum["DIVERGED_NAN"]              = DIVERGED_NAN;
       linear_convergence_reason_to_enum["DIVERGED_INDEFINITE_MAT"]   = DIVERGED_INDEFINITE_MAT;
+      linear_convergence_reason_to_enum["DIVERGED_PCSETUP_FAILED"]   = DIVERGED_PCSETUP_FAILED;
       linear_convergence_reason_to_enum["CONVERGED_ITERATING"]       = CONVERGED_ITERATING;
       linear_convergence_reason_to_enum["UNKNOWN_FLAG"]              = UNKNOWN_FLAG;
     }

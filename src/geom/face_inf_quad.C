@@ -56,17 +56,17 @@ dof_id_type InfQuad::key (const unsigned int s) const
 
   // The order of the node ids does not matter, they are sorted by the
   // compute_key() function.
-  return this->compute_key(this->node(InfQuad4::side_nodes_map[s][0]),
-                           this->node(InfQuad4::side_nodes_map[s][1]));
+  return this->compute_key(this->node_id(InfQuad4::side_nodes_map[s][0]),
+                           this->node_id(InfQuad4::side_nodes_map[s][1]));
 }
 
 
 
-UniquePtr<Elem> InfQuad::side (const unsigned int i) const
+UniquePtr<Elem> InfQuad::side_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_sides());
 
-  // To be returned wrapped in an UniquePtr
+  // To be returned wrapped in a UniquePtr
   Elem * edge = libmesh_nullptr;
 
   switch (i)
@@ -90,7 +90,7 @@ UniquePtr<Elem> InfQuad::side (const unsigned int i) const
 
   // Set the nodes
   for (unsigned n=0; n<edge->n_nodes(); ++n)
-    edge->set_node(n) = this->get_node(InfQuad4::side_nodes_map[i][n]);
+    edge->set_node(n) = this->node_ptr(InfQuad4::side_nodes_map[i][n]);
 
   return UniquePtr<Elem>(edge);
 }

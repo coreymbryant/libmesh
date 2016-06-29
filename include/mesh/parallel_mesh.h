@@ -37,13 +37,12 @@ class Node;
 
 
 /**
- * The \p ParallelMesh class is derived from the \p MeshBase class,
+ * The \p DistributedMesh class is derived from the \p MeshBase class,
  * and is intended to provide identical functionality to the user
- * but be fully parallelized in memory.
- * By "is intended" I mean that it doesn't work that way yet.  Don't
- * use this class unless you're developing or debugging it.
+ * but be distributed rather than replicated across distributed-memory
+ * systems.
  */
-class ParallelMesh : public UnstructuredMesh
+class DistributedMesh : public UnstructuredMesh
 {
 public:
 
@@ -53,8 +52,8 @@ public:
    * changed by mesh generation/loading) later.
    */
   explicit
-  ParallelMesh (const Parallel::Communicator & comm_in,
-                unsigned char dim=1);
+  DistributedMesh (const Parallel::Communicator & comm_in,
+                   unsigned char dim=1);
 
 #ifndef LIBMESH_DISABLE_COMMWORLD
   /**
@@ -63,32 +62,32 @@ public:
    * changed by mesh generation/loading) later.
    */
   explicit
-  ParallelMesh (unsigned char dim=1);
+  DistributedMesh (unsigned char dim=1);
 #endif
 
 
   /**
    * Copy-constructor.  This should be able to take a
-   * serial or parallel mesh.
+   * replicated or distributed mesh.
    */
-  ParallelMesh (const UnstructuredMesh & other_mesh);
+  DistributedMesh (const UnstructuredMesh & other_mesh);
 
   /**
    * Copy-constructor, possibly specialized for a
-   * parallel mesh.
+   * distributed mesh.
    */
-  ParallelMesh (const ParallelMesh & other_mesh);
+  DistributedMesh (const DistributedMesh & other_mesh);
 
   /**
    * Virtual copy-constructor, creates a copy of this mesh
    */
   virtual UniquePtr<MeshBase> clone () const libmesh_override
-  { return UniquePtr<MeshBase>(new ParallelMesh(*this)); }
+  { return UniquePtr<MeshBase>(new DistributedMesh(*this)); }
 
   /**
    * Destructor.
    */
-  virtual ~ParallelMesh();
+  virtual ~DistributedMesh();
 
   /**
    * Clear all internal data.
@@ -116,8 +115,8 @@ public:
   { return _is_serial; }
 
   /**
-   * Verify id and processor_id consistency of a parallel
-   * objects container.
+   * Verify id, processor_id, and if applicable unique_id consistency
+   * of a parallel objects container.
    * Calls libmesh_assert() on each possible failure in that container.
    */
   template <typename T>
@@ -129,6 +128,12 @@ public:
    * Calls libmesh_assert() on each possible failure.
    */
   virtual void libmesh_assert_valid_parallel_ids() const libmesh_override;
+
+  /**
+   * Verify p_level consistency of our elements containers.
+   * Calls libmesh_assert() on each possible failure.
+   */
+  void libmesh_assert_valid_parallel_p_levels() const;
 
   /**
    * Verify refinement_flag and p_refinement_flag consistency of our
@@ -199,20 +204,17 @@ public:
 
   virtual const Point & point (const dof_id_type i) const libmesh_override;
 
-  virtual const Node &  node  (const dof_id_type i) const libmesh_override;
-  virtual Node & node (const dof_id_type i) libmesh_override;
-
   virtual const Node * node_ptr (const dof_id_type i) const libmesh_override;
   virtual Node * node_ptr (const dof_id_type i) libmesh_override;
 
   virtual const Node * query_node_ptr (const dof_id_type i) const libmesh_override;
   virtual Node * query_node_ptr (const dof_id_type i) libmesh_override;
 
-  virtual const Elem * elem (const dof_id_type i) const libmesh_override;
-  virtual Elem * elem (const dof_id_type i) libmesh_override;
+  virtual const Elem * elem_ptr (const dof_id_type i) const libmesh_override;
+  virtual Elem * elem_ptr (const dof_id_type i) libmesh_override;
 
-  virtual const Elem * query_elem (const dof_id_type i) const libmesh_override;
-  virtual Elem * query_elem (const dof_id_type i) libmesh_override;
+  virtual const Elem * query_elem_ptr (const dof_id_type i) const libmesh_override;
+  virtual Elem * query_elem_ptr (const dof_id_type i) libmesh_override;
 
   /**
    * functions for adding /deleting nodes elements.
@@ -238,7 +240,7 @@ public:
    * There is no reason for a user to ever call this function.
    *
    * This function restores a previously broken element/node numbering such that
-   * \p mesh.node(n)->id() == n.
+   * \p mesh.node_ref(n).id() == n.
    */
   virtual void fix_broken_node_and_element_numbering () libmesh_override;
 
@@ -290,6 +292,11 @@ public:
   virtual element_iterator semilocal_elements_end () libmesh_override;
   virtual const_element_iterator semilocal_elements_begin () const libmesh_override;
   virtual const_element_iterator semilocal_elements_end () const libmesh_override;
+
+  virtual element_iterator active_semilocal_elements_begin () libmesh_override;
+  virtual element_iterator active_semilocal_elements_end () libmesh_override;
+  virtual const_element_iterator active_semilocal_elements_begin () const libmesh_override;
+  virtual const_element_iterator active_semilocal_elements_end () const libmesh_override;
 
   virtual element_iterator facelocal_elements_begin () libmesh_override;
   virtual element_iterator facelocal_elements_end () libmesh_override;
@@ -465,6 +472,35 @@ private:
   typedef mapvector<Node *, dof_id_type>::const_veclike_iterator const_node_iterator_imp;
 };
 
+
+
+
+// For backwards compatibility with our original name, users can still
+// refer to a DistributedMesh as a ParallelMesh.
+//
+// This has to be a class rather than a typedef so that forward
+// declarations still work.
+class ParallelMesh : public DistributedMesh
+{
+public:
+  explicit
+  ParallelMesh (const Parallel::Communicator & comm_in,
+                unsigned char dim=1)
+    : DistributedMesh(comm_in,dim) {}
+
+#ifndef LIBMESH_DISABLE_COMMWORLD
+  explicit
+  ParallelMesh (unsigned char dim=1)
+    : DistributedMesh(dim) {}
+#endif
+
+  ParallelMesh (const UnstructuredMesh & other_mesh) : DistributedMesh(other_mesh) {}
+
+  virtual UniquePtr<MeshBase> clone () const libmesh_override
+  { return UniquePtr<MeshBase>(new ParallelMesh(*this)); }
+
+  ~ParallelMesh() {}
+};
 
 } // namespace libMesh
 

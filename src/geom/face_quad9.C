@@ -174,22 +174,22 @@ dof_id_type Quad9::key (const unsigned int s) const
     case 0:
 
       return
-        this->compute_key (this->node(4));
+        this->compute_key (this->node_id(4));
 
     case 1:
 
       return
-        this->compute_key (this->node(5));
+        this->compute_key (this->node_id(5));
 
     case 2:
 
       return
-        this->compute_key (this->node(6));
+        this->compute_key (this->node_id(6));
 
     case 3:
 
       return
-        this->compute_key (this->node(7));
+        this->compute_key (this->node_id(7));
 
     default:
       libmesh_error_msg("Invalid side s = " << s);
@@ -203,13 +203,13 @@ dof_id_type Quad9::key (const unsigned int s) const
 
 dof_id_type Quad9::key () const
 {
-  return this->compute_key(this->node(8));
+  return this->compute_key(this->node_id(8));
 }
 
 
 
-UniquePtr<Elem> Quad9::build_side (const unsigned int i,
-                                   bool proxy) const
+UniquePtr<Elem> Quad9::build_side_ptr (const unsigned int i,
+                                       bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -223,7 +223,7 @@ UniquePtr<Elem> Quad9::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<edge->n_nodes(); ++n)
-        edge->set_node(n) = this->get_node(Quad9::side_nodes_map[i][n]);
+        edge->set_node(n) = this->node_ptr(Quad9::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -255,34 +255,34 @@ void Quad9::connectivity(const unsigned int sf,
           {
           case 0:
             // linear sub-quad 0
-            conn[0] = this->node(0)+1;
-            conn[1] = this->node(4)+1;
-            conn[2] = this->node(8)+1;
-            conn[3] = this->node(7)+1;
+            conn[0] = this->node_id(0)+1;
+            conn[1] = this->node_id(4)+1;
+            conn[2] = this->node_id(8)+1;
+            conn[3] = this->node_id(7)+1;
             return;
 
           case 1:
             // linear sub-quad 1
-            conn[0] = this->node(4)+1;
-            conn[1] = this->node(1)+1;
-            conn[2] = this->node(5)+1;
-            conn[3] = this->node(8)+1;
+            conn[0] = this->node_id(4)+1;
+            conn[1] = this->node_id(1)+1;
+            conn[2] = this->node_id(5)+1;
+            conn[3] = this->node_id(8)+1;
             return;
 
           case 2:
             // linear sub-quad 2
-            conn[0] = this->node(7)+1;
-            conn[1] = this->node(8)+1;
-            conn[2] = this->node(6)+1;
-            conn[3] = this->node(3)+1;
+            conn[0] = this->node_id(7)+1;
+            conn[1] = this->node_id(8)+1;
+            conn[2] = this->node_id(6)+1;
+            conn[3] = this->node_id(3)+1;
             return;
 
           case 3:
             // linear sub-quad 3
-            conn[0] = this->node(8)+1;
-            conn[1] = this->node(5)+1;
-            conn[2] = this->node(2)+1;
-            conn[3] = this->node(6)+1;
+            conn[0] = this->node_id(8)+1;
+            conn[1] = this->node_id(5)+1;
+            conn[2] = this->node_id(2)+1;
+            conn[3] = this->node_id(6)+1;
             return;
 
           default:
@@ -293,15 +293,15 @@ void Quad9::connectivity(const unsigned int sf,
     case VTK:
       {
         conn.resize(9);
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
-        conn[4] = this->node(4);
-        conn[5] = this->node(5);
-        conn[6] = this->node(6);
-        conn[7] = this->node(7);
-        conn[8] = this->node(8);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
+        conn[4] = this->node_id(4);
+        conn[5] = this->node_id(5);
+        conn[6] = this->node_id(6);
+        conn[7] = this->node_id(7);
+        conn[8] = this->node_id(8);
         return;
 
         /*
@@ -309,37 +309,37 @@ void Quad9::connectivity(const unsigned int sf,
           {
           case 0:
           // linear sub-quad 0
-          conn[0] = this->node(0);
-          conn[1] = this->node(4);
-          conn[2] = this->node(8);
-          conn[3] = this->node(7);
+          conn[0] = this->node_id(0);
+          conn[1] = this->node_id(4);
+          conn[2] = this->node_id(8);
+          conn[3] = this->node_id(7);
 
           return;
 
           case 1:
           // linear sub-quad 1
-          conn[0] = this->node(4);
-          conn[1] = this->node(1);
-          conn[2] = this->node(5);
-          conn[3] = this->node(8);
+          conn[0] = this->node_id(4);
+          conn[1] = this->node_id(1);
+          conn[2] = this->node_id(5);
+          conn[3] = this->node_id(8);
 
           return;
 
           case 2:
           // linear sub-quad 2
-          conn[0] = this->node(7);
-          conn[1] = this->node(8);
-          conn[2] = this->node(6);
-          conn[3] = this->node(3);
+          conn[0] = this->node_id(7);
+          conn[1] = this->node_id(8);
+          conn[2] = this->node_id(6);
+          conn[3] = this->node_id(3);
 
           return;
 
           case 3:
           // linear sub-quad 3
-          conn[0] = this->node(8);
-          conn[1] = this->node(5);
-          conn[2] = this->node(2);
-          conn[3] = this->node(6);
+          conn[0] = this->node_id(8);
+          conn[1] = this->node_id(5);
+          conn[2] = this->node_id(2);
+          conn[3] = this->node_id(6);
 
           return;
 
@@ -390,8 +390,9 @@ Real Quad9::volume () const
   Real vol=0.;
   for (unsigned int i=0; i<N; ++i)
     for (unsigned int j=0; j<N; ++j)
-      vol += (q[i]*q[j]*q[j]*a1 + q[j]*q[j]*b1 + q[j]*q[i]*c1 + q[i]*d1 + q[j]*e1 + f1).
-        cross(q[i]*q[i]*q[j]*a2 + q[i]*q[i]*b2 + q[j]*q[i]*c2 + q[i]*d2 + q[j]*e2 + f2).size() * w[i] * w[j];
+      vol += w[i] * w[j] *
+        cross_norm(q[i]*q[j]*q[j]*a1 + q[j]*q[j]*b1 + q[j]*q[i]*c1 + q[i]*d1 + q[j]*e1 + f1,
+                   q[i]*q[i]*q[j]*a2 + q[i]*q[i]*b2 + q[j]*q[i]*c2 + q[i]*d2 + q[j]*e2 + f2);
 
   return vol;
 }

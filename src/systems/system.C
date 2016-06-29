@@ -474,13 +474,10 @@ void System::restrict_solve_to (const SystemSubset * subset,
 void System::assemble ()
 {
   // Log how long the user's assembly code takes
-  START_LOG("assemble()", "System");
+  LOG_SCOPE("assemble()", "System");
 
   // Call the user-specified assembly function
   this->user_assembly();
-
-  // Stop logging the user code
-  STOP_LOG("assemble()", "System");
 }
 
 
@@ -488,13 +485,10 @@ void System::assemble ()
 void System::assemble_qoi (const QoISet & qoi_indices)
 {
   // Log how long the user's assembly code takes
-  START_LOG("assemble_qoi()", "System");
+  LOG_SCOPE("assemble_qoi()", "System");
 
   // Call the user-specified quantity of interest function
   this->user_QOI(qoi_indices);
-
-  // Stop logging the user code
-  STOP_LOG("assemble_qoi()", "System");
 }
 
 
@@ -504,14 +498,11 @@ void System::assemble_qoi_derivative(const QoISet & qoi_indices,
                                      bool apply_constraints)
 {
   // Log how long the user's assembly code takes
-  START_LOG("assemble_qoi_derivative()", "System");
+  LOG_SCOPE("assemble_qoi_derivative()", "System");
 
   // Call the user-specified quantity of interest function
   this->user_QOI_derivative(qoi_indices, include_liftfunc,
                             apply_constraints);
-
-  // Stop logging the user code
-  STOP_LOG("assemble_qoi_derivative()", "System");
 }
 
 
@@ -1428,14 +1419,13 @@ Real System::calculate_norm(const NumericVector<Number> & v,
   // This function must be run on all processors at once
   parallel_object_only();
 
-  START_LOG ("calculate_norm()", "System");
+  LOG_SCOPE ("calculate_norm()", "System");
 
   // Zero the norm before summation
   Real v_norm = 0.;
 
   if (norm.is_discrete())
     {
-      STOP_LOG ("calculate_norm()", "System");
       //Check to see if all weights are 1.0 and all types are equal
       FEMNormType norm_type0 = norm.type(0);
       unsigned int check_var = 0;
@@ -1522,19 +1512,13 @@ Real System::calculate_norm(const NumericVector<Number> & v,
       const std::set<unsigned char> & elem_dims = _mesh.elem_dimensions();
 
       // Prepare finite elements for each dimension present in the mesh
-      for( std::set<unsigned char>::const_iterator d_it = elem_dims.begin();
-           d_it != elem_dims.end(); ++d_it )
+      for (std::set<unsigned char>::const_iterator d_it = elem_dims.begin();
+           d_it != elem_dims.end(); ++d_it)
         {
-          if(skip_dimensions)
-          {
-            if(skip_dimensions->find(*d_it) != skip_dimensions->end())
-            {
-              continue;
-            }
-          }
+          if (skip_dimensions && skip_dimensions->find(*d_it) != skip_dimensions->end())
+            continue;
 
           q_rules[*d_it] =
-
             fe_type.default_quadrature_rule (*d_it).release();
 
           // Construct finite element object
@@ -1558,13 +1542,8 @@ Real System::calculate_norm(const NumericVector<Number> & v,
           const Elem * elem = *el;
           const unsigned int dim = elem->dim();
 
-          if(skip_dimensions)
-          {
-            if(skip_dimensions->find(dim) != skip_dimensions->end())
-            {
-              continue;
-            }
-          }
+          if (skip_dimensions && skip_dimensions->find(dim) != skip_dimensions->end())
+            continue;
 
           FEBase * fe = fe_ptrs[dim];
           QBase * qrule = q_rules[dim];
@@ -1642,7 +1621,7 @@ Real System::calculate_norm(const NumericVector<Number> & v,
                   for (unsigned int i=0; i != n_sf; ++i)
                     grad_u_h.add_scaled((*dphi)[i][qp], (*local_v)(dof_indices[i]));
                   v_norm += norm_weight_sq *
-                    JxW[qp] * grad_u_h.size_sq();
+                    JxW[qp] * grad_u_h.norm_sq();
                 }
 
               if (norm_type == W1_INF_SEMINORM)
@@ -1650,7 +1629,7 @@ Real System::calculate_norm(const NumericVector<Number> & v,
                   Gradient grad_u_h;
                   for (unsigned int i=0; i != n_sf; ++i)
                     grad_u_h.add_scaled((*dphi)[i][qp], (*local_v)(dof_indices[i]));
-                  v_norm = std::max(v_norm, norm_weight * grad_u_h.size());
+                  v_norm = std::max(v_norm, norm_weight * grad_u_h.norm());
                 }
 
 #ifdef LIBMESH_ENABLE_SECOND_DERIVATIVES
@@ -1661,7 +1640,7 @@ Real System::calculate_norm(const NumericVector<Number> & v,
                   for (unsigned int i=0; i != n_sf; ++i)
                     hess_u_h.add_scaled((*d2phi)[i][qp], (*local_v)(dof_indices[i]));
                   v_norm += norm_weight_sq *
-                    JxW[qp] * hess_u_h.size_sq();
+                    JxW[qp] * hess_u_h.norm_sq();
                 }
 
               if (norm_type == W2_INF_SEMINORM)
@@ -1669,7 +1648,7 @@ Real System::calculate_norm(const NumericVector<Number> & v,
                   Tensor hess_u_h;
                   for (unsigned int i=0; i != n_sf; ++i)
                     hess_u_h.add_scaled((*d2phi)[i][qp], (*local_v)(dof_indices[i]));
-                  v_norm = std::max(v_norm, norm_weight * hess_u_h.size());
+                  v_norm = std::max(v_norm, norm_weight * hess_u_h.norm());
                 }
 #endif
             }
@@ -1701,8 +1680,6 @@ Real System::calculate_norm(const NumericVector<Number> & v,
     {
       this->comm().max(v_norm);
     }
-
-  STOP_LOG ("calculate_norm()", "System");
 
   return v_norm;
 }

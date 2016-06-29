@@ -106,8 +106,8 @@ bool Tri3::is_node_on_side(const unsigned int n,
   return false;
 }
 
-UniquePtr<Elem> Tri3::build_side (const unsigned int i,
-                                  bool proxy) const
+UniquePtr<Elem> Tri3::build_side_ptr (const unsigned int i,
+                                      bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -121,7 +121,7 @@ UniquePtr<Elem> Tri3::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<edge->n_nodes(); ++n)
-        edge->set_node(n) = this->get_node(Tri3::side_nodes_map[i][n]);
+        edge->set_node(n) = this->node_ptr(Tri3::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -143,19 +143,19 @@ void Tri3::connectivity(const unsigned int libmesh_dbg_var(sf),
     case TECPLOT:
       {
         conn.resize(4);
-        conn[0] = this->node(0)+1;
-        conn[1] = this->node(1)+1;
-        conn[2] = this->node(2)+1;
-        conn[3] = this->node(2)+1;
+        conn[0] = this->node_id(0)+1;
+        conn[1] = this->node_id(1)+1;
+        conn[2] = this->node_id(2)+1;
+        conn[3] = this->node_id(2)+1;
         return;
       }
 
     case VTK:
       {
         conn.resize(3);
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
         return;
       }
 
@@ -172,11 +172,8 @@ void Tri3::connectivity(const unsigned int libmesh_dbg_var(sf),
 Real Tri3::volume () const
 {
   // 3-node triangles have the following formula for computing the area
-  Point v10 ( *(this->get_node(1)) - *(this->get_node(0)) );
-
-  Point v20 ( *(this->get_node(2)) - *(this->get_node(0)) );
-
-  return 0.5 * (v10.cross(v20)).size() ;
+  return 0.5 * cross_norm(point(1) - point(0),
+                          point(2) - point(0));
 }
 
 
@@ -188,10 +185,9 @@ std::pair<Real, Real> Tri3::min_and_max_angle() const
   Point v21 ( this->point(2) - this->point(1) );
 
   const Real
-    len_10=v10.size(),
-    len_20=v20.size(),
-    len_21=v21.size()
-    ;
+    len_10=v10.norm(),
+    len_20=v20.norm(),
+    len_21=v21.norm();
 
   const Real
     theta0=std::acos(( v10*v20)/len_10/len_20),
@@ -205,6 +201,52 @@ std::pair<Real, Real> Tri3::min_and_max_angle() const
 
   return std::make_pair(std::min(theta0, std::min(theta1,theta2)),
                         std::max(theta0, std::max(theta1,theta2)));
+}
+
+bool Tri3::contains_point (const Point & p, Real tol) const
+{
+  // move test point relative to node 0
+  const Point p0 ( p - this->point(0) );
+
+  // define two in plane vectors
+  Point v1 ( this->point(1) - this->point(0) );
+  Point v2 ( this->point(2) - this->point(0) );
+
+#if LIBMESH_DIM == 3
+  // define out of plane vector
+  Point oop ( v1.cross(v2) );
+
+  // project moved test point onto out of plane component and bail
+  // if it is farther out of plane than tol.
+  if ( std::abs(p0 * oop) > tol || oop.norm_sq() < tol * tol)
+    return false;
+#endif
+
+  const Real d01 = p0 * v1;
+  const Real d02 = p0 * v2;
+  const Real d11 = v1.norm_sq();
+  const Real d12 = v1 * v2;
+  const Real d22 = v2.norm_sq();
+
+#if LIBMESH_DIM == 3
+  // the denominator can only be 0 if v1 = v2, but then the cross product would be 0
+  // and we'd have bailed out already
+  const Real d = 1.0 / (d11 * d22 - d12 * d12);
+#else
+  Real d = d11 * d22 - d12 * d12;
+  if (d < tol)
+    return false;
+  d = 1.0 / d;
+#endif
+
+  // the in plane check implements the barycentric technique from
+  // http://www.blackpawn.com/texts/pointinpoly/
+  const Real s1 = (d02 * d11 - d01 * d12) * d;
+  if (s1 <= -tol)
+    return false;
+
+  const Real s2 = (d01 * d22 - d02 * d12) * d;
+  return s2 > -tol && s1 + s2 < 1.0 + tol;
 }
 
 } // namespace libMesh

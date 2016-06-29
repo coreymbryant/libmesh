@@ -148,15 +148,15 @@ dof_id_type Prism18::key (const unsigned int s) const
       }
     case 1:  // the quad face at y=0
       {
-        return Elem::compute_key (this->node(15));
+        return Elem::compute_key (this->node_id(15));
       }
     case 2:  // the other quad face
       {
-        return Elem::compute_key (this->node(16));
+        return Elem::compute_key (this->node_id(16));
       }
     case 3: // the quad face at x=0
       {
-        return Elem::compute_key (this->node(17));
+        return Elem::compute_key (this->node_id(17));
       }
     case 4: // the triangular face at z=1
       {
@@ -174,8 +174,8 @@ dof_id_type Prism18::key (const unsigned int s) const
 
 
 
-UniquePtr<Elem> Prism18::build_side (const unsigned int i,
-                                     bool proxy) const
+UniquePtr<Elem> Prism18::build_side_ptr (const unsigned int i,
+                                         bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -225,7 +225,7 @@ UniquePtr<Elem> Prism18::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<face->n_nodes(); ++n)
-        face->set_node(n) = this->get_node(Prism18::side_nodes_map[i][n]);
+        face->set_node(n) = this->node_ptr(Prism18::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(face);
     }
@@ -236,7 +236,7 @@ UniquePtr<Elem> Prism18::build_side (const unsigned int i,
 
 
 
-UniquePtr<Elem> Prism18::build_edge (const unsigned int i) const
+UniquePtr<Elem> Prism18::build_edge_ptr (const unsigned int i)
 {
   libmesh_assert_less (i, this->n_edges());
 
@@ -263,112 +263,112 @@ void Prism18::connectivity(const unsigned int sc,
 
           case 0:
             {
-              conn[0] = this->node(0)+1;
-              conn[1] = this->node(6)+1;
-              conn[2] = this->node(8)+1;
-              conn[3] = this->node(8)+1;
-              conn[4] = this->node(9)+1;
-              conn[5] = this->node(15)+1;
-              conn[6] = this->node(17)+1;
-              conn[7] = this->node(17)+1;
+              conn[0] = this->node_id(0)+1;
+              conn[1] = this->node_id(6)+1;
+              conn[2] = this->node_id(8)+1;
+              conn[3] = this->node_id(8)+1;
+              conn[4] = this->node_id(9)+1;
+              conn[5] = this->node_id(15)+1;
+              conn[6] = this->node_id(17)+1;
+              conn[7] = this->node_id(17)+1;
 
               return;
             }
 
           case 1:
             {
-              conn[0] = this->node(6)+1;
-              conn[1] = this->node(1)+1;
-              conn[2] = this->node(7)+1;
-              conn[3] = this->node(7)+1;
-              conn[4] = this->node(15)+1;
-              conn[5] = this->node(10)+1;
-              conn[6] = this->node(16)+1;
-              conn[7] = this->node(16)+1;
+              conn[0] = this->node_id(6)+1;
+              conn[1] = this->node_id(1)+1;
+              conn[2] = this->node_id(7)+1;
+              conn[3] = this->node_id(7)+1;
+              conn[4] = this->node_id(15)+1;
+              conn[5] = this->node_id(10)+1;
+              conn[6] = this->node_id(16)+1;
+              conn[7] = this->node_id(16)+1;
 
               return;
             }
 
           case 2:
             {
-              conn[0] = this->node(8)+1;
-              conn[1] = this->node(7)+1;
-              conn[2] = this->node(2)+1;
-              conn[3] = this->node(2)+1;
-              conn[4] = this->node(17)+1;
-              conn[5] = this->node(16)+1;
-              conn[6] = this->node(11)+1;
-              conn[7] = this->node(11)+1;
+              conn[0] = this->node_id(8)+1;
+              conn[1] = this->node_id(7)+1;
+              conn[2] = this->node_id(2)+1;
+              conn[3] = this->node_id(2)+1;
+              conn[4] = this->node_id(17)+1;
+              conn[5] = this->node_id(16)+1;
+              conn[6] = this->node_id(11)+1;
+              conn[7] = this->node_id(11)+1;
 
               return;
             }
 
           case 3:
             {
-              conn[0] = this->node(6)+1;
-              conn[1] = this->node(7)+1;
-              conn[2] = this->node(8)+1;
-              conn[3] = this->node(8)+1;
-              conn[4] = this->node(15)+1;
-              conn[5] = this->node(16)+1;
-              conn[6] = this->node(17)+1;
-              conn[7] = this->node(17)+1;
+              conn[0] = this->node_id(6)+1;
+              conn[1] = this->node_id(7)+1;
+              conn[2] = this->node_id(8)+1;
+              conn[3] = this->node_id(8)+1;
+              conn[4] = this->node_id(15)+1;
+              conn[5] = this->node_id(16)+1;
+              conn[6] = this->node_id(17)+1;
+              conn[7] = this->node_id(17)+1;
 
               return;
             }
 
           case 4:
             {
-              conn[0] = this->node(9)+1;
-              conn[1] = this->node(15)+1;
-              conn[2] = this->node(17)+1;
-              conn[3] = this->node(17)+1;
-              conn[4] = this->node(3)+1;
-              conn[5] = this->node(12)+1;
-              conn[6] = this->node(14)+1;
-              conn[7] = this->node(14)+1;
+              conn[0] = this->node_id(9)+1;
+              conn[1] = this->node_id(15)+1;
+              conn[2] = this->node_id(17)+1;
+              conn[3] = this->node_id(17)+1;
+              conn[4] = this->node_id(3)+1;
+              conn[5] = this->node_id(12)+1;
+              conn[6] = this->node_id(14)+1;
+              conn[7] = this->node_id(14)+1;
 
               return;
             }
 
           case 5:
             {
-              conn[0] = this->node(15)+1;
-              conn[1] = this->node(10)+1;
-              conn[2] = this->node(16)+1;
-              conn[3] = this->node(16)+1;
-              conn[4] = this->node(12)+1;
-              conn[5] = this->node(4)+1;
-              conn[6] = this->node(13)+1;
-              conn[7] = this->node(13)+1;
+              conn[0] = this->node_id(15)+1;
+              conn[1] = this->node_id(10)+1;
+              conn[2] = this->node_id(16)+1;
+              conn[3] = this->node_id(16)+1;
+              conn[4] = this->node_id(12)+1;
+              conn[5] = this->node_id(4)+1;
+              conn[6] = this->node_id(13)+1;
+              conn[7] = this->node_id(13)+1;
 
               return;
             }
 
           case 6:
             {
-              conn[0] = this->node(17)+1;
-              conn[1] = this->node(16)+1;
-              conn[2] = this->node(11)+1;
-              conn[3] = this->node(11)+1;
-              conn[4] = this->node(14)+1;
-              conn[5] = this->node(13)+1;
-              conn[6] = this->node(5)+1;
-              conn[7] = this->node(5)+1;
+              conn[0] = this->node_id(17)+1;
+              conn[1] = this->node_id(16)+1;
+              conn[2] = this->node_id(11)+1;
+              conn[3] = this->node_id(11)+1;
+              conn[4] = this->node_id(14)+1;
+              conn[5] = this->node_id(13)+1;
+              conn[6] = this->node_id(5)+1;
+              conn[7] = this->node_id(5)+1;
 
               return;
             }
 
           case 7:
             {
-              conn[0] = this->node(15)+1;
-              conn[1] = this->node(16)+1;
-              conn[2] = this->node(17)+1;
-              conn[3] = this->node(17)+1;
-              conn[4] = this->node(12)+1;
-              conn[5] = this->node(13)+1;
-              conn[6] = this->node(14)+1;
-              conn[7] = this->node(14)+1;
+              conn[0] = this->node_id(15)+1;
+              conn[1] = this->node_id(16)+1;
+              conn[2] = this->node_id(17)+1;
+              conn[3] = this->node_id(17)+1;
+              conn[4] = this->node_id(12)+1;
+              conn[5] = this->node_id(13)+1;
+              conn[6] = this->node_id(14)+1;
+              conn[7] = this->node_id(14)+1;
 
               return;
             }
@@ -388,17 +388,17 @@ void Prism18::connectivity(const unsigned int sc,
         // last 3 (mid-face) nodes match.  The middle and top layers
         // of mid-edge nodes are reversed from LibMesh's.
         for (unsigned i=0; i<conn.size(); ++i)
-          conn[i] = this->node(i);
+          conn[i] = this->node_id(i);
 
         // top "ring" of mid-edge nodes
-        conn[9]  = this->node(12);
-        conn[10] = this->node(13);
-        conn[11] = this->node(14);
+        conn[9]  = this->node_id(12);
+        conn[10] = this->node_id(13);
+        conn[11] = this->node_id(14);
 
         // middle "ring" of mid-edge nodes
-        conn[12] = this->node(9);
-        conn[13] = this->node(10);
-        conn[14] = this->node(11);
+        conn[12] = this->node_id(9);
+        conn[13] = this->node_id(10);
+        conn[14] = this->node_id(11);
 
         return;
 
@@ -409,96 +409,96 @@ void Prism18::connectivity(const unsigned int sc,
 
           case 0:
           {
-          conn[0] = this->node(0);
-          conn[1] = this->node(6);
-          conn[2] = this->node(8);
-          conn[3] = this->node(9);
-          conn[4] = this->node(15);
-          conn[5] = this->node(17);
+          conn[0] = this->node_id(0);
+          conn[1] = this->node_id(6);
+          conn[2] = this->node_id(8);
+          conn[3] = this->node_id(9);
+          conn[4] = this->node_id(15);
+          conn[5] = this->node_id(17);
 
           return;
           }
 
           case 1:
           {
-          conn[0] = this->node(6);
-          conn[1] = this->node(1);
-          conn[2] = this->node(7);
-          conn[3] = this->node(15);
-          conn[4] = this->node(10);
-          conn[5] = this->node(16);
+          conn[0] = this->node_id(6);
+          conn[1] = this->node_id(1);
+          conn[2] = this->node_id(7);
+          conn[3] = this->node_id(15);
+          conn[4] = this->node_id(10);
+          conn[5] = this->node_id(16);
 
           return;
           }
 
           case 2:
           {
-          conn[0] = this->node(8);
-          conn[1] = this->node(7);
-          conn[2] = this->node(2);
-          conn[3] = this->node(17);
-          conn[4] = this->node(16);
-          conn[5] = this->node(11);
+          conn[0] = this->node_id(8);
+          conn[1] = this->node_id(7);
+          conn[2] = this->node_id(2);
+          conn[3] = this->node_id(17);
+          conn[4] = this->node_id(16);
+          conn[5] = this->node_id(11);
 
           return;
           }
 
           case 3:
           {
-          conn[0] = this->node(6);
-          conn[1] = this->node(7);
-          conn[2] = this->node(8);
-          conn[3] = this->node(15);
-          conn[4] = this->node(16);
-          conn[5] = this->node(17);
+          conn[0] = this->node_id(6);
+          conn[1] = this->node_id(7);
+          conn[2] = this->node_id(8);
+          conn[3] = this->node_id(15);
+          conn[4] = this->node_id(16);
+          conn[5] = this->node_id(17);
 
           return;
           }
 
           case 4:
           {
-          conn[0] = this->node(9);
-          conn[1] = this->node(15);
-          conn[2] = this->node(17);
-          conn[3] = this->node(3);
-          conn[4] = this->node(12);
-          conn[5] = this->node(14);
+          conn[0] = this->node_id(9);
+          conn[1] = this->node_id(15);
+          conn[2] = this->node_id(17);
+          conn[3] = this->node_id(3);
+          conn[4] = this->node_id(12);
+          conn[5] = this->node_id(14);
 
           return;
           }
 
           case 5:
           {
-          conn[0] = this->node(15);
-          conn[1] = this->node(10);
-          conn[2] = this->node(16);
-          conn[3] = this->node(12);
-          conn[4] = this->node(4);
-          conn[5] = this->node(13);
+          conn[0] = this->node_id(15);
+          conn[1] = this->node_id(10);
+          conn[2] = this->node_id(16);
+          conn[3] = this->node_id(12);
+          conn[4] = this->node_id(4);
+          conn[5] = this->node_id(13);
 
           return;
           }
 
           case 6:
           {
-          conn[0] = this->node(17);
-          conn[1] = this->node(16);
-          conn[2] = this->node(11);
-          conn[3] = this->node(14);
-          conn[4] = this->node(13);
-          conn[5] = this->node(5);
+          conn[0] = this->node_id(17);
+          conn[1] = this->node_id(16);
+          conn[2] = this->node_id(11);
+          conn[3] = this->node_id(14);
+          conn[4] = this->node_id(13);
+          conn[5] = this->node_id(5);
 
           return;
           }
 
           case 7:
           {
-          conn[0] = this->node(15);
-          conn[1] = this->node(16);
-          conn[2] = this->node(17);
-          conn[3] = this->node(12);
-          conn[4] = this->node(13);
-          conn[5] = this->node(14);
+          conn[0] = this->node_id(15);
+          conn[1] = this->node_id(16);
+          conn[2] = this->node_id(17);
+          conn[3] = this->node_id(12);
+          conn[4] = this->node_id(13);
+          conn[5] = this->node_id(14);
 
           return;
           }
@@ -612,6 +612,181 @@ Prism18::second_order_child_vertex (const unsigned int n) const
 
 
 
+Real Prism18::volume () const
+{
+  // Make copies of our points.  It makes the subsequent calculations a bit
+  // shorter and avoids dereferencing the same pointer multiple times.
+  Point
+    x0 = point(0),   x1 = point(1),   x2 = point(2),   x3 = point(3),   x4 = point(4), x5 = point(5),
+    x6 = point(6),   x7 = point(7),   x8 = point(8),   x9 = point(9),  x10 = point(10), x11 = point(11),
+    x12 = point(12), x13 = point(13), x14 = point(14), x15 = point(15), x16 = point(16), x17 = point(17);
+
+  // The number of components in the dx_dxi, dx_deta, and dx_dzeta arrays.
+  const int n_components = 16;
+
+  // Terms are copied directly from a Python script.
+  Point dx_dxi[n_components] =
+    {
+      -x10 + 4*x15 - 3*x9,
+      3*x0/2 + x1/2 + 2*x12 - 3*x3/2 - x4/2 - 2*x6,
+      -3*x0/2 - x1/2 + x10 + 2*x12 - 4*x15 - 3*x3/2 - x4/2 + 2*x6 + 3*x9,
+      -4*x15 + 4*x16 - 4*x17 + 4*x9,
+      -2*x0 - 2*x12 + 2*x13 - 2*x14 + 2*x3 + 2*x6 - 2*x7 + 2*x8,
+      2*x0 - 2*x12 + 2*x13 - 2*x14 + 4*x15 - 4*x16 + 4*x17 + 2*x3 - 2*x6 + 2*x7 - 2*x8 - 4*x9,
+      Point(0,0,0),
+      Point(0,0,0),
+      4*x10 - 8*x15 + 4*x9,
+      -2*x0 - 2*x1 - 4*x12 + 2*x3 + 2*x4 + 4*x6,
+      2*x0 + 2*x1 - 4*x10 - 4*x12 + 8*x15 + 2*x3 + 2*x4 - 4*x6 - 4*x9,
+      Point(0,0,0),
+      Point(0,0,0),
+      Point(0,0,0),
+      Point(0,0,0),
+      Point(0,0,0)
+    };
+
+  Point dx_deta[n_components] =
+    {
+      -x11 + 4*x17 - 3*x9,
+      3*x0/2 + 2*x14 + x2/2 - 3*x3/2 - x5/2 - 2*x8,
+      -3*x0/2 + x11 + 2*x14 - 4*x17 - x2/2 - 3*x3/2 - x5/2 + 2*x8 + 3*x9,
+      4*x11 - 8*x17 + 4*x9,
+      -2*x0 - 4*x14 - 2*x2 + 2*x3 + 2*x5 + 4*x8,
+      2*x0 - 4*x11 - 4*x14 + 8*x17 + 2*x2 + 2*x3 + 2*x5 - 4*x8 - 4*x9,
+      Point(0,0,0),
+      Point(0,0,0),
+      -4*x15 + 4*x16 - 4*x17 + 4*x9,
+      -2*x0 - 2*x12 + 2*x13 - 2*x14 + 2*x3 + 2*x6 - 2*x7 + 2*x8,
+      2*x0 - 2*x12 + 2*x13 - 2*x14 + 4*x15 - 4*x16 + 4*x17 + 2*x3 - 2*x6 + 2*x7 - 2*x8 - 4*x9,
+      Point(0,0,0),
+      Point(0,0,0),
+      Point(0,0,0),
+      Point(0,0,0),
+      Point(0,0,0)
+    };
+
+  Point dx_dzeta[n_components] =
+    {
+      -x0/2 + x3/2,
+      x0 + x3 - 2*x9,
+      Point(0,0,0),
+      3*x0/2 + 2*x14 + x2/2 - 3*x3/2 - x5/2 - 2*x8,
+      -3*x0 + 2*x11 + 4*x14 - 8*x17 - x2 - 3*x3 - x5 + 4*x8 + 6*x9,
+      Point(0,0,0),
+      -x0 - 2*x14 - x2 + x3 + x5 + 2*x8,
+      2*x0 - 4*x11 - 4*x14 + 8*x17 + 2*x2 + 2*x3 + 2*x5 - 4*x8 - 4*x9,
+      3*x0/2 + x1/2 + 2*x12 - 3*x3/2 - x4/2 - 2*x6,
+      -3*x0 - x1 + 2*x10 + 4*x12 - 8*x15 - 3*x3 - x4 + 4*x6 + 6*x9,
+      Point(0,0,0),
+      -2*x0 - 2*x12 + 2*x13 - 2*x14 + 2*x3 + 2*x6 - 2*x7 + 2*x8,
+      4*x0 - 4*x12 + 4*x13 - 4*x14 + 8*x15 - 8*x16 + 8*x17 + 4*x3 - 4*x6 + 4*x7 - 4*x8 - 8*x9,
+      Point(0,0,0),
+      -x0 - x1 - 2*x12 + x3 + x4 + 2*x6,
+      2*x0 + 2*x1 - 4*x10 - 4*x12 + 8*x15 + 2*x3 + 2*x4 - 4*x6 - 4*x9
+    };
+
+  // The quadrature rule for the Prism18 is a tensor product between a
+  // FOURTH-order TRI rule (in xi, eta) and a FIFTH-order EDGE rule
+  // in zeta.
+
+  // Number of points in the 2D quadrature rule.
+  const int N2D = 6;
+
+  // Parameters of the 2D rule
+  static const Real
+    w1 = 1.1169079483900573284750350421656140e-01L,
+    w2 = 5.4975871827660933819163162450105264e-02L,
+    a1 = 4.4594849091596488631832925388305199e-01L,
+    a2 = 9.1576213509770743459571463402201508e-02L;
+
+  // Points and weights of the 2D rule
+  static const Real w2D[N2D] = {w1, w1, w1, w2, w2, w2};
+
+  // Quadrature point locations raised to powers.  xi[0][2] is
+  // quadrature point 0, squared, xi[1][1] is quadrature point 1 to the
+  // first power, etc.  This lets us avoid calling std::pow inside the
+  // loops below.
+  static const Real xi[N2D][3] =
+    {
+      // ^0   ^1      ^2
+      {   1., a1,     a1*a1},
+      {   1., 1-2*a1, (1-2*a1)*(1-2*a1)},
+      {   1., a1,     a1*a1},
+      {   1., a2,     a2*a2},
+      {   1., 1-2*a2, (1-2*a2)*(1-2*a2)},
+      {   1., a2,     a2*a2}
+    };
+
+  static const Real eta[N2D][3] =
+    {
+      // ^0   ^1      ^2
+      {   1., a1,     a1*a1},
+      {   1., a1,     a1*a1},
+      {   1., 1-2*a1, (1-2*a1)*(1-2*a1)},
+      {   1., a2,     a2*a2},
+      {   1., a2,     a2*a2},
+      {   1., 1-2*a2, (1-2*a2)*(1-2*a2)}
+    };
+
+  // Number of points in the 1D quadrature rule.
+  const int N1D = 3;
+
+  // Points and weights of the 1D quadrature rule.
+  static const Real w1D[N1D] = {5./9, 8./9, 5./9};
+
+  const Real zeta[N1D][3] =
+    {
+      //^0   ^1                 ^2
+      {  1., -std::sqrt(15)/5., 15./25},
+      {  1., 0.,                0.},
+      {  1., std::sqrt(15)/5.,  15./25}
+    };
+
+  // The integer exponents for each term.
+  static const int exponents[n_components][3] =
+    {
+      {0, 0, 0},
+      {0, 0, 1},
+      {0, 0, 2},
+      {0, 1, 0},
+      {0, 1, 1},
+      {0, 1, 2},
+      {0, 2, 0},
+      {0, 2, 1},
+      {1, 0, 0},
+      {1, 0, 1},
+      {1, 0, 2},
+      {1, 1, 0},
+      {1, 1, 1},
+      {1, 2, 0},
+      {2, 0, 0},
+      {2, 0, 1}
+    };
+
+  Real vol = 0.;
+  for (int i=0; i<N2D; ++i)
+    for (int j=0; j<N1D; ++j)
+      {
+        // Compute dx_dxi, dx_deta, dx_dzeta at the current quadrature point.
+        Point dx_dxi_q, dx_deta_q, dx_dzeta_q;
+        for (int c=0; c<n_components; ++c)
+          {
+            Real coeff =
+              xi[i][exponents[c][0]]*
+              eta[i][exponents[c][1]]*
+              zeta[j][exponents[c][2]];
+
+            dx_dxi_q   += coeff * dx_dxi[c];
+            dx_deta_q  += coeff * dx_deta[c];
+            dx_dzeta_q += coeff * dx_dzeta[c];
+          }
+
+        // Compute scalar triple product, multiply by weight, and accumulate volume.
+        vol += w2D[i] * w1D[j] * triple_product(dx_dxi_q, dx_deta_q, dx_dzeta_q);
+      }
+
+  return vol;
+}
 
 
 

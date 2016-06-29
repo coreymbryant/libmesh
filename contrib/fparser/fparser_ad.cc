@@ -100,6 +100,7 @@ FunctionParserADBase<Value_t>::FunctionParserADBase(const FunctionParserADBase& 
     mRegisteredDerivatives(cpy.mRegisteredDerivatives),
     ad(new ADImplementation<Value_t>(this))
 {
+  pImmed = this->mData->mImmed.empty() ? NULL : &(this->mData->mImmed[0]);
 }
 
 template<typename Value_t>
@@ -187,14 +188,14 @@ typename ADImplementation<Value_t>::CodeTreeAD ADImplementation<Value_t>::D(cons
 {
   // derivative of a constant number is 0
   if (func.IsImmed())
-    return CodeTreeAD(CodeTreeImmed(Value_t(0)));
+    return CodeTreeAD(0);
 
   // derivative of a variable is 1 for the variable we are diffing w.r.t. and 0 otherwise
   if (func.IsVar())
   {
     if (func.GetVar() == var) {
       // dx/dx = 1
-      return CodeTreeAD(CodeTreeImmed(Value_t(1)));
+      return CodeTreeAD(1);
     } else {
       // check if this derivative is registered
       typename std::vector<typename FunctionParserADBase<Value_t>::VariableDerivative>::const_iterator it;
@@ -204,7 +205,7 @@ typename ADImplementation<Value_t>::CodeTreeAD ADImplementation<Value_t>::D(cons
           return CodeTreeAD(CodeTreeVar<Value_t>(it->derivative));
 
       // otherwise return zero
-      return CodeTreeAD(CodeTreeImmed(Value_t(0)));
+      return CodeTreeAD(0);
     }
   }
 
@@ -248,6 +249,7 @@ typename ADImplementation<Value_t>::CodeTreeAD ADImplementation<Value_t>::D(cons
         sub.SetOpcode(cMul);
         for (j = 0; j < nparam; ++j)
           sub.AddParam(i==j ? D(param[j]) : param[j]);
+        sub.Rehash();
         diff.AddParam(sub);
       }
       diff.Rehash();
@@ -296,7 +298,7 @@ typename ADImplementation<Value_t>::CodeTreeAD ADImplementation<Value_t>::D(cons
         if (exponent == Value_t(1))
           return D(a);
         if (exponent == Value_t(0))
-          return CodeTreeAD(CodeTreeImmed(Value_t(0)));
+          return CodeTreeAD(0);
         return MakeTree(cPow, a, CodeTreeAD(exponent - Value_t(1))) * b * D(a);
       }
       return MakeTree(cPow, a, b) * (D(b) * MakeTree(cLog, a) + b * D(a)/a);
@@ -355,7 +357,7 @@ typename ADImplementation<Value_t>::CodeTreeAD ADImplementation<Value_t>::D(cons
     case cLessOrEq:
     case cGreater:
     case cGreaterOrEq:
-      return CodeTreeAD(CodeTreeImmed(Value_t(0)));
+      return CodeTreeAD(0);
 
     // these opcodes will never appear in the tree when building with keep_powi == false
     // they will be replaced by cPow, cMul, cDiv etc.:
@@ -395,7 +397,7 @@ int FunctionParserADBase<Value_t>::AutoDiff(const std::string& var_name)
 
     // should and can we load a cached derivative?
     std::string cache_file;
-    const std::string jitdir = ".jitdir";
+    const std::string jitdir = ".jitcache";
     if (cached)
     {
       // generate a sha1 hash of the Value type size, byte code, and immediate list
@@ -507,13 +509,7 @@ template<typename Value_t>
 int ADImplementation<Value_t>::AutoDiff(unsigned int _var, typename FunctionParserADBase<Value_t>::Data * mData, bool autoOptimize)
 {
   CodeTreeAD orig;
-
-  std::vector<CodeTree<Value_t> > var_trees;
-  var_trees.reserve(mData->mVariablesAmount);
-  for(unsigned n=0; n<mData->mVariablesAmount; ++n)
-    var_trees.push_back(CodeTreeVar<Value_t>(n + VarBegin));
-
-  orig.GenerateFrom(*mData, var_trees, false);
+  orig.GenerateFrom(*mData, false);
 
   // store variable we are diffing for as a member
   var = _var;
@@ -1032,15 +1028,21 @@ void FunctionParserADBase<Value_t>::Unserialize(std::istream & istr)
   std::vector<unsigned> byteCode;
   size_t byte_code_size;
   istr.read(reinterpret_cast<char *>(&byte_code_size), sizeof(byte_code_size));
-  byteCode.resize(byte_code_size);
-  istr.read(reinterpret_cast<char *>(&byteCode[0]), byte_code_size * sizeof(unsigned));
+  if (byte_code_size > 0)
+  {
+    byteCode.resize(byte_code_size);
+    istr.read(reinterpret_cast<char *>(&byteCode[0]), byte_code_size * sizeof(unsigned));
+  }
 
   // read immediates
   std::vector<Value_t> immed;
   size_t immed_size;
   istr.read(reinterpret_cast<char *>(&immed_size), sizeof(immed_size));
-  immed.resize(immed_size);
-  istr.read(reinterpret_cast<char *>(&immed[0]), immed_size * sizeof(Value_t));
+  if (immed_size > 0)
+  {
+    immed.resize(immed_size);
+    istr.read(reinterpret_cast<char *>(&immed[0]), immed_size * sizeof(Value_t));
+  }
 
   // read stacktop
   unsigned stacktop_max;

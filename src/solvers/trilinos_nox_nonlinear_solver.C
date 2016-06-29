@@ -34,18 +34,13 @@
 #include "libmesh/trilinos_epetra_matrix.h"
 #include "libmesh/trilinos_preconditioner.h"
 
-// ---------- Standard Includes ----------
-#include <iostream>
-#include "Epetra_Vector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
-#include "NOX_Epetra_Interface_Required.H" // base class
-#include "NOX_Epetra_Interface_Jacobian.H" // base class
-#include "NOX_Epetra_Interface_Preconditioner.H" // base class
+// Trilinos includes
+#include "libmesh/ignore_warnings.h"
 #include "NOX_Epetra_MatrixFree.H"
 #include "NOX_Epetra_LinearSystem_AztecOO.H"
 #include "NOX_Epetra_Group.H"// class definition
 #include "NOX_Epetra_Vector.H"
+#include "libmesh/restore_warnings.h"
 
 namespace libMesh
 {
@@ -104,7 +99,7 @@ bool Problem_Interface::computeF(const Epetra_Vector & x,
                                  Epetra_Vector & r,
                                  NOX::Epetra::Interface::Required::FillType /*fillType*/)
 {
-  START_LOG("residual()", "TrilinosNoxNonlinearSolver");
+  LOG_SCOPE("residual()", "TrilinosNoxNonlinearSolver");
 
   NonlinearImplicitSystem & sys = _solver->system();
 
@@ -153,8 +148,6 @@ bool Problem_Interface::computeF(const Epetra_Vector & x,
   R.close();
   X_global.close();
 
-  STOP_LOG("residual()", "TrilinosNoxNonlinearSolver");
-
   return true;
 }
 
@@ -163,7 +156,7 @@ bool Problem_Interface::computeF(const Epetra_Vector & x,
 bool Problem_Interface::computeJacobian(const Epetra_Vector & x,
                                         Epetra_Operator & jac)
 {
-  START_LOG("jacobian()", "TrilinosNoxNonlinearSolver");
+  LOG_SCOPE("jacobian()", "TrilinosNoxNonlinearSolver");
 
   NonlinearImplicitSystem & sys = _solver->system();
 
@@ -209,8 +202,6 @@ bool Problem_Interface::computeJacobian(const Epetra_Vector & x,
   Jac.close();
   X_global.close();
 
-  STOP_LOG("jacobian()", "TrilinosNoxNonlinearSolver");
-
   return true;
 }
 
@@ -228,7 +219,7 @@ bool Problem_Interface::computePreconditioner(const Epetra_Vector & x,
                                               Epetra_Operator & prec,
                                               Teuchos::ParameterList * /*p*/)
 {
-  START_LOG("preconditioner()", "TrilinosNoxNonlinearSolver");
+  LOG_SCOPE("preconditioner()", "TrilinosNoxNonlinearSolver");
 
   NonlinearImplicitSystem & sys = _solver->system();
   TrilinosPreconditioner<Number> & tpc = dynamic_cast<TrilinosPreconditioner<Number> &>(prec);
@@ -276,8 +267,6 @@ bool Problem_Interface::computePreconditioner(const Epetra_Vector & x,
   X_global.close();
 
   tpc.compute();
-
-  STOP_LOG("preconditioner()", "TrilinosNoxNonlinearSolver");
 
   return true;
 }

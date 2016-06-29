@@ -77,9 +77,9 @@ int main (int argc, char ** argv)
   // Create a 3D mesh distributed across the default MPI communicator.
   Mesh mesh(init.comm(), dim);
   MeshTools::Generation::build_cube (mesh,
-                                     40,
-                                     10,
-                                     5,
+                                     32,
+                                     8,
+                                     4,
                                      0., 1.*x_scaling,
                                      0., 0.3,
                                      0., 0.1,
@@ -89,9 +89,11 @@ int main (int argc, char ** argv)
   // Print information about the mesh to the screen.
   mesh.print_info();
 
-  // Let's add some node and edge boundary conditions
-  MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
-  const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+  // Let's add some node and edge boundary conditions.
+  // Each processor should know about each boundary condition it can
+  // see, so we loop over all elements, not just local elements.
+  MeshBase::const_element_iterator       el     = mesh.elements_begin();
+  const MeshBase::const_element_iterator end_el = mesh.elements_end();
   for ( ; el != end_el; ++el)
     {
       const Elem * elem = *el;
@@ -137,7 +139,7 @@ int main (int argc, char ** argv)
           if (elem->is_node_on_side(n, side_max_x) &&
               elem->is_node_on_side(n, side_max_y) &&
               elem->is_node_on_side(n, side_max_z))
-            mesh.get_boundary_info().add_node(elem->get_node(n), NODE_BOUNDARY_ID);
+            mesh.get_boundary_info().add_node(elem->node_ptr(n), NODE_BOUNDARY_ID);
 
       // If elem has sides on boundaries
       // BOUNDARY_ID_MAX_X and BOUNDARY_ID_MIN_Y
@@ -172,12 +174,10 @@ int main (int argc, char ** argv)
 
   // Solve this as a time-dependent or steady system
   if (transient)
-    system.time_solver =
-      UniquePtr<NewmarkSolver>(new NewmarkSolver(system));
+    system.time_solver.reset(new NewmarkSolver(system));
   else
     {
-      system.time_solver =
-        UniquePtr<TimeSolver>(new SteadySolver(system));
+      system.time_solver.reset(new SteadySolver(system));
       libmesh_assert_equal_to (n_timesteps, 1);
     }
 

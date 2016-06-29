@@ -26,6 +26,7 @@
 #include <stdlib.h> // rand, srand
 
 #include "libmesh/libmesh_config.h"
+#include "libmesh/libmesh_nullptr.h"
 
 #ifdef LIBMESH_HAVE_EXODUS_API
 

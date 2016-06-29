@@ -194,6 +194,14 @@ void MeshBase::prepare_for_use (const bool skip_renumber_nodes_and_elements, con
   if(!skip_find_neighbors)
     this->find_neighbors();
 
+  // The user may have set boundary conditions.  We require that the
+  // boundary conditions were set consistently.  Because we examine
+  // neighbors when evaluating non-raw boundary condition IDs, this
+  // assert is only valid when our neighbor links are in place.
+#ifdef DEBUG
+  MeshTools::libmesh_assert_valid_boundary_ids(*this);
+#endif
+
   // Search the mesh for all the dimensions of the elements
   // and cache them.
   this->cache_elem_dims();
@@ -204,7 +212,7 @@ void MeshBase::prepare_for_use (const bool skip_renumber_nodes_and_elements, con
 
   // Fix up node unique ids in case mesh generation code didn't take
   // exceptional care to do so.
-//  MeshCommunication().make_node_unique_ids_parallel_consistent(*this);
+  //  MeshCommunication().make_node_unique_ids_parallel_consistent(*this);
 
   // We're going to still require that mesh generation code gets
   // element unique ids consistent.
@@ -215,7 +223,7 @@ void MeshBase::prepare_for_use (const bool skip_renumber_nodes_and_elements, con
   // Partition the mesh.
   this->partition();
 
-  // If we're using ParallelMesh, we'll want it parallelized.
+  // If we're using DistributedMesh, we'll want it parallelized.
   this->delete_remote_elements();
 
   if(!_skip_renumber_nodes_and_elements)
@@ -575,6 +583,7 @@ void MeshBase::cache_elem_dims()
         {
           Node & node = **node_it;
 
+#if LIBMESH_DIM > 1
           // Note: the exact floating point comparison is intentional,
           // we don't want to get tripped up by tolerances.
           if (node(1) != 0.)
@@ -587,6 +596,7 @@ void MeshBase::cache_elem_dims()
               break;
 #endif
             }
+#endif
 
 #if LIBMESH_DIM > 2
           if (node(2) != 0.)
@@ -625,7 +635,7 @@ void MeshBase::detect_interior_parents()
         {
           libmesh_assert_less (elem->id(), this->max_elem_id());
 
-          node_to_elem[elem->node(n)].push_back(elem->id());
+          node_to_elem[elem->node_id(n)].push_back(elem->id());
         }
     }
 
@@ -649,12 +659,12 @@ void MeshBase::detect_interior_parents()
 
       for (dof_id_type n=0; n < element->n_vertices(); n++)
         {
-          std::vector<dof_id_type> & element_ids = node_to_elem[element->node(n)];
+          std::vector<dof_id_type> & element_ids = node_to_elem[element->node_id(n)];
           for (std::vector<dof_id_type>::iterator e_it = element_ids.begin();
                e_it != element_ids.end(); e_it++)
             {
               dof_id_type eid = *e_it;
-              if (this->elem(eid)->dim() == element->dim()+1)
+              if (this->elem_ref(eid).dim() == element->dim()+1)
                 neighbors[n].insert(eid);
             }
           if (neighbors[n].size()>0)
@@ -697,7 +707,7 @@ void MeshBase::detect_interior_parents()
                 }
               if (found_interior_parents)
                 {
-                  element->set_interior_parent(this->elem(interior_parent_id));
+                  element->set_interior_parent(this->elem_ptr(interior_parent_id));
                   break;
                 }
             }

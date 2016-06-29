@@ -124,8 +124,8 @@ bool Quad4::has_affine_map() const
 
 
 
-UniquePtr<Elem> Quad4::build_side (const unsigned int i,
-                                   bool proxy) const
+UniquePtr<Elem> Quad4::build_side_ptr (const unsigned int i,
+                                       bool proxy)
 {
   libmesh_assert_less (i, this->n_sides());
 
@@ -139,7 +139,7 @@ UniquePtr<Elem> Quad4::build_side (const unsigned int i,
 
       // Set the nodes
       for (unsigned n=0; n<edge->n_nodes(); ++n)
-        edge->set_node(n) = this->get_node(Quad4::side_nodes_map[i][n]);
+        edge->set_node(n) = this->node_ptr(Quad4::side_nodes_map[i][n]);
 
       return UniquePtr<Elem>(edge);
     }
@@ -166,19 +166,19 @@ void Quad4::connectivity(const unsigned int libmesh_dbg_var(sf),
     {
     case TECPLOT:
       {
-        conn[0] = this->node(0)+1;
-        conn[1] = this->node(1)+1;
-        conn[2] = this->node(2)+1;
-        conn[3] = this->node(3)+1;
+        conn[0] = this->node_id(0)+1;
+        conn[1] = this->node_id(1)+1;
+        conn[2] = this->node_id(2)+1;
+        conn[3] = this->node_id(3)+1;
         return;
       }
 
     case VTK:
       {
-        conn[0] = this->node(0);
-        conn[1] = this->node(1);
-        conn[2] = this->node(2);
-        conn[3] = this->node(3);
+        conn[0] = this->node_id(0);
+        conn[1] = this->node_id(1);
+        conn[2] = this->node_id(2);
+        conn[3] = this->node_id(3);
         return;
       }
 
@@ -209,7 +209,7 @@ Real Quad4::volume () const
 
   // Check for quick return for parallelogram QUAD4.
   if (a1.relative_fuzzy_equals(Point(0,0,0)))
-    return 4. * b1.cross(b2).size();
+    return 4. * b1.cross(b2).norm();
 
   // Otherwise, use 2x2 quadrature to approximate the surface area.
 
@@ -220,7 +220,8 @@ Real Quad4::volume () const
   Real vol=0.;
   for (unsigned int i=0; i<2; ++i)
     for (unsigned int j=0; j<2; ++j)
-      vol += (q[j]*a1 + b1).cross(q[i]*a2 + b2).size();
+      vol += cross_norm(q[j]*a1 + b1,
+                        q[i]*a2 + b2);
 
   return vol;
 }

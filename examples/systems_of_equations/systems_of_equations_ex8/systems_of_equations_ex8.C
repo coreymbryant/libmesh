@@ -39,7 +39,7 @@
 
 // libMesh includes
 #include "libmesh/libmesh.h"
-#include "libmesh/mesh.h"
+#include "libmesh/serial_mesh.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/dof_map.h"
@@ -60,6 +60,14 @@ using namespace libMesh;
 int main (int argc, char ** argv)
 {
   LibMeshInit init (argc, argv);
+
+  // This example uses an ExodusII input file
+#ifndef LIBMESH_HAVE_EXODUS_API
+  libmesh_example_requires(false, "--enable-exodus");
+#endif
+
+  // We use a 3D domain.
+  libmesh_example_requires(LIBMESH_DIM > 2, "--disable-1D-only --disable-2D-only");
 
   // This example requires the PETSc nonlinear solvers
   libmesh_example_requires(libMesh::default_solver_package() == PETSC_SOLVERS, "--enable-petsc");
@@ -83,7 +91,8 @@ int main (int argc, char ** argv)
   const Real contact_penalty = infile("contact_penalty", 1.e2);
   const Real gap_function_tol = infile("gap_function_tol", 1.e-8);
 
-  Mesh mesh(init.comm());
+  // This example code has not been written to cope with a distributed mesh
+  SerialMesh mesh(init.comm());
   mesh.read("systems_of_equations_ex8.exo");
 
   mesh.print_info();
@@ -181,9 +190,16 @@ int main (int argc, char ** argv)
 
   Real current_max_gap_function = std::numeric_limits<Real>::max();
 
-  unsigned int outer_iteration = 0;
-  while (current_max_gap_function > gap_function_tol)
+  const unsigned int max_outer_iterations = 10;
+  for (unsigned int outer_iteration = 0;
+       outer_iteration != max_outer_iterations; ++outer_iteration)
     {
+      if (current_max_gap_function <= gap_function_tol)
+        {
+          libMesh::out << "Outer iterative loop converged!" << std::endl;
+          break;
+        }
+
       libMesh::out << "Starting outer iteration " << outer_iteration << std::endl;
 
       // Perform inner iteration (i.e. Newton's method loop)
